@@ -40,7 +40,7 @@ export async function enableTotp(userId: string, secret: string) {
   return codes;
 }
 
-export async function useBackupCode(userId: string, code: string) {
+export async function consumeBackupCode(userId: string, code: string) {
   const row = await db.backupCode.findFirst({ where: { userId, codeHash: hashToken(normalizeCode(code)), usedAt: null } });
   if (!row) return false;
   const r = await db.backupCode.updateMany({ where: { id: row.id, usedAt: null }, data: { usedAt: new Date() } });

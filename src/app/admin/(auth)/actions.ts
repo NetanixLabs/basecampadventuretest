@@ -11,9 +11,9 @@ import { sendTemplate } from "@/lib/admin/email/send";
 import { dummyHash, hashPassword, passwordProblem, verifyPassword } from "@/lib/admin/password";
 import { clearLimit, clientIp, limit, RULES, waitText } from "@/lib/admin/rate-limit";
 import { createSession, endSession, getAuth, markMfa, mfaRequired, revokeAll, revokeSession } from "@/lib/admin/session";
-import { checkCode, checkUserCode, enableTotp, newEnrollment, useBackupCode } from "@/lib/admin/totp";
+import { checkCode, checkUserCode, enableTotp, newEnrollment, consumeBackupCode } from "@/lib/admin/totp";
 
-export type FormState = { error?: string; ok?: string } | null;
+export type FormState = { error?: string; ok?: string; email?: string } | null;
 
 const SETUP_COOKIE = "bca_totp_setup";
 
@@ -27,7 +27,7 @@ export async function signIn(_prev: FormState, form: FormData): Promise<FormStat
   const ip = await clientIp();
   for (const key of [`login:ip:${ip}`, `login:email:${email}`]) {
     const r = await limit(key, key.includes(":ip:") ? RULES.ip : RULES.login);
-    if (!r.ok) return { error: `Too many attempts. Try again in ${waitText(r.retryAfter)}, or reset your password.` };
+    if (!r.ok) return { email, error: `Too many attempts. Try again in ${waitText(r.retryAfter)}, or reset your password.` };
   }
 
   const user = await db.user.findUnique({ where: { email } });
@@ -35,7 +35,7 @@ export async function signIn(_prev: FormState, form: FormData): Promise<FormStat
   const valid = user ? await verifyPassword(password, user.passwordHash) : (await verifyPassword(password, await dummyHash()), false);
   if (!user || !valid || user.status !== "active") {
     await audit(user?.id ?? null, "login.failed", "user", user?.id, email);
-    return { error: "That email and password don't match." };
+    return { email, error: "That email and password don't match." };
   }
 
   await clearLimit(`login:email:${email}`);
@@ -63,7 +63,7 @@ export async function verifyTwoFactor(_prev: FormState, form: FormData): Promise
   }
 
   const digits = code.replace(/\s/g, "");
-  const ok = /^\d{6}$/.test(digits) ? await checkUserCode(auth.user.id, digits) : await useBackupCode(auth.user.id, code);
+  const ok = /^\d{6}$/.test(digits) ? await checkUserCode(auth.user.id, digits) : await consumeBackupCode(auth.user.id, code);
   if (!ok) {
     await audit(auth.user.id, "login.2fa.failed", "user", auth.user.id);
     return { error: "That code didn't work. Codes change every 30 seconds; try the newest one." };

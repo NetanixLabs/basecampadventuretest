@@ -8,10 +8,10 @@ export const metadata = { title: "Set up two-step sign-in" };
 export default async function SetupPage() {
   const auth = await getAuth();
   if (!auth) redirect("/login");
-  if (auth.user.totpEnabled) redirect(auth.mfaDone ? "/" : "/login/verify");
+  if (auth.user.totpEnabled && !auth.mfaDone) redirect("/login/verify");
   return (
     <AuthShell title="Protect your account" subtitle="Every admin account uses two-step sign-in: your password plus a code from your phone. It takes one minute.">
-      <SetupForm />
+      <SetupForm alreadyOn={auth.user.totpEnabled} />
     </AuthShell>
   );
 }

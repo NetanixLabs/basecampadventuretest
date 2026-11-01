@@ -14,7 +14,7 @@ export function LoginForm({ notice }: { notice?: string }) {
       {state?.error ? <Alert tone="red">{state.error}</Alert> : null}
       <div>
         <Label htmlFor="email">Email</Label>
-        <input id="email" name="email" type="email" autoComplete="username" required autoFocus className={inputClass} />
+        <input id="email" name="email" type="email" autoComplete="username" required autoFocus={!state?.email} defaultValue={state?.email} key={state?.email ?? ""} className={inputClass} />
       </div>
       <div>
         <Label htmlFor="password" hint={<Link href="/forgot" className="font-semibold text-pine hover:underline">Forgot password?</Link>}>
@@ -62,14 +62,21 @@ export function VerifyForm() {
   );
 }
 
-export function SetupForm() {
+export function SetupForm({ alreadyOn }: { alreadyOn?: boolean }) {
   const [enrol, setEnrol] = useState<{ qr: string; secret: string } | { error: string } | null>(null);
   const [state, action] = useActionState(confirmTotpSetup, null);
   useEffect(() => {
-    void beginTotpSetup().then(setEnrol);
-  }, []);
+    if (!alreadyOn) void beginTotpSetup().then(setEnrol);
+  }, [alreadyOn]);
 
+  // The codes stay on screen until the person continues, even though the page refreshes behind them.
   if (state?.codes) return <BackupCodes codes={state.codes} />;
+  if (alreadyOn) return (
+    <div className="space-y-4">
+      <Alert tone="green">Two-step sign-in is already on for this account.</Alert>
+      <Link href="/" className="block w-full rounded-full bg-pine px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-pine-deep">Go to the dashboard</Link>
+    </div>
+  );
   if (!enrol) return <p className="text-sm text-muted">Preparing your QR code…</p>;
   if ("error" in enrol) return <Alert tone="red">{enrol.error}</Alert>;
   return (
