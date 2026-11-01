@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { Badge, ButtonLink, Empty, PageHeader, Table, day, money } from "@/components/admin/ui";
 import { collection } from "@/lib/admin/collections";
 import { db } from "@/lib/admin/db";
-import { requireUser } from "@/lib/admin/guards";
+import { can, requireUser } from "@/lib/admin/guards";
 import { Reorder } from "./reorder";
+import { RowActions } from "./row-actions";
 import { getPath } from "@/lib/admin/paths";
 import { site } from "@/lib/site";
 import { RESERVED_PAGES } from "@/lib/reserved-pages";
@@ -19,7 +20,8 @@ export async function generateMetadata({ params }: { params: Promise<{ collectio
 }
 
 export default async function ListPage({ params, searchParams }: { params: Promise<{ collection: string }>; searchParams: Promise<{ q?: string; status?: string; page?: string; order?: string }> }) {
-  await requireUser("content");
+  const { user } = await requireUser("content");
+  const canPublish = can(user.role, "publish");
   const def = collection((await params).collection);
   if (!def) notFound();
   const { q = "", status = "", page = "1", order } = await searchParams;
@@ -65,7 +67,7 @@ export default async function ListPage({ params, searchParams }: { params: Promi
           {[
             ["", `All (${count("published") + count("draft")})`],
             ["published", `Live (${count("published")})`],
-            ["draft", `Drafts (${count("draft")})`],
+            ["draft", `Hidden & drafts (${count("draft")})`],
             ["changed", "Unpublished changes"],
             ["archived", `Archived (${count("archived")})`],
           ].map(([s, label]) => (
@@ -77,7 +79,7 @@ export default async function ListPage({ params, searchParams }: { params: Promi
       </div>
 
       {rows.length ? (
-        <Table head={[def.titleField === "name" ? "Name" : "Title", ...(def.columns ?? []).map((c) => c.label), "Status", "Updated", ""]}>
+        <Table head={[def.titleField === "name" ? "Name" : "Title", ...(def.columns ?? []).map((c) => c.label), "Status", "Updated", "Actions"]}>
           {rows.map((r) => (
             <tr key={r.id}>
               <td className="max-w-md">
@@ -94,13 +96,16 @@ export default async function ListPage({ params, searchParams }: { params: Promi
                 );
               })}
               <td>
-                {r.status === "published" ? (r.dirty ? <Badge tone="amber">Live · changes not published</Badge> : <Badge tone="green">Live</Badge>) : r.status === "draft" ? <Badge>Draft</Badge> : <Badge tone="gray">Archived</Badge>}
+                {r.status === "published" ? (r.dirty ? <Badge tone="amber">Live · changes not published</Badge> : <Badge tone="green">Live</Badge>) : r.status === "draft" ? <Badge>Hidden / draft</Badge> : <Badge tone="gray">Archived</Badge>}
               </td>
               <td className="whitespace-nowrap text-ink-soft">{day(r.updatedAt)}</td>
-              <td className="whitespace-nowrap text-right">
-                {def.url && r.status === "published" ? (
-                  <a href={`${site.url}${def.url.replace("{slug}", r.slug)}`} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-pine hover:underline">View ↗</a>
-                ) : null}
+              <td className="whitespace-nowrap sm:text-right">
+                <span className="inline-flex flex-wrap items-center gap-1">
+                  {def.url && r.status === "published" ? (
+                    <a href={`${site.url}${def.url.replace("{slug}", r.slug)}`} target="_blank" rel="noopener noreferrer" className="rounded-full px-2.5 py-1 text-xs font-semibold text-pine hover:bg-pine/8">View ↗</a>
+                  ) : null}
+                  {canPublish ? <RowActions collection={def.key} id={r.id} title={r.title} status={r.status} singular={def.singular} /> : null}
+                </span>
               </td>
             </tr>
           ))}

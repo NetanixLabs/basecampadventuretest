@@ -144,18 +144,18 @@ export function EntryEditor({
                     <MenuItem icon={<History className="size-4" />} onClick={() => { setHistory(true); setMenu(false); }}>Version history</MenuItem>
                     {canPublish && status === "published" ? (
                       <MenuItem icon={<EyeOff className="size-4" />} onClick={() => start(async () => {
-                        if (!confirm(`Take this ${def.singular} off the website? It stays here as a draft.`)) return;
+                        if (!confirm(`Hide this ${def.singular} from the website? It stays here as a draft and you can show it again any time.`)) return;
                         const r = await unpublishAction(def.key, id);
-                        if (r.ok) { setStatus("draft"); setMessage({ tone: "green", text: "Taken off the website. It's a draft now." }); router.refresh(); } else setMessage({ tone: "red", text: r.error });
+                        if (r.ok) { setStatus("draft"); setMessage({ tone: "green", text: "Hidden from the website. Press Publish to show it again." }); router.refresh(); } else setMessage({ tone: "red", text: r.error });
                         setMenu(false);
-                      })}>Unpublish</MenuItem>
+                      })}>Hide from website</MenuItem>
                     ) : null}
                     {canPublish ? (
                       <MenuItem danger icon={<Trash2 className="size-4" />} onClick={() => start(async () => {
-                        if (!confirm(`Delete "${title}" for good? This can't be undone.${status === "published" ? " It will disappear from the website." : ""}`)) return;
+                        if (!confirm(`Delete "${title}" for good? This can't be undone.${status === "published" ? " It will disappear from the website. To keep it but take it off the site, use Hide instead." : ""}`)) return;
                         const r = await deleteAction(def.key, id);
                         if (r.ok) router.push(`/c/${def.key}`); else setMessage({ tone: "red", text: r.error });
-                      })}>Delete</MenuItem>
+                      })}>Delete for good</MenuItem>
                     ) : null}
                   </div>
                 ) : null}

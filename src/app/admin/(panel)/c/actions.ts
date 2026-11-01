@@ -30,6 +30,16 @@ export async function unpublishAction(key: string, id: string) {
   });
 }
 
+/** Puts a hidden item back on the website, as it was last saved. */
+export async function showAction(key: string, id: string) {
+  return run(async () => {
+    const { user } = await assertUser("publish");
+    const e = await db.entry.findUnique({ where: { id } });
+    if (!e || e.collection !== key) throw new InputError("This item no longer exists.");
+    await saveEntry(user.id, key, id, e.data as Record<string, unknown>, true);
+  });
+}
+
 export async function deleteAction(key: string, id: string) {
   return run(async () => {
     const { user } = await assertUser("publish");
