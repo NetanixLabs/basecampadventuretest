@@ -18,7 +18,7 @@ export function Fields({ fields, value, onChange, ctx }: { fields: Field[]; valu
   return (
     <div className="grid gap-x-5 gap-y-6 sm:grid-cols-2">
       {fields.map((f) => (
-        <div key={f.name} className={cn(f.wide || ["richtext", "repeater", "gallery", "group", "seo", "json", "strings", "textarea"].includes(f.type) ? "sm:col-span-2" : "")}>
+        <div key={f.name} className={cn("min-w-0", f.wide || ["richtext", "repeater", "gallery", "group", "seo", "json", "strings", "textarea"].includes(f.type) ? "sm:col-span-2" : "")}>
           <FieldView field={f} value={getPath(value, f.name)} onChange={(v) => onChange(setPath(value, f.name, v))} ctx={ctx} />
         </div>
       ))}

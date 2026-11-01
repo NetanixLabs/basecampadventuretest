@@ -106,15 +106,15 @@ export function EntryEditor({
     : status === "archived" ? <Badge>Archived</Badge> : <Badge>{unsaved ? "Draft · unsaved" : "Draft"}</Badge>;
 
   return (
-    <div>
+    <div className="pb-24 lg:pb-0">
       <div className="mb-2">
         <Link href={`/c/${def.key}`} className="text-sm font-semibold text-pine hover:underline">← {def.label}</Link>
       </div>
 
-      <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-line bg-card/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-10 lg:px-10">
+      <div className="sticky top-[65px] z-30 -mx-4 mb-6 border-b border-line bg-card px-4 py-3 sm:-mx-6 sm:px-6 lg:top-0 lg:-mx-10 lg:bg-card/95 lg:px-10 lg:backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="font-display truncate text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+            <h1 className="font-display line-clamp-2 text-xl font-bold tracking-tight sm:text-2xl lg:truncate">{title}</h1>
             <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted">
               {badge}
               {publicUrl && status === "published" ? (
@@ -124,7 +124,8 @@ export function EntryEditor({
               ) : null}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {/* On phones the actions sit in a bar at the bottom of the screen, within thumb reach. */}
+          <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-line bg-card/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none [&>button]:flex-1 lg:[&>button]:flex-none">
             <Button variant="secondary" disabled={pending || (!unsaved && Boolean(id))} onClick={() => save(false)} title="Ctrl+S">
               {pending ? "Saving…" : status === "published" ? "Save" : "Save draft"}
             </Button>
@@ -139,7 +140,7 @@ export function EntryEditor({
                   <MoreHorizontal className="size-4" />
                 </button>
                 {menu ? (
-                  <div className="absolute right-0 z-40 mt-2 w-56 rounded-2xl border border-line bg-card p-1.5 shadow-xl" onMouseLeave={() => setMenu(false)}>
+                  <div className="absolute right-0 bottom-full z-40 mb-2 w-56 rounded-2xl border border-line bg-card p-1.5 shadow-xl lg:top-full lg:bottom-auto lg:mt-2 lg:mb-0" onMouseLeave={() => setMenu(false)}>
                     <MenuItem icon={<History className="size-4" />} onClick={() => { setHistory(true); setMenu(false); }}>Version history</MenuItem>
                     {canPublish && status === "published" ? (
                       <MenuItem icon={<EyeOff className="size-4" />} onClick={() => start(async () => {

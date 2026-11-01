@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Children, cloneElement, isValidElement, type ReactElement } from "react";
 import { Info } from "@/components/admin/info";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ export function PageHeader({ title, description, actions, back, info }: { title:
 
 export function Card({ children, className, title, description, actions, info }: { children: React.ReactNode; className?: string; title?: string; description?: string; actions?: React.ReactNode; info?: React.ReactNode }) {
   return (
-    <section className={cn("rounded-2xl border border-line bg-card p-5 shadow-[0_1px_2px_rgba(0,40,50,0.04)] sm:p-6", className)}>
+    <section className={cn("min-w-0 rounded-2xl border border-line bg-card p-4 shadow-[0_1px_2px_rgba(0,40,50,0.04)] sm:p-6", className)}>
       {title ? (
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -110,13 +111,27 @@ export function Empty({ title, children }: { title: string; children?: React.Rea
 }
 
 export function Table({ head, children }: { head: React.ReactNode[]; children: React.ReactNode }) {
+  // Each cell carries its column name, shown as a small label on phones.
+  const labelled = Children.map(children, (row) => {
+    if (!isValidElement(row)) return row;
+    const r = row as ReactElement<{ children?: React.ReactNode }>;
+    let i = 0;
+    return cloneElement(r, {
+      children: Children.map(r.props.children, (cell) => {
+        if (!isValidElement(cell)) return cell;
+        const label = head[i++];
+        return typeof label === "string" && label ? cloneElement(cell as ReactElement<Record<string, unknown>>, { "data-label": label }) : cell;
+      }),
+    });
+  });
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-card">
-      <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="border-b border-line bg-pine/[0.03] text-xs font-semibold tracking-wide text-muted uppercase">
+    // On phones each row becomes a small stacked card; from tablet size up it's a normal table.
+    <div className="min-w-0 overflow-x-auto rounded-2xl border border-line bg-card">
+      <table className="admin-table w-full text-left text-sm sm:min-w-[640px]">
+        <thead className="hidden border-b border-line bg-pine/[0.03] text-xs font-semibold tracking-wide text-muted uppercase sm:table-header-group">
           <tr>{head.map((h, i) => <th key={i} className="px-4 py-3">{h}</th>)}</tr>
         </thead>
-        <tbody className="divide-y divide-line [&_td]:px-4 [&_td]:py-3 [&_tr:hover]:bg-pine/[0.025]">{children}</tbody>
+        <tbody className="block divide-y divide-line sm:table-row-group [&_td]:block [&_td]:px-4 [&_td]:py-0.5 [&_td:empty]:hidden [&_td:first-child]:pt-3 [&_td:last-child]:pb-3 sm:[&_td]:table-cell sm:[&_td]:py-3 [&_td]:text-left sm:[&_td]:text-inherit [&_tr]:block sm:[&_tr]:table-row [&_tr:hover]:bg-pine/[0.025]">{labelled}</tbody>
       </table>
     </div>
   );

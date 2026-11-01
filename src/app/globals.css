@@ -652,3 +652,18 @@
 .prose-admin div[data-youtube-video] iframe { width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 0.75rem; }
 .prose-admin .measurement { background: color-mix(in oklab, var(--marigold) 25%, transparent); border-radius: 0.25rem; padding: 0 0.15em; }
 .prose-admin p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--muted); float: left; height: 0; pointer-events: none; }
+
+/* Admin tables on phones: each row is a card, each value has a small label. */
+@media (max-width: 639px) {
+  .admin-table td[data-label]:not(:first-child)::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 6.5rem;
+    margin-right: 0.5rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
