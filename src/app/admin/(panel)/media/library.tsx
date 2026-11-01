@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { deleteMediaAction, updateMediaAction } from "./actions";
 
 type Item = { id: string; src: string; width: number; height: number; alt: string; bytes: number; mime: string; folder: string };
-const thumb = (src: string) => (src.endsWith(".svg") ? src : `/_next/image?url=${encodeURIComponent(src)}&w=384&q=70`);
+const thumb = (src: string) => (src.endsWith(".svg") ? src : `/_next/image/?url=${encodeURIComponent(src)}&w=384&q=70`);
 const size = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`);
 
 export function MediaLibrary({ siteUrl }: { siteUrl: string }) {

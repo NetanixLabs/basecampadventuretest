@@ -3,7 +3,7 @@
 import Image from "@/components/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CircleCheckBig, Clock, Loader2, Lock, Minus, Plus, ShieldCheck, Tag, Users } from "lucide-react";
 import { PaymentMarks } from "@/components/icons";
@@ -71,6 +71,15 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
       setPromoMsg("Couldn't check the code. Please try again.");
     }
   };
+
+  // Arriving from a voucher email (?code=…): check the code straight away.
+  const fromLink = useRef(Boolean(params.get("code")));
+  useEffect(() => {
+    if (!fromLink.current) return;
+    fromLink.current = false;
+    void applyCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const endDate = date ? new Date(new Date(`${date}T00:00:00`).getTime() + (trip.days - 1) * 86400000) : null;
 
   const submit = async () => {

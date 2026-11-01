@@ -57,8 +57,8 @@ function block(b: EmailBlock): string {
   }
 }
 
-export function renderHtml(c: EmailContent): string {
-  const logo = `${site.url}/brand/logo-512.png`;
+export function renderHtml(c: EmailContent, { base = site.url }: { base?: string } = {}): string {
+  const logo = `${base}/brand/logo-512.png`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(c.heading)}</title></head>
 <body style="margin:0;padding:0;background:#f3f7f8;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(c.preview)}</span>

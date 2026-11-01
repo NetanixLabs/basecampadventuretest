@@ -25,8 +25,11 @@ function mailer() {
 }
 
 export async function sendRaw(to: string, subject: string, content: EmailContent, template = "custom", replyTo?: string) {
-  const html = renderHtml(content);
-  const text = renderText(content);
+  return sendHtml(to, subject, renderHtml(content), renderText(content), template, { replyTo, unsubscribeUrl: content.unsubscribeUrl });
+}
+
+/** Sends finished HTML (used by the newsletter design) and logs it. */
+export async function sendHtml(to: string, subject: string, html: string, text: string, template: string, opts: { replyTo?: string; unsubscribeUrl?: string } = {}) {
   let status = "sent";
   let error: string | null = null;
   let providerId: string | null = null;
@@ -42,8 +45,8 @@ export async function sendRaw(to: string, subject: string, content: EmailContent
         subject,
         html,
         text,
-        replyTo,
-        headers: content.unsubscribeUrl ? { "List-Unsubscribe": `<${content.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : undefined,
+        replyTo: opts.replyTo,
+        headers: opts.unsubscribeUrl ? { "List-Unsubscribe": `<${opts.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : undefined,
       });
       providerId = info.messageId ?? null;
     }

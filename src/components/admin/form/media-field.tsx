@@ -12,7 +12,7 @@ const toImg = (m: Item): Img => ({ src: m.src, w: m.width, h: m.height, alt: m.a
 const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`);
 
 /** Admin pages are on another host; photos come from the same app, so a relative path works. */
-const thumb = (src: string, w = 384) => (src.endsWith(".svg") ? src : `/_next/image?url=${encodeURIComponent(src)}&w=${w}&q=70`);
+const thumb = (src: string, w = 384) => (src.endsWith(".svg") ? src : `/_next/image/?url=${encodeURIComponent(src)}&w=${w}&q=70`);
 
 export async function uploadFile(file: File, folder?: string): Promise<Item> {
   const body = new FormData();

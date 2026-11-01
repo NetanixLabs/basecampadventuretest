@@ -24,7 +24,7 @@ export async function previewTemplate(key: string, input: unknown) {
   await assertUser("email");
   const p = schema.safeParse(input);
   if (!p.success || !templateDef(key)) return "";
-  return renderHtml(build(key, p.data).content);
+  return renderHtml(build(key, p.data).content, { base: "" });
 }
 
 export async function saveTemplate(key: string, input: unknown): Promise<{ ok: boolean; message: string }> {

@@ -102,8 +102,7 @@ export async function saveSubscriber(email: string, source: string) {
     const sub = existing
       ? await db.subscriber.update({ where: { email: lower }, data: { status: "subscribed", unsubscribedAt: null, source } })
       : await db.subscriber.create({ data: { email: lower, source, token: randomBytes(24).toString("base64url") } });
-    const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://basecampadventure.com").replace(/\/$/, "");
-    await sendTemplate("newsletter-welcome", lower, {}, { buttonHref: `${site}/trip/`, unsubscribeUrl: `${site}/api/newsletter/unsubscribe/?t=${sub.token}` });
+    await sendWelcome(lower, sub.token);
   } catch (error) {
     console.error("[newsletter] database write failed, kept in log", error);
     await record("newsletter", { email: lower, source });
@@ -111,3 +110,28 @@ export async function saveSubscriber(email: string, source: string) {
 }
 
 export { env as adminEnv };
+
+/** The welcome email, in the newsletter design, with the homepage's featured trips. */
+async function sendWelcome(email: string, token: string) {
+  const { renderNewsletter, newsletterText } = await import("@/lib/admin/email/newsletter");
+  const { templateDef } = await import("@/lib/admin/email/templates");
+  const { sendHtml } = await import("@/lib/admin/email/send");
+  const { getFeaturedTrips, getDestination } = await import("@/lib/content");
+  const def = templateDef("newsletter-welcome")!;
+  const saved = await db.emailTemplate.findUnique({ where: { key: def.key } }).catch(() => null);
+  if (saved && !saved.enabled) return;
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://basecampadventure.com").replace(/\/$/, "");
+  const n = {
+    preheader: "Seasonal trip ideas, trekking guides and our festival offers.",
+    heading: saved?.heading ?? def.heading,
+    body: saved?.body ?? def.body,
+    hero: "/photos/hero-ama-dablam.webp",
+    heroAlt: "Ama Dablam above the Everest trail",
+    offer: null,
+    trips: getFeaturedTrips().slice(0, 3).map((t) => ({ slug: t.slug, title: t.title, days: t.days, region: t.destinations[0] ? getDestination(t.destinations[0])?.name ?? null : null, price: t.price?.amount ?? null, regular: t.price?.regular ?? null, image: t.cover?.src ?? null })),
+    button: saved?.button ?? def.button ?? "Browse our trips",
+    buttonUrl: `${site}/trip/`,
+    unsubscribeUrl: `${site}/api/newsletter/unsubscribe/?t=${token}`,
+  };
+  await sendHtml(email, saved?.subject ?? def.subject, renderNewsletter(n), newsletterText(n), def.key, { replyTo: officeEmail(), unsubscribeUrl: n.unsubscribeUrl });
+}

@@ -31,7 +31,7 @@ export function proxy(req: NextRequest) {
   }
 
   // Shared static files (logo, fonts, uploaded images) are served as they are.
-  const isFile = /\.[a-z0-9]{2,5}$/i.test(pathname) && !pathname.startsWith("/admin/");
+  const isFile = (/\.[a-z0-9]{2,5}$/i.test(pathname) && !pathname.startsWith("/admin/")) || pathname.startsWith("/email-image") || pathname.startsWith("/coupon/");
   let res: NextResponse;
   if (isFile || pathname.startsWith("/admin/") || pathname === "/admin") {
     res = NextResponse.next();

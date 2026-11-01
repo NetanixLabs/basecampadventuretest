@@ -371,6 +371,8 @@ model Campaign {
   body       String
   button     String?
   buttonUrl  String?
+  /// Newsletter extras: hero photo, offer box, featured trips.
+  extra      Json?
   status     String    @default("draft")
   recipients Int       @default(0)
   sentAt     DateTime?
