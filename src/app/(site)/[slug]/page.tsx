@@ -1,4 +1,5 @@
 import { missing } from "@/lib/not-found";
+import { RESERVED_PAGES } from "@/lib/reserved-pages";
 import { ArticleLayout, heroPhoto } from "@/components/article-layout";
 import { categoryPath } from "@/components/journal-list";
 import { JsonLd } from "@/components/json-ld";
@@ -13,12 +14,7 @@ type Props = { params: Promise<{ slug: string }> };
  * WordPress pages that have their own route in this app, or that were
  * plugin plumbing and now redirect (see next.config.ts).
  */
-const RESERVED = new Set([
-  "home", "about-us", "our-team", "contact-us", "customize-trip", "booking", "checkout", "testimonials",
-  "blogs", "destination", "activities", "trip-types", "thank-you", "online-payment", "online-payment-form",
-  "search-result", "review-listing-page", "wishlist", "user-dashboard", "travelers-information",
-  "thanking-you", "enquiry-received", "enquiry-thankyou-page", "success", "cancel",
-]);
+const RESERVED = RESERVED_PAGES;
 
 // New pages published from the admin render on first visit, then stay cached.
 export const dynamicParams = true;

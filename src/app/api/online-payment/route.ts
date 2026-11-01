@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getTrips } from "@/lib/content";
-import { rateLimited, record, reference } from "@/lib/server/store";
+import { saveBooking } from "@/lib/server/sales";
+import { rateLimited, reference } from "@/lib/server/store";
 import { createPaymentLink, wetravelEnabled } from "@/lib/server/wetravel";
 
 /** The live site's "Online Payment Form": a client pays an agreed amount. */
@@ -29,12 +30,35 @@ export async function POST(req: Request) {
   const trip = getTrips().find((t) => t.slug === input.trip);
   const ref = reference("PAY");
   let paymentUrl: string | null = null;
+  let wetravelId: string | null = null;
   let paymentError: string | null = null;
   if (wetravelEnabled()) {
     const link = await createPaymentLink({ reference: ref, title: trip?.title ?? "Base Camp Adventure payment", startDate: input.date, days: trip?.days ?? 1, amount: input.amount });
-    if ("url" in link) paymentUrl = link.url;
-    else paymentError = link.error;
+    if ("url" in link) {
+      paymentUrl = link.url;
+      wetravelId = link.id;
+    } else paymentError = link.error;
   }
-  await record("bookings", { reference: ref, status: paymentUrl ? "awaiting-payment" : "requested", kind: "online-payment", ...input, website: undefined, tripTitle: trip?.title, paymentError, ip });
+  // An agreed amount (e.g. a balance or a tailor-made trip) is kept as a booking too.
+  await saveBooking({
+    reference: ref,
+    tripSlug: trip?.slug ?? input.trip,
+    tripTitle: trip?.title ?? input.trip,
+    startDate: input.date,
+    pax: input.travellers,
+    each: Math.round((input.amount / input.travellers) * 100) / 100,
+    subtotal: input.amount,
+    discountCode: null,
+    discount: 0,
+    total: input.amount,
+    plan: "agreed amount",
+    due: input.amount,
+    lead: { name: input.fullname, email: input.email, phone: input.phone, country: input.country },
+    notes: input.message || undefined,
+    paymentUrl,
+    wetravelId,
+    paymentError,
+    ip,
+  });
   return NextResponse.json({ ok: true, reference: ref, paymentUrl });
 }

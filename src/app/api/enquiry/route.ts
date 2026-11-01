@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { rateLimited, record, reference } from "@/lib/server/store";
+import { saveEnquiry } from "@/lib/server/sales";
+import { rateLimited, reference } from "@/lib/server/store";
 
 const schema = z.object({
   kind: z.enum(["contact", "custom-trip", "trip-request"]).default("contact"),
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
   const ref = reference("ENQ");
   const { website: _honeypot, ...data } = parsed.data;
   void _honeypot;
-  await record("enquiries", { reference: ref, ip, ...data });
+  const { kind, name, email, phone, country, trip, ...rest } = data;
+  await saveEnquiry({ reference: ref, kind, name, email, phone, country, trip, data: rest, ip });
   return NextResponse.json({ ok: true, reference: ref });
 }

@@ -23,7 +23,7 @@ export async function createPaymentLink(input: {
   days: number;
   amount: number;
   deposit?: number;
-}): Promise<{ url: string } | { error: string }> {
+}): Promise<{ url: string; id: string | null } | { error: string }> {
   const key = process.env.WETRAVEL_API_KEY;
   if (!key) return { error: "WeTravel is not configured" };
 
@@ -58,8 +58,11 @@ export async function createPaymentLink(input: {
     const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) return { error: `WeTravel ${res.status}` };
     const data = (json.data ?? json) as Record<string, unknown>;
-    const url = (data.url ?? data.link ?? (data.trip as Record<string, unknown> | undefined)?.url) as string | undefined;
-    return url ? { url } : { error: "WeTravel returned no link" };
+    const trip = data.trip as Record<string, unknown> | undefined;
+    const url = (data.url ?? data.link ?? trip?.url) as string | undefined;
+    // Kept on the booking so WeTravel's payment notifications can be matched to it.
+    const id = (data.uuid ?? trip?.uuid ?? null) as string | null;
+    return url ? { url, id } : { error: "WeTravel returned no link" };
   } catch {
     return { error: "WeTravel could not be reached" };
   }

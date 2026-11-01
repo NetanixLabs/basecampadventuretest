@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, CircleCheckBig, Clock, Loader2, Lock, Minus, Plus, ShieldCheck, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, CircleCheckBig, Clock, Loader2, Lock, Minus, Plus, ShieldCheck, Tag, Users } from "lucide-react";
 import { PaymentMarks } from "@/components/icons";
 import { site } from "@/lib/site";
 import type { Img, Price } from "@/lib/types";
@@ -39,14 +39,38 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ reference: string; paymentUrl: string | null; due: number } | null>(null);
+  const [code, setCode] = useState(params.get("code") ?? "");
+  const [promo, setPromo] = useState<{ code: string; label: string; kind: "percent" | "fixed"; value: number } | null>(null);
+  const [promoMsg, setPromoMsg] = useState("");
 
   const trip = trips.find((t) => t.slug === slug) ?? trips[0];
   const each = useMemo(() => {
     const tier = trip.price.groupTiers.find((t) => pax >= t.from && (!t.to || pax <= t.to));
     return tier?.price ?? trip.price.amount;
   }, [trip, pax]);
-  const total = each * pax;
+  const subtotal = each * pax;
+  // The saving shown here is a preview; the server checks the code and prices the booking itself.
+  const saving = promo ? Math.round((promo.kind === "percent" ? (subtotal * promo.value) / 100 : Math.min(promo.value, subtotal)) * 100) / 100 : 0;
+  const total = Math.round((subtotal - saving) * 100) / 100;
   const due = plan === "deposit" ? Math.round(total * DEPOSIT * 100) / 100 : total;
+
+  const applyCode = async () => {
+    setPromoMsg("");
+    if (!code.trim()) return;
+    try {
+      const res = await fetch(`/api/discount/?${new URLSearchParams({ code, trip: trip.slug, pax: String(pax) })}`);
+      const json = await res.json();
+      if (json.ok) {
+        setPromo(json.discount);
+        setPromoMsg(`${json.discount.label} applied.`);
+      } else {
+        setPromo(null);
+        setPromoMsg(json.error ?? "That code isn't valid.");
+      }
+    } catch {
+      setPromoMsg("Couldn't check the code. Please try again.");
+    }
+  };
   const endDate = date ? new Date(new Date(`${date}T00:00:00`).getTime() + (trip.days - 1) * 86400000) : null;
 
   const submit = async () => {
@@ -56,7 +80,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
       const res = await fetch("/api/booking/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trip: trip.slug, date, pax, plan, ...form }),
+        body: JSON.stringify({ trip: trip.slug, date, pax, plan, ...form, discountCode: promo?.code ?? "" }),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Something went wrong");
@@ -198,6 +222,13 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
               <Field label="Anything we should know? (optional)" htmlFor="ck-notes">
                 <textarea id="ck-notes" rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input h-auto py-3" placeholder="Dietary needs, flight times, a birthday on the trail…" />
               </Field>
+              <Field label="Discount code (optional)" htmlFor="ck-code">
+                <div className="flex gap-2">
+                  <input id="ck-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (promo) setPromo(null); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void applyCode(); } }} className="input font-mono uppercase" placeholder="DASHAIN10" autoComplete="off" />
+                  <button type="button" onClick={() => void applyCode()} className="shrink-0 rounded-full border border-line px-5 font-semibold hover:border-pine">Apply</button>
+                </div>
+                {promoMsg ? <p role="status" className={`mt-2 text-sm ${promo ? "text-moss font-semibold" : "text-crimson"}`}>{promoMsg}</p> : null}
+              </Field>
               <label className="flex cursor-pointer gap-3 text-sm text-ink-soft">
                 <input type="checkbox" checked={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.checked })} className="accent-[var(--pine)] mt-0.5 size-4" />
                 <span>
@@ -240,6 +271,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
             <Row icon={<Clock className="size-4" aria-hidden />} label="Duration" value={`${trip.days} days`} />
             <Row icon={<CalendarDays className="size-4" aria-hidden />} label="Dates" value={date && endDate ? `${new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${endDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "Choose a date"} />
             <Row icon={<Users className="size-4" aria-hidden />} label="Travellers" value={`${pax} × ${usd(each)}`} />
+            {promo && saving ? <Row icon={<Tag className="size-4" aria-hidden />} label={`Discount ${promo.code}`} value={`−${usd(saving)}`} /> : null}
             <div className="flex items-baseline justify-between border-t border-dashed border-line pt-4">
               <dt className="font-semibold">Trip total</dt>
               <dd className="font-display text-3xl font-black">{usd(total)}</dd>

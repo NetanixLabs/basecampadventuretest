@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getTrip } from "@/lib/content";
-import { rateLimited, record, reference } from "@/lib/server/store";
+import { checkDiscount } from "@/lib/server/discounts";
+import { saveBooking } from "@/lib/server/sales";
+import { rateLimited, reference } from "@/lib/server/store";
 import { createPaymentLink, wetravelEnabled } from "@/lib/server/wetravel";
 
 const schema = z.object({
@@ -15,6 +17,8 @@ const schema = z.object({
   country: z.string().trim().min(2, "Please choose a nationality").max(80),
   notes: z.string().trim().max(3000).optional().or(z.literal("")),
   terms: z.literal(true, "Please accept the booking terms"),
+  discountCode: z.string().trim().max(40).optional().or(z.literal("")),
+  website: z.string().max(0).optional().or(z.literal("")),
 });
 
 /** Deposit taken at booking; the balance is due before departure. */
@@ -31,6 +35,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form" }, { status: 400 });
   }
   const input = parsed.data;
+  if (input.website) return NextResponse.json({ ok: true, reference: "BCA-OK", paymentUrl: null, total: 0, discount: 0, due: 0 });
 
   const trip = getTrip(input.trip);
   if (!trip || !trip.price) {
@@ -45,11 +50,22 @@ export async function POST(req: Request) {
   // The price is always worked out here, never taken from the browser.
   const tier = trip.price.groupTiers.find((t) => input.pax >= t.from && (!t.to || input.pax <= t.to));
   const each = tier?.price ?? trip.price.amount;
-  const total = Math.round(each * input.pax * 100) / 100;
+  const subtotal = Math.round(each * input.pax * 100) / 100;
+  let discountCode: string | null = null;
+  let discount = 0;
+  if (input.discountCode) {
+    const d = await checkDiscount(input.discountCode, trip.slug, input.pax, subtotal);
+    if (!d.ok) return NextResponse.json({ ok: false, error: d.error }, { status: 400 });
+    discountCode = d.discount.code;
+    discount = d.discount.amount;
+  }
+  const total = Math.round((subtotal - discount) * 100) / 100;
   const deposit = Math.round(total * DEPOSIT_RATE * 100) / 100;
+  const due = input.plan === "deposit" ? deposit : total;
   const ref = reference("BCA");
 
   let paymentUrl: string | null = null;
+  let wetravelId: string | null = null;
   let paymentError: string | null = null;
   if (wetravelEnabled()) {
     const link = await createPaymentLink({
@@ -60,26 +76,32 @@ export async function POST(req: Request) {
       amount: total,
       deposit: input.plan === "deposit" ? deposit : undefined,
     });
-    if ("url" in link) paymentUrl = link.url;
-    else paymentError = link.error;
+    if ("url" in link) {
+      paymentUrl = link.url;
+      wetravelId = link.id;
+    } else paymentError = link.error;
   }
 
-  await record("bookings", {
+  await saveBooking({
     reference: ref,
-    status: paymentUrl ? "awaiting-payment" : "requested",
-    trip: trip.slug,
-    title: trip.title,
-    date: input.date,
+    tripSlug: trip.slug,
+    tripTitle: trip.title,
+    startDate: input.date,
     pax: input.pax,
     each,
+    subtotal,
+    discountCode,
+    discount,
     total,
     plan: input.plan,
-    due: input.plan === "deposit" ? deposit : total,
+    due,
     lead: { name: input.name, email: input.email, phone: input.phone, country: input.country },
-    notes: input.notes,
+    notes: input.notes || undefined,
+    paymentUrl,
+    wetravelId,
     paymentError,
     ip,
   });
 
-  return NextResponse.json({ ok: true, reference: ref, paymentUrl, total, due: input.plan === "deposit" ? deposit : total });
+  return NextResponse.json({ ok: true, reference: ref, paymentUrl, total, discount, due });
 }

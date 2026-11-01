@@ -1,21 +1,37 @@
 "use client";
 
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { site } from "@/lib/site";
 
 /**
  * Third-party scripts, each switched on by its ID alone (set in the admin's
  * Settings later; environment variables for now). Both wait until the page is
  * idle, so neither can slow the first paint or hurt Core Web Vitals.
  */
-export function Integrations() {
-  const { tawkProperty, tawkWidget, ga4 } = site.integrations;
+export type IntegrationIds = { tawkProperty: string; tawkWidget: string; ga4: string };
+
+type TawkWindow = Window & { Tawk_API?: Record<string, unknown>; Tawk_LoadStart?: Date };
+
+export function Integrations({ tawkProperty, tawkWidget, ga4 }: IntegrationIds) {
+  const path = usePathname();
+  // Trip pages have a booking bar along the bottom on phones: the chat bubble sits above it.
+  const aboveBar = path.startsWith("/trip/") && path.split("/").filter(Boolean).length === 2;
 
   useEffect(() => {
     if (!tawkProperty) return;
+    const w = window as TawkWindow;
+    w.Tawk_API = w.Tawk_API ?? {};
+    w.Tawk_API.customStyle = {
+      zIndex: 45,
+      visibility: {
+        desktop: { position: "br", xOffset: 24, yOffset: 24 },
+        mobile: { position: "br", xOffset: 12, yOffset: aboveBar ? 92 : 16 },
+      },
+    };
     const load = () => {
       if (document.getElementById("tawk-script")) return;
+      w.Tawk_LoadStart = new Date();
       const s = document.createElement("script");
       s.id = "tawk-script";
       s.async = true;
@@ -29,7 +45,7 @@ export function Integrations() {
     return () => {
       if (!idle) window.clearTimeout(t as number);
     };
-  }, [tawkProperty, tawkWidget]);
+  }, [tawkProperty, tawkWidget, aboveBar]);
 
   if (!ga4) return null;
   return (

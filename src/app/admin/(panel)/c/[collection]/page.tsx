@@ -6,6 +6,7 @@ import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
 import { getPath } from "@/lib/admin/paths";
 import { site } from "@/lib/site";
+import { RESERVED_PAGES } from "@/lib/reserved-pages";
 import type { Prisma } from "@/generated/prisma/client";
 
 const PER_PAGE = 40;
@@ -69,6 +70,7 @@ export default async function ListPage({ params, searchParams }: { params: Promi
               <td className="max-w-md">
                 <Link href={`/c/${def.key}/${r.id}`} className="font-semibold text-ink hover:text-pine">{r.title}</Link>
                 <p className="truncate font-mono text-xs text-muted">{def.url ? def.url.replace("{slug}", r.slug) : r.slug}</p>
+                {def.key === "pages" && RESERVED_PAGES.has(r.slug) ? <p className="text-xs text-amber-700">Has its own designed page: only the SEO title and description are used.</p> : null}
               </td>
               {(def.columns ?? []).map((c) => {
                 const v = getPath(r.data, c.name);
