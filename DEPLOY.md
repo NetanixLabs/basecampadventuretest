@@ -57,7 +57,7 @@ DKIM records your email provider gives you to Cloudflare DNS.
 ## 4. First deploy
 
 ```bash
-sudo -u basecamp bash /srv/basecamp/app/deploy/deploy.sh --first
+sudo -u basecamp bash /srv/basecamp/repo/deploy/deploy.sh --first
 ```
 
 This builds the site, creates the database tables and **imports everything**:
@@ -94,10 +94,15 @@ in Google Search Console.
 ## Every update after that
 
 ```bash
-sudo -u basecamp bash /srv/basecamp/app/deploy/deploy.sh
+sudo -u basecamp bash /srv/basecamp/repo/deploy/deploy.sh
 ```
 
 Content edits do **not** need a deploy: they go live from the admin in seconds.
+
+Each deploy backs up first, builds beside the live site, switches only if the
+build works, and switches back automatically if the site doesn't answer.
+Undo the last deploy: `sudo -u basecamp bash /srv/basecamp/repo/deploy/rollback.sh`.
+See DEVELOPING.md for changing layouts safely.
 
 ## Backups
 

@@ -37,31 +37,32 @@ mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy
 
 echo "== App user and folders"
 id basecamp >/dev/null 2>&1 || useradd --system --create-home --home-dir /srv/basecamp --shell /bin/bash basecamp
-install -d -o basecamp -g basecamp /srv/basecamp/{content,uploads,backups}
+install -d -o basecamp -g basecamp /srv/basecamp/{content,uploads,backups,releases}
 chmod 711 /srv/basecamp
 chmod 755 /srv/basecamp/uploads
-[ -d /srv/basecamp/app/.git ] || sudo -u basecamp git clone "$REPO" /srv/basecamp/app
+# The code is checked out in repo/; each deploy builds a copy in releases/ and app points at the live one.
+[ -d /srv/basecamp/repo/.git ] || sudo -u basecamp git clone "$REPO" /srv/basecamp/repo
 
 if [ ! -f /srv/basecamp/.env ]; then
   sed -e "s|postgresql://basecamp:CHANGE_ME@localhost:5432/basecamp|postgresql://basecamp:${DBPASS}@localhost:5432/basecamp|" \
       -e "s|^ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$(openssl rand -base64 32)|" \
-      /srv/basecamp/app/.env.example > /srv/basecamp/.env
+      /srv/basecamp/repo/.env.example > /srv/basecamp/.env
   chown basecamp:basecamp /srv/basecamp/.env && chmod 600 /srv/basecamp/.env
   echo ">> Created /srv/basecamp/.env. Fill in SMTP_*, WETRAVEL_*, SEED_OWNER_EMAIL and SEED_OWNER_NAME now."
 fi
 # Caddy needs to reach the uploads folder.
 usermod -aG basecamp caddy
 
-cp /srv/basecamp/app/deploy/Caddyfile /etc/caddy/Caddyfile
-cp /srv/basecamp/app/deploy/basecamp.service /etc/systemd/system/basecamp.service
+cp /srv/basecamp/repo/deploy/Caddyfile /etc/caddy/Caddyfile
+cp /srv/basecamp/repo/deploy/basecamp.service /etc/systemd/system/basecamp.service
 systemctl daemon-reload && systemctl enable basecamp caddy
 # Lets deploy.sh restart the site without full root rights.
 echo "basecamp ALL=(root) NOPASSWD: /usr/bin/systemctl restart basecamp" > /etc/sudoers.d/basecamp && chmod 440 /etc/sudoers.d/basecamp
 
 echo "== Nightly backup at 02:30 Nepal time (20:45 UTC)"
-echo "45 20 * * * basecamp /srv/basecamp/app/deploy/backup.sh >> /srv/basecamp/backups/backup.log 2>&1" > /etc/cron.d/basecamp-backup
+echo "45 20 * * * basecamp /srv/basecamp/repo/deploy/backup.sh >> /srv/basecamp/backups/backup.log 2>&1" > /etc/cron.d/basecamp-backup
 
 echo
 echo "Done. Next:"
 echo "  1. nano /srv/basecamp/.env   (email, WeTravel, first owner)"
-echo "  2. sudo -u basecamp bash /srv/basecamp/app/deploy/deploy.sh --first"
+echo "  2. sudo -u basecamp bash /srv/basecamp/repo/deploy/deploy.sh --first"

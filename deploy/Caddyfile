@@ -30,6 +30,9 @@ basecampadventure.com, admin.basecampadventure.com {
 
 	handle {
 		reverse_proxy 127.0.0.1:3000 {
+			# During the few seconds a deploy restarts the app, visitors wait instead of seeing an error.
+			lb_try_duration 20s
+			lb_try_interval 250ms
 			# Overwrites anything the visitor sent; the app trusts only this.
 			header_up X-Real-IP {client_ip}
 		}
