@@ -1,0 +1,27 @@
+[Unit]
+Description=Base Camp Adventure website and admin
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=basecamp
+Group=basecamp
+WorkingDirectory=/srv/basecamp/app
+EnvironmentFile=/srv/basecamp/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start
+Restart=always
+RestartSec=3
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/basecamp
+MemoryMax=6G
+
+[Install]
+WantedBy=multi-user.target

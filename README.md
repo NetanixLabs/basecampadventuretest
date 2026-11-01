@@ -12,27 +12,49 @@ npm run dev                    # http://localhost:3000
 npm run build && npm start     # production build: every page pre-rendered
 ```
 
-## Content
+## The admin (admin.basecampadventure.com)
 
-All content comes from the live WordPress site through its public REST API:
+Our own content management system, in this same app (`src/app/admin`), on
+PostgreSQL. Nothing from WordPress runs here.
+
+- **Content:** trips (itinerary, prices, group prices, photos, FAQs, packing
+  list, reviews), blog with a rich text editor, pages, destinations,
+  activities, offers, video reviews, awards, team, menu, homepage rows.
+  Drafts, publish, version history, SEO panel with Google preview.
+- **Media library:** drag-and-drop uploads, optimised to high-quality WebP,
+  fingerprinted names, alt text, safe delete.
+- **Customers:** enquiries, bookings with WeTravel payments (webhook),
+  discount codes, newsletter and offer emails, editable email templates.
+- **Security:** Argon2id passwords, mandatory two-step sign-in (TOTP + backup
+  codes), emailed password reset, database rate limits, roles, activity log.
+- **Speed:** publishing writes the files the site reads and refreshes the
+  cached pages. Visitors never wait on the database.
 
 ```bash
-npm run import:wp      # trips, posts, pages, team, taxonomies, images -> src/content, public/media
-python scripts/prepare-photos.py   # hero photos chosen from the company's own uploads -> public/photos
+docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=dev postgres:17   # or any PostgreSQL
+cp .env.example .env          # DATABASE_URL, ENCRYPTION_KEY, ADMIN_URL=http://admin.localhost:3000
+npx prisma migrate dev
+SEED_OWNER_EMAIL=you@example.com npm run admin:import
+npm run dev                   # site: localhost:3000 · admin: admin.localhost:3000
 ```
 
-`src/lib/content.ts` is the only place that reads it. When the admin
-(admin.basecampadventure.com) and its PostgreSQL database land, that file is
-what changes; pages stay as they are.
+Going live on the server: see [DEPLOY.md](DEPLOY.md).
+
+## Content
+
+The original content came from the old WordPress site's public REST API
+(`npm run import:wp` refreshes `src/content` and `public/media`), and
+`npm run admin:import` moves it into the admin's database. From then on the
+admin is the source of truth.
 
 | What | Count |
 | --- | --- |
 | Trips (`/trip/{slug}/`) | 120 |
 | Blog posts (`/{slug}/`) | 161 |
 | Pages (`/{slug}/`) | 48 |
-| Destinations / activities | 8 / 7 |
+| Destinations / activities | 12 / 10 |
 | Team members (`/team/{slug}/`) | 13 |
-| Images, converted to WebP | ~1,290 |
+| Images, converted to WebP | ~1,470 |
 
 ## SEO carried over
 
@@ -49,22 +71,9 @@ what changes; pages stay as they are.
 - Booking: `/booking/` -> `POST /api/booking` prices the trip on the server and
   creates a WeTravel payment link (`src/lib/server/wetravel.ts`).
 - Enquiries: contact and tailor-made forms -> `POST /api/enquiry`.
-- Until the admin exists, submissions are appended to `.data/*.jsonl`.
+- Submissions are saved in the admin's database (with a `.data/*.jsonl` fallback if it is unreachable) and emailed to the traveller and the office.
 - tawk.to and GA4 load after the page is idle, only when their IDs are set.
 
-## Deploy on Vercel
+## Deploy
 
-1. Import the GitHub repository in Vercel. Framework preset: **Next.js**. No
-   build settings to change (`npm run build`, output handled by Next).
-2. Environment variables (Project → Settings → Environment Variables), all optional:
-   - `NEXT_PUBLIC_SITE_URL`: the preview URL while testing, then `https://basecampadventure.com`
-   - `WETRAVEL_API_KEY`, `WETRAVEL_ENV` (`sandbox` or `production`)
-   - `NEXT_PUBLIC_TAWK_PROPERTY_ID`, `NEXT_PUBLIC_TAWK_WIDGET_ID`
-   - `NEXT_PUBLIC_GA4_ID`
-3. Deploy. All ~370 pages are pre-rendered at build time.
-
-On Vercel, form submissions are written to the function logs (and `/tmp`),
-because serverless storage is temporary. The admin database replaces this.
-
-Images under `public/media` (about 125 MB, converted from WordPress) are part of
-the repository so the build has them; re-run `npm run import:wp` to refresh.
+On the company's own server (Frankfurt KVM) with Caddy, PostgreSQL and Cloudflare: [DEPLOY.md](DEPLOY.md).

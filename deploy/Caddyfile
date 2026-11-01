@@ -1,0 +1,39 @@
+# Caddy: HTTPS certificates are automatic. Put Cloudflare in front with
+# SSL mode "Full (strict)".
+
+www.basecampadventure.com {
+	redir https://basecampadventure.com{uri} permanent
+}
+
+basecampadventure.com, admin.basecampadventure.com {
+	encode zstd gzip
+
+	# Uploaded photos and videos: straight from disk, cached for a year
+	# (their names change whenever the file changes).
+	handle /uploads/* {
+		root * /srv/basecamp
+		header Cache-Control "public, max-age=31536000, immutable"
+		header X-Content-Type-Options nosniff
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/basecamp.log {
+			roll_size 50mb
+			roll_keep 10
+		}
+	}
+}

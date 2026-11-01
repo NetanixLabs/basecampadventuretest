@@ -36,13 +36,13 @@ export async function storeUpload(file: File, folder = "uploads", alt = "") {
   const now = new Date();
   const sub = path.join(String(now.getUTCFullYear()), String(now.getUTCMonth() + 1).padStart(2, "0"));
   const base = slugify(file.name.replace(/\.[^.]+$/, "")) || "photo";
-  await mkdir(path.join(uploadsDir(), sub), { recursive: true });
+  await mkdir(path.join(/*turbopackIgnore: true*/ uploadsDir(), sub), { recursive: true });
 
   if (isVideo(buf)) {
     if (buf.length > MAX_VIDEO) throw new InputError("Videos can be up to 300 MB. Compress it first (HandBrake, 1080p).");
     const ext = buf.subarray(4, 8).toString("latin1") === "ftyp" ? "mp4" : "webm";
     const name = `${base}-${hash.slice(0, 10)}.${ext}`;
-    await writeFile(path.join(uploadsDir(), sub, name), buf);
+    await writeFile(path.join(/*turbopackIgnore: true*/ uploadsDir(), sub, name), buf);
     return db.media.create({
       data: { src: `/uploads/${sub.split(path.sep).join("/")}/${name}`, hash, originalName: file.name.slice(0, 200), mime: `video/${ext}`, width: 0, height: 0, bytes: buf.length, alt, folder: "videos" },
     });
@@ -63,7 +63,7 @@ export async function storeUpload(file: File, folder = "uploads", alt = "") {
     .webp({ quality: QUALITY, smartSubsample: true, effort: 5 })
     .toBuffer({ resolveWithObject: true });
   const name = `${base}-${hash.slice(0, 10)}.webp`;
-  await writeFile(path.join(uploadsDir(), sub, name), out.data);
+  await writeFile(path.join(/*turbopackIgnore: true*/ uploadsDir(), sub, name), out.data);
   return db.media.create({
     data: {
       src: `/uploads/${sub.split(path.sep).join("/")}/${name}`,
