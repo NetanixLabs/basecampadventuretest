@@ -37,7 +37,7 @@ export async function deleteMediaAction(id: string): Promise<R> {
     if (usedBy.length) return { ok: false, error: "This file is still used on the website. Remove it there first.", usedBy };
     await db.media.delete({ where: { id } });
     if (m.src.startsWith("/uploads/")) {
-      const file = path.resolve(uploadsDir(), m.src.replace(/^\/uploads\//, ""));
+      const file = path.resolve(/*turbopackIgnore: true*/ uploadsDir(), m.src.replace(/^\/uploads\//, ""));
       if (file.startsWith(uploadsDir() + path.sep)) await unlink(file).catch(() => undefined);
     }
     await audit(user.id, "media.delete", "media", id, m.src);

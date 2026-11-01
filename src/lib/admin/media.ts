@@ -17,7 +17,7 @@ import { InputError } from "@/lib/admin/entries";
  * photo uploaded twice is stored once. The website then serves each visitor
  * the right size (AVIF/WebP) automatically.
  */
-export const uploadsDir = () => path.resolve(process.env.UPLOADS_DIR || path.join(process.cwd(), ".storage", "uploads"));
+export const uploadsDir = () => path.resolve(/*turbopackIgnore: true*/ process.env.UPLOADS_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), ".storage", "uploads"));
 
 const MAX_IMAGE = 30 * 1024 * 1024;
 const MAX_VIDEO = 300 * 1024 * 1024;

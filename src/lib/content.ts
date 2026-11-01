@@ -40,7 +40,7 @@ import type {
  * files in the repository, so a fresh checkout works with no database.
  */
 const repoDir = path.join(process.cwd(), "src", "content");
-const liveDir = path.resolve(process.env.CONTENT_DIR || path.join(process.cwd(), ".storage", "content"));
+const liveDir = path.resolve(/*turbopackIgnore: true*/ process.env.CONTENT_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), ".storage", "content"));
 
 function fileFor(name: string): { file: string; modified: number } | null {
   for (const d of [liveDir, repoDir]) {

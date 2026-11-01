@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Play, Pause, X } from "lucide-react";
 import Image from "@/components/image";
+import { VideoMark } from "@/components/brand/video-mark";
 import { usePageWheelScroll } from "@/lib/use-page-wheel-scroll";
 
 export type VideoReview = { id: string; title: string; src: string; poster?: string };
@@ -103,6 +104,7 @@ export function VideoReviewGallery({ items }: { items: VideoReview[] }) {
           <span className="relative block aspect-[2/3] overflow-hidden rounded-xl bg-pine/10">
             {item.poster ? <Image src={item.poster} alt="" fill sizes="(max-width: 640px) 72vw, (max-width: 1024px) 33vw, 20vw" draggable={false} className="object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none" /> : <video src={item.src} preload="metadata" playsInline muted className="pointer-events-none h-full w-full object-cover" />}
             <span className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            <VideoMark size="sm" />
           </span>
           <span className="mt-3 block line-clamp-2 text-sm font-semibold leading-snug">{item.title}</span>
           <span className="mt-1 block text-xs text-muted">Traveller story · {String(index + 1).padStart(2, "0")}</span>
@@ -123,6 +125,7 @@ export function VideoReviewGallery({ items }: { items: VideoReview[] }) {
         <button type="button" autoFocus onClick={close} aria-label="Close video" className="absolute top-3 right-3 z-10 grid size-10 place-items-center rounded-full bg-black/65 text-white hover:bg-black"><X className="size-5" /></button>
         <div className="relative max-w-full">
           <video ref={player} key={selected.id} src={selected.src} poster={selected.poster} autoPlay playsInline preload="metadata" onPlay={() => setPaused(false)} onPause={() => setPaused(true)} onEnded={() => setPaused(true)} className="max-h-[calc(100dvh-7rem)] max-w-full rounded-2xl bg-black object-contain shadow-2xl" />
+          <VideoMark size="lg" className="overflow-hidden rounded-2xl" />
           <button type="button" onClick={togglePlayback} aria-label={paused ? "Play video" : "Pause video"} className="group absolute inset-0 flex items-center justify-center rounded-2xl focus-visible:outline-2 focus-visible:outline-white">
             <span className={`grid size-12 place-items-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-opacity ${paused ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"}`}>
               {paused ? <Play className="ml-0.5 size-5 fill-current" aria-hidden /> : <Pause className="size-5 fill-current" aria-hidden />}

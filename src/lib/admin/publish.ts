@@ -14,7 +14,7 @@ import { COLLECTIONS, SINGLETON_WRAP, SINGLETONS, TAXONOMY_KEYS, type Collection
  * database, and if it is down the site keeps serving the last published
  * version.
  */
-export const contentDir = () => path.resolve(process.env.CONTENT_DIR || path.join(process.cwd(), ".storage", "content"));
+export const contentDir = () => path.resolve(/*turbopackIgnore: true*/ process.env.CONTENT_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), ".storage", "content"));
 
 async function writeJson(name: string, value: unknown) {
   const dir = contentDir();

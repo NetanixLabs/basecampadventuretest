@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { VideoMark } from "@/components/brand/video-mark";
 
 export type VideoReview = { id: string; title: string; src: string; poster?: string };
 
@@ -49,5 +50,5 @@ function AutoplayReview({ item, active }: { item: VideoReview; active: boolean }
     if (video.paused) { manuallyPaused.current = false; video.muted = false; void video.play().catch(() => setPaused(true)); }
     else { manuallyPaused.current = true; video.pause(); }
   };
-  return <><video ref={ref} src={item.src} poster={item.poster} autoPlay={active} loop playsInline disablePictureInPicture onPlay={() => setPaused(false)} onPause={() => setPaused(true)} preload="metadata" tabIndex={-1} aria-label={item.title} className="h-full w-full object-contain" /><button type="button" onClick={toggle} tabIndex={active ? 0 : -1} aria-label={`${paused ? "Resume" : "Pause"} ${item.title}`} className="absolute inset-0 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white" /></>;
+  return <><video ref={ref} src={item.src} poster={item.poster} autoPlay={active} loop playsInline disablePictureInPicture onPlay={() => setPaused(false)} onPause={() => setPaused(true)} preload="metadata" tabIndex={-1} aria-label={item.title} className="h-full w-full object-contain" /><VideoMark size="lg" /><button type="button" onClick={toggle} tabIndex={active ? 0 : -1} aria-label={`${paused ? "Resume" : "Pause"} ${item.title}`} className="absolute inset-0 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white" /></>;
 }

@@ -15,7 +15,7 @@ const TYPES: Record<string, string> = { ".webp": "image/webp", ".jpg": "image/jp
 export async function GET(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const parts = (await params).path;
   const root = uploadsDir();
-  const file = path.resolve(root, ...parts);
+  const file = path.resolve(/*turbopackIgnore: true*/ root, ...parts);
   const type = TYPES[path.extname(file).toLowerCase()];
   if (!file.startsWith(root + path.sep) || !type || parts.some((p) => p.startsWith("."))) return new Response("Not found", { status: 404 });
   let size: number;
