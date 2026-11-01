@@ -54,9 +54,9 @@ mindmap
 | Email | Branded templates, newsletter design, gift vouchers with QR code |
 | Settings | Company details, social links, encrypted keys, tawk.to, GA4 |
 | SEO | Titles/descriptions fixed, real 404s, llms.txt, IndexNow, all checks passing |
-| Security | OWASP checks 19/19 (brute force, CSRF, XSS, injection, headers…) |
+| Security | OWASP checks 18/18 (brute force, CSRF, XSS, injection, headers…) |
 
-## In progress (approved)
+## Done (approved features, live on main since 1 Nov 2026)
 
 - [x] Feature switches page (turn every feature on/off from the admin)
 - [x] Abandoned booking follow-up (reminder if not paid after 24 h)
@@ -64,6 +64,32 @@ mindmap
 - [x] Review collection after the trip, moderated, shown on trip pages
 - [x] Traveller portal on my.basecampadventure.com (secure login, documents, payments)
 - [x] Languages: German, French, Spanish (system done; Everest Base Camp translated; 19 more trips to translate)
+
+## Left to do (next session)
+
+1. **Translate the other 19 top trips** into German, French and Spanish
+   (Trips → the trip → Translations; same JSON shape as
+   `src/content/trip-translations.json`, which the first import loads).
+   A native speaker should check them before publishing.
+2. **Translate the last English words on /de, /fr, /es trip pages**: the main
+   menu (header/footer) and "View N photos" in `TripSlider`
+   (`src/components/trip/trip-slider.tsx`); pass words in like
+   `AltitudeProfile`'s `words` prop.
+3. **Before launch**: add the `my` DNS record in Cloudflare (orange cloud);
+   enter WhatsApp keys (CallMeBot or WhatsApp Business) in Settings → Features
+   if the office wants alerts; switch languages on only after translations
+   are checked.
+4. Optional: build notice "Encountered unexpected file in NFT list" (file
+   tracing via `src/lib/content.ts`) is harmless and existed before; could be
+   silenced later.
+
+How to check after changes: `npm run build`, then with `next start -p 3100`:
+`node scripts/seo-audit.mjs http://localhost:3100`,
+`node scripts/launch-check.mjs http://localhost:3100 --admin-host admin.localhost:3100`,
+`node scripts/security-check.mjs http://localhost:3100 --admin-host admin.localhost:3100`.
+Last results: 0 SEO errors/warnings, 27/27 launch, 18/18 security.
+Never set `NEXT_PUBLIC_SITE_URL` to localhost in `.env` before a build: it
+changes canonicals and the sitemap.
 
 ## Ideas to discuss with the client
 
