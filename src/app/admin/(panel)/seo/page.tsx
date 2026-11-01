@@ -3,21 +3,19 @@ import { Badge, Card, PageHeader, Stat } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
 import { RESERVED_PAGES } from "@/lib/reserved-pages";
+import { fullTitle } from "@/lib/seo";
 
 export const metadata = { title: "SEO health" };
 
 type Issue = { id: string; collection: string; title: string; problems: { text: string; level: "high" | "medium" | "low" }[] };
 const words = (html: string) => html.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
-const SUFFIX = " | Base Camp Adventure";
 
 export default async function SeoHealth() {
   await requireUser("content");
   const entries = await db.entry.findMany({ where: { status: "published", collection: { in: ["trips", "posts", "pages", "destinations", "activities", "categories"] } }, select: { id: true, collection: true, title: true, live: true } });
   const titleCount = new Map<string, number>();
-  const effTitle = (d: Record<string, unknown>) => {
-    const seo = (d.seo ?? {}) as { title?: string | null };
-    return seo.title || `${d.title ?? d.name}${SUFFIX}`;
-  };
+  // Exactly what the website puts in <title> (src/lib/seo.ts).
+  const effTitle = (d: Record<string, unknown>) => fullTitle(((d.seo ?? {}) as { title?: string | null }).title, String(d.title ?? d.name ?? ""));
   entries.forEach((e) => { const t = effTitle(e.live as Record<string, unknown>).toLowerCase(); titleCount.set(t, (titleCount.get(t) ?? 0) + 1); });
   const year = new Date().getFullYear();
 
@@ -29,6 +27,7 @@ export default async function SeoHealth() {
     const p: Issue["problems"] = [];
     const t = effTitle(d);
     if (t.length > 65) p.push({ text: `Title is ${t.length} characters; Google shows about 60`, level: "medium" });
+    if (/Archives/i.test(t)) p.push({ text: "Title still says \"Archives\" (left over from WordPress)", level: "high" });
     if (titleCount.get(t.toLowerCase())! > 1) p.push({ text: "Same title as another page", level: "high" });
     if (!seo.description && !d.summary && !d.excerpt) p.push({ text: "No description for Google", level: "high" });
     else if (seo.description && (seo.description.length > 170 || seo.description.length < 70)) p.push({ text: `Description is ${seo.description.length} characters (aim for 120–160)`, level: "low" });

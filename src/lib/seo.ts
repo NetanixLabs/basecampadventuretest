@@ -5,8 +5,20 @@ import type { Img, Post, Seo, Trip } from "@/lib/types";
 export const abs = (path: string) => (path.startsWith("http") ? path : `${site.url}${path.startsWith("/") ? "" : "/"}${path}`);
 
 /** Yoast titles carry " - Base Camp Adventure"; the root template adds it back. */
-function bareTitle(title: string | null | undefined) {
-  return (title ?? "").replace(/\s*[-|–]\s*Base Camp Adventure\s*$/i, "").trim();
+/** The page's own title, without the company name or WordPress's automatic " Archives". */
+export function bareTitle(title: string | null | undefined) {
+  return (title ?? "")
+    .replace(/\s*[-|–]\s*Base Camp Adventure\s*$/i, "")
+    .replace(/\s+Archives$/i, "")
+    .trim();
+}
+
+/** The exact <title> a page gets: the company name is added when it fits. */
+export function fullTitle(seoTitle: string | null | undefined, title: string) {
+  const t = bareTitle(seoTitle) || title;
+  const branded = `${t} | ${site.name}`;
+  // Google shows about 60 characters; add the brand only when it still fits.
+  return branded.length <= 62 ? branded : t;
 }
 
 /** Search results show about 160 characters: cut longer text at a word, with an ellipsis. */
@@ -47,12 +59,13 @@ export function meta({
   price?: number | null;
 }): Metadata {
   const finalTitle = bareTitle(seo?.title) || title;
+  // (fullTitle() below gives the same result; kept in one place for the admin's SEO check.)
   const base = seo?.description || description || site.description;
   const finalDescription = clip(lead ? `${lead} ${base}` : base);
   const imgSrc = typeof image === "string" ? image : image?.src;
   const og = imgSrc ?? "/photos/home-banner.webp";
   return {
-    title: { absolute: finalTitle.length > 48 ? finalTitle : `${finalTitle} | ${site.name}` },
+    title: { absolute: fullTitle(seo?.title, title) },
     description: finalDescription,
     alternates: { canonical: abs(path) },
     robots: seo?.noindex ? { index: false, follow: true } : undefined,
