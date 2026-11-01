@@ -41,12 +41,20 @@ export async function writeCollection(def: CollectionDef) {
   if (def.key === "trips") {
     // The packing list is edited with the trip but read from its own file.
     const equipment: Record<string, { items: unknown[] }> = {};
-    const trips = items.map(({ equipment: eq, ...t }) => {
+    const travellers: Record<string, unknown[]> = {};
+    const trips = items.map(({ equipment: eq, travellerPhotos: tp, ...t }) => {
       if (Array.isArray(eq) && eq.length) equipment[String(t.slug)] = { items: eq };
+      // Traveller photos are read from their own file as { src, w, h, alt, traveller, date }.
+      if (Array.isArray(tp) && tp.length) {
+        travellers[String(t.slug)] = (tp as { photo?: Record<string, unknown> | null; traveller?: string; date?: string | null }[])
+          .filter((x) => x.photo?.src)
+          .map((x) => ({ ...x.photo, alt: x.photo?.alt || `Photo from ${x.traveller ?? "a traveller"}`, traveller: x.traveller ?? "", date: x.date ?? null }));
+      }
       return t;
     });
     await writeJson("trips", trips);
     await writeJson("equipment", equipment);
+    await writeJson("traveller-photos", travellers);
     await writeJson("itinerary-extras", {}); // now part of each trip
     return;
   }

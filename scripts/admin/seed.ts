@@ -47,6 +47,7 @@ async function importContent() {
   const taxonomies = read<Record<string, Item[]>>("taxonomies", {});
   const extras = read<Record<string, Record<string, Item>>>("itinerary-extras", {});
   const equipment = read<Record<string, { items: Item[] }>>("equipment", {});
+  const travellerPhotos = read<Record<string, (Item & { traveller?: string; date?: string | null })[]>>("traveller-photos", {});
 
   for (const def of COLLECTIONS) {
     let items: Item[] = def.file === "taxonomies" ? taxonomies[def.key] ?? [] : read<Item[]>(def.file, []);
@@ -55,6 +56,7 @@ async function importContent() {
         ...t,
         itinerary: (t.itinerary as Item[]).map((d) => ({ ...d, ...(extras[String(t.slug)]?.[String(d.day)] ?? {}) })),
         equipment: equipment[String(t.slug)]?.items ?? [],
+        travellerPhotos: (travellerPhotos[String(t.slug)] ?? []).map(({ traveller, date, ...photo }) => ({ photo, traveller: traveller ?? "", date: date ?? null })),
       }));
     }
     const slugField = def.slugField ?? "slug";

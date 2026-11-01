@@ -86,6 +86,7 @@ const trips: CollectionDef = {
     price: null, groupSize: { min: 1, max: null }, maxAltitude: null, facts: [], cover: null, gallery: [], map: null,
     overview: "", toc: [], highlights: [], itinerary: [], includes: [], excludes: [], sections: [], faqs: [], rating: null, reviews: [],
     equipment: [],
+    travellerPhotos: [],
   },
   sections: [
     {
@@ -151,6 +152,15 @@ const trips: CollectionDef = {
         { name: "cover", label: "Main photo", type: "image", folder: "trips", wide: true, help: "Wide landscape photos work best (at least 1600 px wide)." },
         { name: "gallery", label: "Gallery", type: "gallery", folder: "trips", wide: true, help: "Drag to reorder. The first photos are shown in the slider." },
         { name: "map", label: "Route map", type: "image", folder: "trips", wide: true },
+        {
+          name: "travellerPhotos", label: "Photos from travellers", type: "repeater", itemLabel: "traveller photo", titleField: "traveller", collapsed: true, wide: true,
+          help: "Photos guests sent from this trip. Shown with their name in the trip's gallery.",
+          fields: [
+            { name: "photo", label: "Photo", type: "image", folder: "travellers", wide: true },
+            { name: "traveller", label: "Traveller's name", type: "text", placeholder: "Emma, United Kingdom" },
+            { name: "date", label: "Taken", type: "date" },
+          ],
+        },
       ],
     },
     {

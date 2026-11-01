@@ -4,22 +4,26 @@ import { Badge, ButtonLink, Empty, PageHeader, Table, day, money } from "@/compo
 import { collection } from "@/lib/admin/collections";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
+import { Reorder } from "./reorder";
 import { getPath } from "@/lib/admin/paths";
 import { site } from "@/lib/site";
 import { RESERVED_PAGES } from "@/lib/reserved-pages";
 import type { Prisma } from "@/generated/prisma/client";
 
 const PER_PAGE = 40;
+/** Lists the website shows in the office's own order. */
+const ORDERED = new Set(["team", "videoReviews", "videos", "awards", "offers", "community", "destinations", "activities", "difficulty"]);
 
 export async function generateMetadata({ params }: { params: Promise<{ collection: string }> }) {
   return { title: collection((await params).collection)?.label ?? "Content" };
 }
 
-export default async function ListPage({ params, searchParams }: { params: Promise<{ collection: string }>; searchParams: Promise<{ q?: string; status?: string; page?: string }> }) {
+export default async function ListPage({ params, searchParams }: { params: Promise<{ collection: string }>; searchParams: Promise<{ q?: string; status?: string; page?: string; order?: string }> }) {
   await requireUser("content");
   const def = collection((await params).collection);
   if (!def) notFound();
-  const { q = "", status = "", page = "1" } = await searchParams;
+  const { q = "", status = "", page = "1", order } = await searchParams;
+  const ordering = Boolean(order) && ORDERED.has(def.key);
   const current = Math.max(1, Number(page) || 1);
 
   const where: Prisma.EntryWhereInput = {
@@ -41,8 +45,17 @@ export default async function ListPage({ params, searchParams }: { params: Promi
       <PageHeader
         title={def.label}
         description={def.description}
-        actions={<ButtonLink href={`/c/${def.key}/new`}>+ New {def.singular}</ButtonLink>}
+        actions={
+          <>
+            {ORDERED.has(def.key) ? <ButtonLink variant="secondary" href={ordering ? `/c/${def.key}` : `/c/${def.key}?order=1`}>{ordering ? "Done" : "Change order"}</ButtonLink> : null}
+            <ButtonLink href={`/c/${def.key}/new`}>+ New {def.singular}</ButtonLink>
+          </>
+        }
       />
+      {ordering ? (
+        <Reorder collection={def.key} rows={(await db.entry.findMany({ where: { collection: def.key, status: { not: "archived" } }, orderBy: [{ sort: "asc" }, { title: "asc" }], select: { id: true, title: true, status: true } }))} />
+      ) : (
+      <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <form className="flex-1 min-w-56">
           {status ? <input type="hidden" name="status" value={status} /> : null}
@@ -107,6 +120,8 @@ export default async function ListPage({ params, searchParams }: { params: Promi
           </span>
         </nav>
       ) : null}
+      </>
+      )}
     </>
   );
 }
