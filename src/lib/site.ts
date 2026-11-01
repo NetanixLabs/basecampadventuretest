@@ -92,3 +92,58 @@ export const difficultyLabel: Record<string, string> = {
   hard: "Challenging",
   extreme: "Strenuous",
 };
+
+/* ------------------------------------------------------------------ live company details */
+
+/** Company details the office edits in Admin → Settings → Company. */
+export type CompanySettings = Partial<{
+  contactPerson: string;
+  phone: string;
+  mobile: string;
+  whatsapp: string;
+  email: string;
+  street: string;
+  city: string;
+  poBox: string;
+  facebook: string;
+  instagram: string;
+  x: string;
+  tripadvisor: string;
+}>;
+
+/**
+ * Applies the admin's company details on top of the defaults above. Called on
+ * the server whenever settings are published (src/lib/company.ts) and in the
+ * browser from the values the page carries, so both always agree.
+ */
+export function applyCompany(c: CompanySettings | null | undefined) {
+  if (!c) return;
+  const s = site as unknown as { contactPerson: string; phone: string; mobile: string; mobileHref: string; whatsapp: string; email: string; address: Record<string, string>; social: Record<string, string> };
+  const set = <K extends keyof CompanySettings>(k: K, fn: (v: string) => void) => {
+    const v = c[k]?.trim();
+    if (v) fn(v);
+  };
+  set("contactPerson", (v) => (s.contactPerson = v));
+  set("phone", (v) => (s.phone = v));
+  set("mobile", (v) => {
+    s.mobile = v;
+    s.mobileHref = `+${v.replace(/[^0-9]/g, "")}`;
+  });
+  set("whatsapp", (v) => (s.whatsapp = v.replace(/[^0-9]/g, "")));
+  set("email", (v) => (s.email = v));
+  set("street", (v) => (s.address.street = v));
+  set("city", (v) => (s.address.city = v));
+  set("poBox", (v) => (s.address.poBox = v));
+  set("facebook", (v) => (s.social.facebook = v));
+  set("instagram", (v) => (s.social.instagram = v));
+  set("x", (v) => (s.social.x = v));
+  set("tripadvisor", (v) => (s.social.tripadvisor = v));
+}
+
+declare global {
+  interface Window {
+    __BCA_COMPANY__?: CompanySettings;
+  }
+}
+
+if (typeof window !== "undefined") applyCompany(window.__BCA_COMPANY__);

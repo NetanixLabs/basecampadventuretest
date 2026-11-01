@@ -17,7 +17,7 @@ export const metadata = meta({
 export default function ContactPage() {
   const trips = getTrips().map((t) => t.title);
   const cards = [
-    { Icon: Phone, title: "Mobile (24/7)", lines: ["+977 9851 029616 [Shree]", "Available 24/7 - Call Us Anytime"], href: `tel:${site.mobileHref}` },
+    { Icon: Phone, title: "Mobile (24/7)", lines: [`${site.mobile} [${site.contactPerson.split(" ")[0]}]`, "Available 24/7 - Call Us Anytime"], href: `tel:${site.mobileHref}` },
     { Icon: WhatsappIcon, title: "WhatsApp", lines: [site.mobile], href: whatsappHref() },
     { Icon: Mail, title: "Email", lines: [site.email], href: `mailto:${site.email}` },
     { Icon: Clock, title: "Phone", lines: [site.phone], href: `tel:${site.phone.replace(/[^+\d]/g, "")}` },

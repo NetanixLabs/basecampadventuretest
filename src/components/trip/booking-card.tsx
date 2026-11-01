@@ -70,7 +70,7 @@ export function BookingCard({ slug, title, price }: { slug: string; title: strin
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">Available 24/7 - Call Us Anytime</p>
           <a href={`tel:${site.mobileHref}`} className="text-pine inline-flex items-center gap-1.5 text-sm">
-            <Phone className="size-3.5" aria-hidden /> +977 9851 029616 [Shree]
+            <Phone className="size-3.5" aria-hidden /> {site.mobile} [{site.contactPerson.split(" ")[0]}]
           </a>
         </div>
         <a href={whatsappHref(`Namaste! I'm interested in the ${title}.`)} target="_blank" rel="noopener noreferrer" aria-label="Ask on WhatsApp" className="grid size-11 place-items-center rounded-full bg-[#25D366] text-white">

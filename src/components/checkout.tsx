@@ -115,7 +115,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
           {done.paymentUrl ? (
             <>Opening WeTravel to take your payment of {usd(done.due)}. If nothing happens, <a className="text-pine font-bold underline" href={done.paymentUrl}>continue to payment</a>.</>
           ) : (
-            <>We&apos;ve received your booking for the {trip.title}. Shree&apos;s team will confirm the date and email you a secure WeTravel payment link for {usd(done.due)} within a few hours.</>
+            <>We&apos;ve received your booking for the {trip.title}. {site.contactPerson.split(" ")[0]}&apos;s team will confirm the date and email you a secure WeTravel payment link for {usd(done.due)} within a few hours.</>
           )}
         </p>
         <p className="mt-6 inline-block rounded-full bg-snow-2 px-5 py-2 font-mono text-sm">Reference {done.reference}</p>
@@ -292,7 +292,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
           </dl>
         </div>
         <p className="mt-4 text-center text-sm text-muted">
-          Questions? Call Shree 24/7 on <a href={`tel:${site.mobileHref}`} className="text-pine font-semibold">{site.mobile}</a>
+          Questions? Call {site.contactPerson.split(" ")[0]} 24/7 on <a href={`tel:${site.mobileHref}`} className="text-pine font-semibold">{site.mobile}</a>
         </p>
       </aside>
     </div>

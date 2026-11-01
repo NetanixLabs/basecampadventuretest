@@ -2,6 +2,8 @@ import { Info } from "@/components/admin/info";
 import { Card, PageHeader } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
+import { site } from "@/lib/site";
+import { CompanyForm } from "./company";
 import { SettingsForm } from "./form";
 
 export const metadata = { title: "Settings" };
@@ -10,12 +12,28 @@ const ok = (b: boolean) => (b ? <span className="font-semibold text-emerald-700"
 
 export default async function Settings() {
   await requireUser("settings");
-  const rows = await db.setting.findMany({ where: { key: { in: ["tawkProperty", "tawkWidget", "ga4"] } } });
+  const rows = await db.setting.findMany({ where: { key: { in: ["tawkProperty", "tawkWidget", "ga4", "company"] } } });
+  const saved = (rows.find((r) => r.key === "company")?.value ?? {}) as Record<string, string>;
+  const company = {
+    contactPerson: saved.contactPerson ?? site.contactPerson,
+    phone: saved.phone ?? site.phone,
+    mobile: saved.mobile ?? site.mobile,
+    whatsapp: saved.whatsapp ?? site.whatsapp,
+    email: saved.email ?? site.email,
+    street: saved.street ?? site.address.street,
+    city: saved.city ?? site.address.city,
+    poBox: saved.poBox ?? site.address.poBox,
+    facebook: saved.facebook ?? site.social.facebook,
+    instagram: saved.instagram ?? site.social.instagram,
+    x: saved.x ?? site.social.x,
+    tripadvisor: saved.tripadvisor ?? site.social.tripadvisor,
+  };
   const v = (k: string, fallback: string) => String(rows.find((r) => r.key === k)?.value ?? fallback);
   return (
     <>
       <PageHeader title="Settings" description="Website integrations and how the system is connected." />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <CompanyForm initial={company} />
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <SettingsForm initial={{ tawkProperty: v("tawkProperty", process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID ?? ""), tawkWidget: v("tawkWidget", process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ?? "default"), ga4: v("ga4", process.env.NEXT_PUBLIC_GA4_ID ?? "") }} />
         <Card title="Connections" info={<>Payment, email and security keys are kept in the server's private settings file (/srv/basecamp/.env), never in the database, so they can't leak through the admin. See DEPLOY.md to change them.</>}>
           <dl className="grid grid-cols-[1fr_auto] gap-y-3 text-sm">

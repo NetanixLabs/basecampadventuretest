@@ -41,6 +41,38 @@ export async function saveSettings(input: unknown): Promise<R> {
   }
 }
 
+const url = z.union([z.url("Links must start with https://"), z.literal("")]);
+const companySchema = z.object({
+  contactPerson: z.string().trim().max(80),
+  phone: z.string().trim().max(40),
+  mobile: z.string().trim().max(40),
+  whatsapp: z.string().trim().max(40),
+  email: z.union([z.email("Enter a valid email"), z.literal("")]),
+  street: z.string().trim().max(120),
+  city: z.string().trim().max(80),
+  poBox: z.string().trim().max(40),
+  facebook: url,
+  instagram: url,
+  x: url,
+  tripadvisor: url,
+});
+
+/** Company details shown across the website and in every email. */
+export async function saveCompany(input: unknown): Promise<R> {
+  try {
+    const { user } = await assertUser("settings");
+    const p = companySchema.safeParse(input);
+    if (!p.success) throw new Error(`!${p.error.issues[0]?.message}`);
+    await db.setting.upsert({ where: { key: "company" }, create: { key: "company", value: p.data, public: true }, update: { value: p.data } });
+    await writeSettings();
+    refreshSite();
+    await audit(user.id, "settings.company", "settings", null);
+    return { ok: true, message: "Saved. The website and emails use these details now." };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 /* ------------------------------------------------------------------ users */
 
 const ROLES: Role[] = ["owner", "admin", "editor", "sales"];

@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureCompany } from "@/lib/company";
 import { resolveOldPath } from "@/lib/redirects";
 import { tripInfo, type InfoOverrides } from "@/lib/trip-info";
 import { readFileSync, statSync } from "node:fs";
@@ -111,7 +112,7 @@ function withExtras(trips: Trip[], extras: DayExtras): Trip[] {
   );
 }
 
-const data = cache(() => ({
+const data = cache(() => (ensureCompany(), {
   trips: withExtras(load<Trip[]>("trips", []), load<DayExtras>("itinerary-extras", {})),
   posts: load<Post[]>("posts", []),
   pages: load<Page[]>("pages", []),
@@ -445,4 +446,4 @@ export function findRedirect(pathname: string): { to: string; permanent: boolean
 }
 
 /** Public settings from the admin (chat widget, analytics…). */
-export const getPublicSettings = () => load<Record<string, unknown>>("settings", {});
+export const getPublicSettings = () => (ensureCompany(), load<Record<string, unknown>>("settings", {}));

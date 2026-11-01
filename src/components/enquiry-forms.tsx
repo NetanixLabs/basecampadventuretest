@@ -24,7 +24,7 @@ function Sent({ reference, onReset }: { reference: string; onReset: () => void }
       <h3 className="font-display mt-6 text-5xl font-black uppercase leading-[0.9]">
         Namaste, <span className="accent-word text-marigold">message received.</span>
       </h3>
-      <p className="mt-4 max-w-md text-ink-soft">Our Kathmandu team will reply within a few hours, usually much sooner. For anything urgent, WhatsApp Shree on {site.mobile}.</p>
+      <p className="mt-4 max-w-md text-ink-soft">Our Kathmandu team will reply within a few hours, usually much sooner. For anything urgent, WhatsApp {site.contactPerson.split(" ")[0]} on {site.mobile}.</p>
       <p className="mt-5 rounded-full bg-snow-2 px-5 py-2 font-mono text-sm">Reference {reference}</p>
       <button type="button" onClick={onReset} className="text-pine mt-6 font-semibold underline">Send another message</button>
     </motion.div>

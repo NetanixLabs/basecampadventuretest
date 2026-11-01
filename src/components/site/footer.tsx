@@ -129,7 +129,7 @@ export function SiteFooter() {
               <ul className="mt-5 hidden space-y-3 text-sm lg:block">
                 <li>
                   <a href={`tel:${site.mobileHref}`} className="flex items-start gap-2.5 hover:text-white">
-                    <Phone className="mt-0.5 size-4 shrink-0" aria-hidden /> +977 9851029616 [Available 24/7]
+                    <Phone className="mt-0.5 size-4 shrink-0" aria-hidden /> {site.mobile} [Available 24/7]
                   </a>
                 </li>
                 <li>

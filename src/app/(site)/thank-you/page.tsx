@@ -15,7 +15,7 @@ export default function ThankYou() {
           Dhanyabad. <span className="accent-word text-marigold">Thank you.</span>
         </h1>
         <p className="mt-4 text-lg text-ink-soft">
-          We&apos;ve got your message and will reply within a few hours. For anything urgent, call or WhatsApp Shree on {site.mobile}.
+          We&apos;ve got your message and will reply within a few hours. For anything urgent, call or WhatsApp {site.contactPerson.split(" ")[0]} on {site.mobile}.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link href="/trip/" className="bg-pine rounded-full px-6 py-3 font-semibold text-white">

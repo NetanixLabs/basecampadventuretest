@@ -1,4 +1,5 @@
 import { couponBlock, type Coupon } from "@/lib/admin/email/coupon";
+import { ensureCompany } from "@/lib/company";
 import { site } from "@/lib/site";
 
 /**
@@ -79,6 +80,7 @@ ${t.image ? `<tr><td><a href="${esc(track(url))}"><img src="${esc(emailImage(t.i
 }
 
 export function renderNewsletter(n: Newsletter, { base = site.url }: { base?: string } = {}): string {
+  ensureCompany();
   const logo = `${base}/brand/logo-512.png`;
   const trips = n.trips.slice(0, 4);
   const tripRows = trips.length

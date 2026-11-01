@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono, Manrope, Newsreader } from "next/font/google";
 import { themeScript } from "@/components/theme-toggle";
 import { site } from "@/lib/site";
+import { ensureCompany } from "@/lib/company";
 import "./globals.css";
 
 /**
@@ -35,10 +36,13 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // The admin's company details, for this page and for the browser.
+  const company = ensureCompany();
   return (
     <html lang="en" className={`${display.variable} ${serif.variable} ${sans.variable} ${mono.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body id="top" className="min-h-dvh">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {Object.keys(company).length ? <script dangerouslySetInnerHTML={{ __html: `window.__BCA_COMPANY__=${JSON.stringify(company).replace(/</g, "\\u003c")}` }} /> : null}
         {children}
       </body>
     </html>

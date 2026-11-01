@@ -1,3 +1,4 @@
+import { ensureCompany } from "@/lib/company";
 import { site } from "@/lib/site";
 
 /**
@@ -50,6 +51,7 @@ export function couponBlock(c: Coupon, { base = site.url, photo, bg }: { bg?: st
 
 /** A coupon sent to one person, with a personal note. */
 export function renderCouponEmail(c: Coupon & { name: string; message: string; photo?: string | null }, { base = site.url }: { base?: string } = {}): string {
+  ensureCompany();
   const BG = "#eef3f4";
   const para = c.message
     .trim()
