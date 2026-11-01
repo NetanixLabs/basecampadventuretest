@@ -13,7 +13,16 @@ export const discountAmount = (kind: string, value: number, subtotal: number) =>
  * Checks a discount code for a trip and group size. Returns the saving, or a
  * friendly reason it can't be used.
  */
-export async function checkDiscount(raw: string, tripSlug: string, pax: number, subtotal: number): Promise<{ ok: true; discount: AppliedDiscount } | { ok: false; error: string }> {
+export type DiscountTrip = { slug: string; destinations: string[]; activities: string[] };
+
+/** Does a code apply to this trip? Nothing chosen = every trip. */
+export const appliesTo = (d: { trips: string[]; destinations: string[]; activities: string[] }, t: DiscountTrip) =>
+  (!d.trips.length && !d.destinations.length && !d.activities.length) ||
+  d.trips.includes(t.slug) ||
+  t.destinations.some((x) => d.destinations.includes(x)) ||
+  t.activities.some((x) => d.activities.includes(x));
+
+export async function checkDiscount(raw: string, trip: DiscountTrip, pax: number, subtotal: number): Promise<{ ok: true; discount: AppliedDiscount } | { ok: false; error: string }> {
   const code = raw.trim().toUpperCase();
   if (!code) return { ok: false, error: "Enter a code." };
   if (!adminConfigured()) return { ok: false, error: "Discount codes can't be checked right now. Mention it in your notes and we'll apply it." };
@@ -23,7 +32,7 @@ export async function checkDiscount(raw: string, tripSlug: string, pax: number, 
   if (d.startsAt && d.startsAt > now) return { ok: false, error: "That code isn't active yet." };
   if (d.endsAt && d.endsAt < now) return { ok: false, error: "That code has expired." };
   if (d.maxUses !== null && d.used >= d.maxUses) return { ok: false, error: "That code has been fully used." };
-  if (d.trips.length && !d.trips.includes(tripSlug)) return { ok: false, error: "That code isn't valid for this trip." };
+  if (!appliesTo(d, trip)) return { ok: false, error: "That code isn't valid for this trip." };
   if (pax < d.minPax) return { ok: false, error: `That code needs at least ${d.minPax} travellers.` };
   const value = Number(d.value);
   const kind = d.kind === "fixed" ? "fixed" : "percent";

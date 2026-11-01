@@ -13,6 +13,6 @@ export async function GET(req: Request) {
   if (!trip?.price) return NextResponse.json({ ok: false, error: "This trip is booked on request." }, { status: 400 });
   const tier = trip.price.groupTiers.find((t) => pax >= t.from && (!t.to || pax <= t.to));
   const subtotal = (tier?.price ?? trip.price.amount) * pax;
-  const r = await checkDiscount(u.searchParams.get("code") ?? "", trip.slug, pax, subtotal);
+  const r = await checkDiscount(u.searchParams.get("code") ?? "", trip, pax, subtotal);
   return NextResponse.json(r, { status: r.ok ? 200 : 400, headers: { "Cache-Control": "no-store" } });
 }

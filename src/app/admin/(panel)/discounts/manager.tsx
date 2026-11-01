@@ -6,10 +6,11 @@ import { Badge, Card, Empty, inputClass, Label, money } from "@/components/admin
 import { FieldView } from "@/components/admin/form/fields";
 import { deleteDiscount, saveDiscount } from "../sales-actions";
 
-type Code = { id: string; code: string; label: string; kind: string; value: number; startsAt: string; endsAt: string; maxUses: number | null; used: number; trips: string[]; minPax: number; active: boolean; revenue: number; saved: number };
-const blank = { code: "", label: "", kind: "percent", value: 10, startsAt: "", endsAt: "", maxUses: "", minPax: 1, trips: [] as string[], active: true };
+type Code = { id: string; code: string; label: string; kind: string; value: number; startsAt: string; endsAt: string; maxUses: number | null; used: number; trips: string[]; destinations: string[]; activities: string[]; minPax: number; active: boolean; revenue: number; saved: number };
+const blank = { code: "", label: "", kind: "percent", value: 10, startsAt: "", endsAt: "", maxUses: "", minPax: 1, trips: [] as string[], destinations: [] as string[], activities: [] as string[], active: true };
+type Opt = { value: string; label: string };
 
-export function DiscountManager({ codes, trips }: { codes: Code[]; trips: { value: string; label: string }[] }) {
+export function DiscountManager({ codes, trips, destinations, activities }: { codes: Code[]; trips: Opt[]; destinations: Opt[]; activities: Opt[] }) {
   const router = useRouter();
   const [edit, setEdit] = useState<{ id: string | null; v: typeof blank } | null>(null);
   const [msg, setMsg] = useState("");
@@ -26,7 +27,7 @@ export function DiscountManager({ codes, trips }: { codes: Code[]; trips: { valu
             <button key={c.id} type="button" onClick={() => setEdit({ id: c.id, v: { ...blank, ...c, maxUses: c.maxUses === null ? "" : String(c.maxUses) } })} className="flex w-full flex-wrap items-center gap-3 rounded-2xl border border-line bg-card p-4 text-left hover:border-pine">
               <span className="font-mono text-lg font-bold">{c.code}</span>
               <Badge tone={t}>{l}</Badge>
-              <span className="flex-1 text-sm text-muted">{c.label} · {c.kind === "percent" ? `${c.value}% off` : `${money(c.value)} off`}{c.trips.length ? ` · ${c.trips.length} trips` : " · all trips"}</span>
+              <span className="flex-1 text-sm text-muted">{c.label} · {c.kind === "percent" ? `${c.value}% off` : `${money(c.value)} off`}{c.trips.length || c.destinations.length || c.activities.length ? ` · ${[c.destinations.length && `${c.destinations.length} regions`, c.activities.length && `${c.activities.length} activities`, c.trips.length && `${c.trips.length} trips`].filter(Boolean).join(", ")}` : " · all bookings"}</span>
               <span className="text-right text-xs text-muted">Used {c.used}{c.maxUses !== null ? `/${c.maxUses}` : ""}<br />{c.revenue ? `${money(c.revenue)} booked` : ""}</span>
             </button>
           );
@@ -48,7 +49,19 @@ export function DiscountManager({ codes, trips }: { codes: Code[]; trips: { valu
                 <div><Label htmlFor="dm">Max uses</Label><input id="dm" type="number" min={1} value={v.maxUses} onChange={(e) => set("maxUses", e.target.value)} className={inputClass} placeholder="No limit" /></div>
                 <div><Label htmlFor="dp" info="The code only works when at least this many people travel.">Min. travellers</Label><input id="dp" type="number" min={1} value={v.minPax} onChange={(e) => set("minPax", Number(e.target.value))} className={inputClass} /></div>
               </div>
-              <FieldView field={{ name: "trips", label: "Only for these trips", type: "multiselect", help: "Leave empty and the code works on every trip." }} value={v.trips} onChange={(x) => set("trips", x)} ctx={{ options: { trips }, data: {}, siteUrl: "", urlPattern: null }} />
+              <fieldset className="space-y-3 rounded-xl border border-line p-4">
+                <legend className="flex items-center gap-1.5 px-1 text-sm font-semibold">Where it works</legend>
+                <div className="flex gap-2 text-sm">
+                  {[["all", "All bookings"], ["some", "Chosen regions, activities or trips"]].map(([k, l]) => {
+                    const all = !v.trips.length && !v.destinations.length && !v.activities.length;
+                    const on = (k === "all") === all;
+                    return <button key={k} type="button" onClick={() => (k === "all" ? setEdit({ id: edit?.id ?? null, v: { ...v, trips: [], destinations: [], activities: [] } }) : undefined)} className={`rounded-full px-3 py-1.5 font-semibold ${on ? "bg-pine text-white" : "border border-line"}`}>{l}</button>;
+                  })}
+                </div>
+                <FieldView field={{ name: "destinations", label: "Regions", type: "multiselect", help: "e.g. Everest Region: every trip in that region qualifies." }} value={v.destinations} onChange={(x) => set("destinations", x)} ctx={{ options: { destinations }, data: {}, siteUrl: "", urlPattern: null }} />
+                <FieldView field={{ name: "activities", label: "Activities", type: "multiselect", help: "e.g. Peak climbing: every trip of that type qualifies." }} value={v.activities} onChange={(x) => set("activities", x)} ctx={{ options: { activities }, data: {}, siteUrl: "", urlPattern: null }} />
+                <FieldView field={{ name: "trips", label: "Individual trips", type: "multiselect" }} value={v.trips} onChange={(x) => set("trips", x)} ctx={{ options: { trips }, data: {}, siteUrl: "", urlPattern: null }} />
+              </fieldset>
               <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={v.active} onChange={(e) => set("active", e.target.checked)} className="size-4 accent-[var(--pine)]" /> Switched on</label>
               <div className="flex gap-2">
                 <button type="submit" disabled={pending} className="flex-1 rounded-full bg-pine px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{pending ? "Saving…" : "Save code"}</button>

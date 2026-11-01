@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   let discountCode: string | null = null;
   let discount = 0;
   if (input.discountCode) {
-    const d = await checkDiscount(input.discountCode, trip.slug, input.pax, subtotal);
+    const d = await checkDiscount(input.discountCode, trip, input.pax, subtotal);
     if (!d.ok) return NextResponse.json({ ok: false, error: d.error }, { status: 400 });
     discountCode = d.discount.code;
     discount = d.discount.amount;

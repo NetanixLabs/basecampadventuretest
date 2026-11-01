@@ -312,8 +312,11 @@ model DiscountCode {
   endsAt    DateTime?
   maxUses   Int?
   used      Int       @default(0)
-  /// Empty means every trip.
-  trips     String[]
+  /// Where the code works. All three empty = every trip; otherwise a trip
+  /// qualifies if it is listed, or is in a listed region or activity.
+  trips        String[]
+  destinations String[] @default([])
+  activities   String[] @default([])
   minPax    Int       @default(1)
   active    Boolean   @default(true)
   createdAt DateTime  @default(now())

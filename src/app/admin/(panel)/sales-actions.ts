@@ -103,6 +103,8 @@ const discountSchema = z.object({
   maxUses: z.string().optional(),
   minPax: z.coerce.number().int().min(1).default(1),
   trips: z.array(z.string()).default([]),
+  destinations: z.array(z.string()).default([]),
+  activities: z.array(z.string()).default([]),
   active: z.boolean(),
 });
 
@@ -113,7 +115,7 @@ export async function saveDiscount(id: string | null, input: unknown): Promise<R
     if (!p.success) throw new Error(`!${p.error.issues[0]?.message}`);
     const d = p.data;
     if (d.kind === "percent" && d.value > 90) throw new Error("!A percentage discount can be at most 90%.");
-    const data = { code: d.code, label: d.label, kind: d.kind, value: d.value, startsAt: d.startsAt ? new Date(d.startsAt) : null, endsAt: d.endsAt ? new Date(`${d.endsAt}T23:59:59`) : null, maxUses: d.maxUses ? Number(d.maxUses) : null, minPax: d.minPax, trips: d.trips, active: d.active };
+    const data = { code: d.code, label: d.label, kind: d.kind, value: d.value, startsAt: d.startsAt ? new Date(d.startsAt) : null, endsAt: d.endsAt ? new Date(`${d.endsAt}T23:59:59`) : null, maxUses: d.maxUses ? Number(d.maxUses) : null, minPax: d.minPax, trips: d.trips, destinations: d.destinations, activities: d.activities, active: d.active };
     const clash = await db.discountCode.findUnique({ where: { code: d.code } });
     if (clash && clash.id !== id) throw new Error("!That code already exists.");
     if (id) await db.discountCode.update({ where: { id }, data });
