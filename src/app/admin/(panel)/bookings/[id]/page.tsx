@@ -45,7 +45,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               {b.notes ? <><dt className="text-muted">Their notes</dt><dd className="whitespace-pre-wrap">{b.notes}</dd></> : null}
             </dl>
           </Card>
-          <Card title="Payments" description="From WeTravel (automatic) and payments you record yourself.">
+          <Card title="Payments" info="Payments from WeTravel appear here automatically. Payments you record by hand are marked as such.">
             {b.payments.length ? (
               <ul className="divide-y divide-line text-sm">
                 {b.payments.map((p) => (

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Badge, Card, Empty, Help, inputClass, Label, money } from "@/components/admin/ui";
+import { Badge, Card, Empty, inputClass, Label, money } from "@/components/admin/ui";
 import { FieldView } from "@/components/admin/form/fields";
 import { deleteDiscount, saveDiscount } from "../sales-actions";
 
@@ -32,7 +32,7 @@ export function DiscountManager({ codes, trips }: { codes: Code[]; trips: { valu
           );
         }) : <Empty title="No discount codes yet.">Create one for a festival offer, a returning traveller or a partner.</Empty>}
       </div>
-      <Card title={edit?.id ? "Edit code" : "New code"} className="lg:sticky lg:top-6 lg:self-start">
+      <Card title={edit?.id ? "Edit code" : "New code"} className="lg:sticky lg:top-6 lg:self-start" info={<>To promote a code, add it to an Offer (Website → Offers) so it shows on the website, then send it to subscribers from Newsletter. The saving is always checked and applied on the server.</>}>
         {(() => {
           const v = edit?.v ?? blank;
           const set = (k: keyof typeof blank, val: unknown) => setEdit({ id: edit?.id ?? null, v: { ...v, [k]: val } });
@@ -46,11 +46,10 @@ export function DiscountManager({ codes, trips }: { codes: Code[]; trips: { valu
                 <div><Label htmlFor="ds">Starts</Label><input id="ds" type="date" value={v.startsAt} onChange={(e) => set("startsAt", e.target.value)} className={inputClass} /></div>
                 <div><Label htmlFor="de">Ends</Label><input id="de" type="date" value={v.endsAt} onChange={(e) => set("endsAt", e.target.value)} className={inputClass} /></div>
                 <div><Label htmlFor="dm">Max uses</Label><input id="dm" type="number" min={1} value={v.maxUses} onChange={(e) => set("maxUses", e.target.value)} className={inputClass} placeholder="No limit" /></div>
-                <div><Label htmlFor="dp">Min. travellers</Label><input id="dp" type="number" min={1} value={v.minPax} onChange={(e) => set("minPax", Number(e.target.value))} className={inputClass} /></div>
+                <div><Label htmlFor="dp" info="The code only works when at least this many people travel.">Min. travellers</Label><input id="dp" type="number" min={1} value={v.minPax} onChange={(e) => set("minPax", Number(e.target.value))} className={inputClass} /></div>
               </div>
-              <FieldView field={{ name: "trips", label: "Only for these trips", type: "multiselect", help: "Leave empty for every trip." }} value={v.trips} onChange={(x) => set("trips", x)} ctx={{ options: { trips }, data: {}, siteUrl: "", urlPattern: null }} />
+              <FieldView field={{ name: "trips", label: "Only for these trips", type: "multiselect", help: "Leave empty and the code works on every trip." }} value={v.trips} onChange={(x) => set("trips", x)} ctx={{ options: { trips }, data: {}, siteUrl: "", urlPattern: null }} />
               <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={v.active} onChange={(e) => set("active", e.target.checked)} className="size-4 accent-[var(--pine)]" /> Switched on</label>
-              <Help>Tip: put the code in an Offer (Website → Offers) so it shows on the site, and send it to subscribers from Newsletter.</Help>
               <div className="flex gap-2">
                 <button type="submit" disabled={pending} className="flex-1 rounded-full bg-pine px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{pending ? "Saving…" : "Save code"}</button>
                 {edit?.id ? <button type="button" disabled={pending} onClick={() => start(async () => { if (!confirm("Delete this code?")) return; const r = await deleteDiscount(edit.id!); if (r.ok) { setEdit(null); router.refresh(); } else setMsg(r.error); })} className="rounded-full border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700">Delete</button> : null}

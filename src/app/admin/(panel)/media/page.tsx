@@ -9,7 +9,7 @@ export default async function MediaPage() {
   await requireUser("media");
   return (
     <>
-      <PageHeader title="Media library" description="Every photo and video on the website. Upload here, or straight from any photo field." />
+      <PageHeader title="Media library" description="Every photo and video on the website." info="Upload here or straight from any photo field. Photos are turned the right way up, stripped of camera and GPS data, resized to at most 2560 px and saved as high-quality WebP. Visitors get the right size for their screen automatically. A file can only be deleted when nothing on the website uses it." />
       <MediaLibrary siteUrl={site.url} />
     </>
   );

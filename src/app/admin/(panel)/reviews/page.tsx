@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Clapperboard as Youtube, Film, Star, Trophy } from "lucide-react";
-import { Card, PageHeader } from "@/components/admin/ui";
+import { Guide } from "@/components/admin/info";
+import { PageHeader } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
 
@@ -20,7 +21,7 @@ export default async function ReviewsHub() {
   ];
   return (
     <>
-      <PageHeader title="Reviews & videos" description="What travellers say about Base Camp Adventure. Traveller reviews of a single trip are edited on that trip." />
+      <PageHeader title="Reviews & videos" description="What travellers say about Base Camp Adventure." info="Reviews written for one trip are edited on that trip (Trips → the trip → Traveller reviews). The pages here control the review tabs on the homepage and the Reviews page." />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(({ href, icon: Icon, title, text }) => (
           <Link key={href} href={href} className="group rounded-2xl border border-line bg-card p-5 transition-colors hover:border-pine">
@@ -30,9 +31,12 @@ export default async function ReviewsHub() {
           </Link>
         ))}
       </div>
-      <Card className="mt-6" title="Tip">
-        <p className="text-sm text-muted">To add a video review: upload the MP4 in the media library (Videos), copy its address, then create a new video review and paste it in. Keep videos under 50 MB (1080p) so they start quickly on phones.</p>
-      </Card>
+      <Guide className="mt-6" title="How to add a video review">
+        <p>1. Open the Media library, choose Videos and upload the MP4 (best under 50 MB, filmed upright).</p>
+        <p>2. Click the video and press Copy address.</p>
+        <p>3. Go to Video reviews → New video review, give it a title and paste the address. Publish.</p>
+        <p>The Base Camp logo is added to every video review automatically, in the bottom-right corner.</p>
+      </Guide>
     </>
   );
 }

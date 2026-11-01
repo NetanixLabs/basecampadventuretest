@@ -10,7 +10,7 @@ export default async function Activity({ searchParams }: { searchParams: Promise
   const rows = await db.auditLog.findMany({ orderBy: { createdAt: "desc" }, skip: (page - 1) * 100, take: 100, include: { user: { select: { name: true } } } });
   return (
     <>
-      <PageHeader title="Activity log" description="Every sign-in, change and email sent from the admin, with who and from where. Kept for security." />
+      <PageHeader title="Activity log" description="Sign-ins and changes, newest first." info="Every sign-in (and failed attempt), content change, booking update and email sent from the admin is recorded with the person, time and IP address. Failed or locked sign-ins are highlighted in red. The log cannot be edited." />
       <Table head={["When", "Who", "What", "Details", "From"]}>
         {rows.map((a) => (
           <tr key={a.id} className={a.action.includes("failed") || a.action.includes("locked") ? "bg-red-50/60 dark:bg-red-950/20" : ""}>

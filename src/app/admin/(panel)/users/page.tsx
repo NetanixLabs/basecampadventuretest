@@ -10,7 +10,7 @@ export default async function Users() {
   const users = await db.user.findMany({ orderBy: [{ role: "asc" }, { name: "asc" }], select: { id: true, name: true, email: true, role: true, status: true, totpEnabled: true, lastLoginAt: true } });
   return (
     <>
-      <PageHeader title="Team accounts" description="Who can sign in to the admin, and what they can do. Everyone uses two-step sign-in." />
+      <PageHeader title="Team accounts" description="Who can sign in, and what they can do." info="Every account uses two-step sign-in. Suspending someone signs them out at once. If someone loses their phone, use Reset 2FA and they set it up again at their next sign-in." />
       <UserManager me={{ id: user.id, role: user.role }} users={users.map((u) => ({ ...u, lastLoginAt: u.lastLoginAt?.toISOString() ?? null }))} />
     </>
   );

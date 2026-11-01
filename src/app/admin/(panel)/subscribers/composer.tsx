@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, Help, inputClass, Label } from "@/components/admin/ui";
+import { Card, inputClass, Label } from "@/components/admin/ui";
 import { sendCampaign } from "./actions";
 
 export function Composer() {
@@ -19,7 +19,7 @@ export function Composer() {
       <div className="space-y-4">
         <div><Label htmlFor="cs">Subject</Label><input id="cs" value={v.subject} onChange={(e) => set("subject", e.target.value)} className={inputClass} placeholder="Dashain offer: 10% off Everest treks" /></div>
         <div><Label htmlFor="ch">Heading</Label><input id="ch" value={v.heading} onChange={(e) => set("heading", e.target.value)} className={inputClass} placeholder="Celebrate Dashain in the Himalayas" /></div>
-        <div><Label htmlFor="cb">Message</Label><textarea id="cb" rows={8} value={v.body} onChange={(e) => set("body", e.target.value)} className={inputClass} placeholder={"Namaste!\n\nThis Dashain, enjoy **10% off** every Everest trek with the code DASHAIN10.\n\n- Valid for departures until 31 December\n- Book by 15 October"} /><Help>Blank line = new paragraph. Start lines with "- " for a list. **Bold** works.</Help></div>
+        <div><Label htmlFor="cb" info={<>Blank line = new paragraph. Start lines with "- " for a list. **Bold** works.</>}>Message</Label><textarea id="cb" rows={8} value={v.body} onChange={(e) => set("body", e.target.value)} className={inputClass} placeholder={"Namaste!\n\nThis Dashain, enjoy **10% off** every Everest trek with the code DASHAIN10.\n\n- Valid for departures until 31 December\n- Book by 15 October"} /></div>
         <div className="grid grid-cols-2 gap-3">
           <div><Label htmlFor="cbt">Button</Label><input id="cbt" value={v.button} onChange={(e) => set("button", e.target.value)} className={inputClass} /></div>
           <div><Label htmlFor="cbu">Button link</Label><input id="cbu" value={v.buttonUrl} onChange={(e) => set("buttonUrl", e.target.value)} className={inputClass} /></div>

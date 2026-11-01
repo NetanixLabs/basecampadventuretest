@@ -52,7 +52,7 @@ export function UserManager({ me, users }: { me: { id: string; role: Role }; use
           </tr>
         ))}
       </Table>
-      <Card title="Invite someone" description="They get an email to choose a password (link valid 3 days), then set up two-step sign-in.">
+      <Card title="Invite someone" info="They receive an email to choose their password (the link works for 3 days), then set up two-step sign-in with an authenticator app on their phone.">
         <form className="grid gap-4 sm:grid-cols-[1fr_1fr_12rem_auto] sm:items-end" onSubmit={(e) => { e.preventDefault(); run(() => inviteUser(inv)); setInv({ name: "", email: "", role: "editor" }); }}>
           <div><Label htmlFor="in">Name</Label><input id="in" value={inv.name} onChange={(e) => setInv({ ...inv, name: e.target.value })} className={inputClass} required /></div>
           <div><Label htmlFor="ie">Email</Label><input id="ie" type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} className={inputClass} required /></div>

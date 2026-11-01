@@ -56,7 +56,7 @@ export function MediaLibrary({ siteUrl }: { siteUrl: string }) {
         <button type="button" onClick={() => input.current?.click()} className="inline-flex items-center gap-2 rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep"><Upload className="size-4" /> Upload</button>
       </div>
       {busy || error ? <p className={cn("mb-4 rounded-xl px-4 py-2 text-sm", error ? "bg-red-50 text-red-700" : "bg-pine/8 text-pine")}>{busy ?? error}</p> : null}
-      <p className="mb-3 text-sm text-muted">{data ? `${data.total.toLocaleString()} ${kind === "image" ? "photos" : "videos"}` : "Loading…"} · drop files anywhere here to upload. Photos are optimised automatically without losing quality.</p>
+      <p className="mb-3 text-sm text-muted">{data ? `${data.total.toLocaleString()} ${kind === "image" ? "photos" : "videos"}` : "Loading…"} · drop files anywhere here to upload.</p>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {data?.items.map((m) => (
           <li key={m.id}>

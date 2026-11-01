@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { Info } from "@/components/admin/info";
 import { cn } from "@/lib/utils";
 
 /** Small, consistent building blocks for every admin screen. */
 
-export function PageHeader({ title, description, actions, back }: { title: string; description?: React.ReactNode; actions?: React.ReactNode; back?: { href: string; label: string } }) {
+export function PageHeader({ title, description, actions, back, info }: { title: string; description?: React.ReactNode; actions?: React.ReactNode; back?: { href: string; label: string }; info?: React.ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
@@ -12,7 +13,10 @@ export function PageHeader({ title, description, actions, back }: { title: strin
             ← {back.label}
           </Link>
         ) : null}
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">{title}</h1>
+        <h1 className="font-display flex items-center gap-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          {title}
+          {info ? <Info label={`About ${title}`}>{info}</Info> : null}
+        </h1>
         {description ? <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -20,13 +24,13 @@ export function PageHeader({ title, description, actions, back }: { title: strin
   );
 }
 
-export function Card({ children, className, title, description, actions }: { children: React.ReactNode; className?: string; title?: string; description?: string; actions?: React.ReactNode }) {
+export function Card({ children, className, title, description, actions, info }: { children: React.ReactNode; className?: string; title?: string; description?: string; actions?: React.ReactNode; info?: React.ReactNode }) {
   return (
     <section className={cn("rounded-2xl border border-line bg-card p-5 shadow-[0_1px_2px_rgba(0,40,50,0.04)] sm:p-6", className)}>
       {title ? (
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-ink">{title}</h2>
+            <h2 className="flex items-center gap-1.5 text-base font-bold text-ink">{title}{info ? <Info label={`About ${title}`}>{info}</Info> : null}</h2>
             {description ? <p className="mt-0.5 text-sm text-muted">{description}</p> : null}
           </div>
           {actions}
@@ -62,10 +66,13 @@ export function ButtonLink({ variant = "primary", size = "md", className, ...pro
 export const inputClass =
   "w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/70 focus:border-pine focus:outline-none focus:ring-3 focus:ring-pine/15 disabled:opacity-60";
 
-export function Label({ children, htmlFor, hint }: { children: React.ReactNode; htmlFor?: string; hint?: React.ReactNode }) {
+export function Label({ children, htmlFor, hint, info }: { children: React.ReactNode; htmlFor?: string; hint?: React.ReactNode; info?: React.ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-semibold text-ink">
-      <span>{children}</span>
+    <label htmlFor={htmlFor} className="mb-1.5 flex items-center justify-between gap-3 text-sm font-semibold text-ink">
+      <span className="flex items-center gap-1.5">
+        {children}
+        {info ? <Info>{info}</Info> : null}
+      </span>
       {hint ? <span className="text-xs font-normal text-muted">{hint}</span> : null}
     </label>
   );

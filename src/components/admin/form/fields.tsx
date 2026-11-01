@@ -4,7 +4,8 @@ import { useId, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Copy, GripVertical, Plus, Trash2, X } from "lucide-react";
 import type { Field, Option, OptionSource } from "@/lib/admin/collections";
 import { getPath, setPath } from "@/lib/admin/paths";
-import { Help, inputClass, Label } from "@/components/admin/ui";
+import { inputClass, Label } from "@/components/admin/ui";
+import { Info } from "@/components/admin/info";
 import { ImageField, GalleryField } from "@/components/admin/form/media-field";
 import { RichText } from "@/components/admin/form/rich-text";
 import { SeoField } from "@/components/admin/form/seo-field";
@@ -28,12 +29,11 @@ export function Fields({ fields, value, onChange, ctx }: { fields: Field[]; valu
 export function FieldView({ field: f, value, onChange, ctx }: { field: Field; value: unknown; onChange: (v: unknown) => void; ctx: Ctx }) {
   const id = useId();
   const label = (
-    <Label htmlFor={id} hint={f.type === "textarea" && f.max ? `${String(value ?? "").length}/${f.max}` : undefined}>
+    <Label htmlFor={id} info={f.help} hint={f.type === "textarea" && f.max ? `${String(value ?? "").length}/${f.max}` : undefined}>
       {f.label}
       {f.required ? <span className="text-red-600"> *</span> : null}
     </Label>
   );
-  const help = f.help ? <Help>{f.help}</Help> : null;
 
   switch (f.type) {
     case "text":
@@ -41,7 +41,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <input id={id} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} placeholder={f.placeholder} maxLength={f.max} required={f.required} className={cn(inputClass, f.mono && "font-mono text-[13px]")} />
-          {help}
         </div>
       );
     case "textarea":
@@ -49,7 +48,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <textarea id={id} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} rows={f.rows ?? 4} maxLength={f.max ? f.max + 200 : undefined} className={cn(inputClass, "resize-y leading-relaxed")} />
-          {help}
         </div>
       );
     case "number":
@@ -70,7 +68,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
             />
             {f.suffix ? <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-muted">{f.suffix}</span> : null}
           </div>
-          {help}
         </div>
       );
     case "date":
@@ -78,7 +75,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <input id={id} type="date" value={typeof value === "string" ? value.slice(0, 10) : ""} onChange={(e) => onChange(e.target.value || null)} className={inputClass} />
-          {help}
         </div>
       );
     case "toggle":
@@ -95,8 +91,10 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
             <span className={cn("absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow transition-transform", Boolean(value) && "translate-x-5")} />
           </button>
           <div>
-            <label htmlFor={id} className="text-sm font-semibold">{f.label}</label>
-            {help}
+            <span className="flex items-center gap-1.5">
+              <label htmlFor={id} className="text-sm font-semibold">{f.label}</label>
+              {f.help ? <Info>{f.help}</Info> : null}
+            </span>
           </div>
         </div>
       );
@@ -109,7 +107,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
             {f.allowEmpty !== false ? <option value="">—</option> : null}
             {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          {help}
         </div>
       );
     }
@@ -118,7 +115,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <MultiSelect value={(value as string[]) ?? []} onChange={onChange} options={f.options ?? ctx.options[f.source!] ?? []} ordered={f.ordered} />
-          {help}
         </div>
       );
     case "strings":
@@ -126,7 +122,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <StringList value={(value as string[]) ?? []} onChange={onChange} itemLabel={f.itemLabel ?? "item"} placeholder={f.placeholder} />
-          {help}
         </div>
       );
     case "richtext":
@@ -134,7 +129,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <RichText value={String(value ?? "")} onChange={onChange} minimal={f.minimal} />
-          {help}
         </div>
       );
     case "image":
@@ -142,7 +136,6 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <ImageField value={(value as never) ?? null} onChange={onChange} folder={f.folder} />
-          {help}
         </div>
       );
     case "gallery":
@@ -150,29 +143,26 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
         <div>
           {label}
           <GalleryField value={(value as never[]) ?? []} onChange={onChange} folder={f.folder} />
-          {help}
         </div>
       );
     case "repeater":
       return (
         <div>
-          <p className="mb-1.5 text-sm font-semibold">{f.label}</p>
-          {help}
+          <p className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold">{f.label}{f.help ? <Info>{f.help}</Info> : null}</p>
           <Repeater field={f} value={(value as Data[]) ?? []} onChange={onChange} ctx={ctx} />
         </div>
       );
     case "group":
       return (
         <fieldset className="rounded-2xl border border-line p-4 sm:p-5">
-          <legend className="px-1 text-sm font-semibold">{f.label}</legend>
-          {help}
+          <legend className="flex items-center gap-1.5 px-1 text-sm font-semibold">{f.label}{f.help ? <Info>{f.help}</Info> : null}</legend>
           <Fields fields={f.fields} value={(value as Data) ?? {}} onChange={onChange} ctx={ctx} />
         </fieldset>
       );
     case "seo":
       return <SeoField value={(value as never) ?? {}} onChange={onChange} ctx={ctx} />;
     case "json":
-      return <JsonField label={label} help={help} id={id} value={value} onChange={onChange} rows={f.rows} />;
+      return <JsonField label={label} id={id} value={value} onChange={onChange} rows={f.rows} />;
   }
 }
 
@@ -339,7 +329,7 @@ function Repeater({ field, value, onChange, ctx }: { field: Extract<Field, { typ
   );
 }
 
-function JsonField({ label, help, id, value, onChange, rows }: { label: React.ReactNode; help: React.ReactNode; id: string; value: unknown; onChange: (v: unknown) => void; rows?: number }) {
+function JsonField({ label, id, value, onChange, rows }: { label: React.ReactNode; id: string; value: unknown; onChange: (v: unknown) => void; rows?: number }) {
   const [text, setText] = useState(() => JSON.stringify(value ?? null, null, 2));
   const [error, setError] = useState<string | null>(null);
   return (
@@ -361,7 +351,7 @@ function JsonField({ label, help, id, value, onChange, rows }: { label: React.Re
         }}
         className={cn(inputClass, "font-mono text-xs leading-relaxed", error && "border-red-400")}
       />
-      {error ? <p className="mt-1 text-xs text-red-600">Not valid yet: {error}</p> : help}
+      {error ? <p className="mt-1 text-xs text-red-600">Not valid yet: {error}</p> : null}
     </div>
   );
 }

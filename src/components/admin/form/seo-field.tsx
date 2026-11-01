@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { Help, inputClass, Label } from "@/components/admin/ui";
+import { inputClass, Label } from "@/components/admin/ui";
 import type { Ctx } from "@/components/admin/form/fields";
 import { cn } from "@/lib/utils";
 
@@ -31,14 +31,12 @@ export function SeoField({ value, onChange, ctx }: { value: Seo; onChange: (v: S
     <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,22rem)]">
       <div className="space-y-5">
         <div>
-          <Label htmlFor={`${id}t`} hint={meter((value.title ?? "").length, [35, 60], 65)}>Title in Google</Label>
+          <Label htmlFor={`${id}t`} hint={meter((value.title ?? "").length, [35, 60], 65)} info={<>Put the main search phrase first, e.g. "Everest Base Camp Trek 14 Days: Cost & Itinerary".</>}>Title in Google</Label>
           <input id={`${id}t`} value={value.title ?? ""} onChange={(e) => set("title", e.target.value)} placeholder={fallbackTitle} className={inputClass} />
-          <Help>Put the main search phrase first, e.g. "Everest Base Camp Trek 14 Days: Cost & Itinerary".</Help>
         </div>
         <div>
-          <Label htmlFor={`${id}d`} hint={meter((value.description ?? "").length, [120, 160], 170)}>Description in Google</Label>
+          <Label htmlFor={`${id}d`} hint={meter((value.description ?? "").length, [120, 160], 170)} info={<>A sentence or two that makes people want to click. Mention what's unique.</>}>Description in Google</Label>
           <textarea id={`${id}d`} value={value.description ?? ""} onChange={(e) => set("description", e.target.value)} placeholder={fallbackDesc} rows={3} className={inputClass} />
-          <Help>A sentence or two that makes people want to click. Mention what's unique.</Help>
         </div>
         <div>
           <Label htmlFor={`${id}o`}>Sharing image (optional)</Label>

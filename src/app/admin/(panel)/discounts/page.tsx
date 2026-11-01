@@ -14,7 +14,7 @@ export default async function Discounts() {
   ]);
   return (
     <>
-      <PageHeader title="Discount codes" description="Codes travellers type when booking online, e.g. DASHAIN10. The saving is checked and applied on the server, so it can't be faked." />
+      <PageHeader title="Discount codes" description="Codes travellers enter when booking online." info="Travellers type the code on the booking page, e.g. DASHAIN10. The website checks it (dates, uses, trips, group size) and prices the booking on the server, so a code can't be faked or edited in the browser. Usage and the value booked with each code are shown here." />
       <DiscountManager
         codes={codes.map((c) => ({ ...c, value: Number(c.value), startsAt: c.startsAt?.toISOString().slice(0, 10) ?? "", endsAt: c.endsAt?.toISOString().slice(0, 10) ?? "", createdAt: c.createdAt.toISOString(), revenue: Number(usage.find((u) => u.discountCode === c.code)?._sum.total ?? 0), saved: Number(usage.find((u) => u.discountCode === c.code)?._sum.discount ?? 0) }))}
         trips={trips.map((t) => ({ value: t.slug, label: t.title }))}

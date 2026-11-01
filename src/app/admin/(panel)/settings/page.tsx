@@ -1,3 +1,4 @@
+import { Info } from "@/components/admin/info";
 import { Card, PageHeader } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
@@ -16,7 +17,7 @@ export default async function Settings() {
       <PageHeader title="Settings" description="Website integrations and how the system is connected." />
       <div className="grid gap-6 lg:grid-cols-2">
         <SettingsForm initial={{ tawkProperty: v("tawkProperty", process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID ?? ""), tawkWidget: v("tawkWidget", process.env.NEXT_PUBLIC_TAWK_WIDGET_ID ?? "default"), ga4: v("ga4", process.env.NEXT_PUBLIC_GA4_ID ?? "") }} />
-        <Card title="Connections" description="These are set on the server for security (in its .env file), not here.">
+        <Card title="Connections" info={<>Payment, email and security keys are kept in the server's private settings file (/srv/basecamp/.env), never in the database, so they can't leak through the admin. See DEPLOY.md to change them.</>}>
           <dl className="grid grid-cols-[1fr_auto] gap-y-3 text-sm">
             <dt>WeTravel payments ({process.env.WETRAVEL_ENV === "production" ? "live" : "sandbox"})</dt><dd>{ok(Boolean(process.env.WETRAVEL_API_KEY))}</dd>
             <dt>WeTravel payment notifications (webhook)</dt><dd>{ok(Boolean(process.env.WETRAVEL_WEBHOOK_SECRET))}</dd>
@@ -24,7 +25,7 @@ export default async function Settings() {
             <dt>Office alerts go to</dt><dd className="font-mono text-xs">{process.env.OFFICE_EMAIL ?? "info@basecampadventure.com"}</dd>
             <dt>Two-step sign-in required</dt><dd>{ok(process.env.REQUIRE_TOTP !== "false")}</dd>
           </dl>
-          <p className="mt-4 text-xs text-muted">WeTravel webhook address: <code className="font-mono">https://basecampadventure.com/api/webhooks/wetravel</code> (events: payment.created, payment.updated, transaction.updated).</p>
+          <p className="mt-4 flex items-center gap-1.5 text-xs text-muted">WeTravel payment notifications <Info>In WeTravel: Profile → Edit Profile → Webhooks → Yes, add the address https://basecampadventure.com/api/webhooks/wetravel with the events payment.created, payment.updated and transaction.updated, and copy its signing secret to WETRAVEL_WEBHOOK_SECRET on the server.</Info></p>
         </Card>
       </div>
     </>

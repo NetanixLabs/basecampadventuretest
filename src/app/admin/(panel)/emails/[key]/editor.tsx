@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Card, Help, inputClass, Label } from "@/components/admin/ui";
+import { Card, inputClass, Label } from "@/components/admin/ui";
 import { previewTemplate, resetTemplate, saveTemplate, testTemplate } from "../actions";
 
 type V = { subject: string; heading: string; body: string; button: string; enabled: boolean };
@@ -24,7 +24,7 @@ export function TemplateEditor({ keyName, vars, initial, edited }: { keyName: st
         <div className="space-y-4">
           <div><Label htmlFor="s">Subject line</Label><input id="s" value={v.subject} onChange={(e) => set("subject", e.target.value)} className={inputClass} /></div>
           <div><Label htmlFor="h">Heading</Label><input id="h" value={v.heading} onChange={(e) => set("heading", e.target.value)} className={inputClass} /></div>
-          <div><Label htmlFor="b">Text</Label><textarea id="b" rows={10} value={v.body} onChange={(e) => set("body", e.target.value)} className={inputClass} /><Help>Blank line = new paragraph. "- " starts a list. **bold**. Booking details and the button are added automatically.</Help></div>
+          <div><Label htmlFor="b" info={<>Blank line = new paragraph. "- " starts a list. **bold**. Booking details and the button are added automatically.</>}>Text</Label><textarea id="b" rows={10} value={v.body} onChange={(e) => set("body", e.target.value)} className={inputClass} /></div>
           <div><Label htmlFor="bt">Button label</Label><input id="bt" value={v.button} onChange={(e) => set("button", e.target.value)} className={inputClass} /></div>
           {vars.length ? <div className="rounded-xl bg-pine/5 p-3 text-xs"><p className="font-semibold">Placeholders you can use</p><p className="mt-1 flex flex-wrap gap-1.5">{vars.map((x) => <button key={x} type="button" onClick={() => set("body", `${v.body}{{${x}}}`)} className="rounded-md bg-card px-1.5 py-0.5 font-mono ring-1 ring-line hover:ring-pine">{`{{${x}}}`}</button>)}</p></div> : null}
           <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={v.enabled} onChange={(e) => set("enabled", e.target.checked)} className="size-4 accent-[var(--pine)]" /> Send this email</label>

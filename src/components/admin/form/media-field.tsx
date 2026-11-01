@@ -215,7 +215,7 @@ export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image" 
                 <button type="button" disabled={page >= data.pages} onClick={() => setPage((p) => p + 1)} className="rounded-full border border-line px-3 py-1 disabled:opacity-40">→</button>
               </>
             ) : (
-              <span>Tip: drag photos from your computer straight into this window.</span>
+              <span>Drag files from your computer straight into this window.</span>
             )}
           </div>
           <button type="button" disabled={!picked.length} onClick={() => onPick(picked)} className="rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep disabled:opacity-40">

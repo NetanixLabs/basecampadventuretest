@@ -11,8 +11,8 @@ export default async function Emails() {
   const [saved, log, smtp] = await Promise.all([db.emailTemplate.findMany(), db.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 30 }), Promise.resolve(Boolean(process.env.SMTP_HOST))]);
   return (
     <>
-      <PageHeader title="Email templates" description="The emails the website sends by itself. Change the wording any time; the branded design stays the same." />
-      {!smtp ? <p className="mb-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">Email sending isn't connected yet (SMTP settings on the server). Until then emails are written to the server log instead of being sent.</p> : null}
+      <PageHeader title="Email templates" description="Automatic emails to travellers, the office and the team." info="Open a template to change its subject, heading, text and button. The branded design, booking details and links are added automatically, so every email looks the same. Use Send me a test to check it in your inbox. Restore original brings back the starting wording." />
+      {!smtp ? <p className="mb-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">Email sending is not connected on this server. Add the SMTP settings in the server's .env file (see DEPLOY.md) to start sending.</p> : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {TEMPLATES.map((t) => {
           const s = saved.find((x) => x.key === t.key);

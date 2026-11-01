@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
-import { Alert, Help, inputClass, Label } from "@/components/admin/ui";
+import { Alert, inputClass, Label } from "@/components/admin/ui";
 import { Submit } from "@/components/admin/submit";
 import { beginTotpSetup, confirmTotpSetup, requestReset, resetPassword, signIn, verifyTwoFactor, type FormState } from "./actions";
 
@@ -46,13 +46,12 @@ export function VerifyForm() {
     <form action={action} className="space-y-5">
       {state?.error ? <Alert tone="red">{state.error}</Alert> : null}
       <div>
-        <Label htmlFor="code">{backup ? "Backup code" : "6-digit code"}</Label>
+        <Label htmlFor="code" info={<>{backup ? "Each backup code works once." : "Open your authenticator app and type the code shown for Base Camp Adventure."}</>}>{backup ? "Backup code" : "6-digit code"}</Label>
         {backup ? (
           <input key="b" id="code" name="code" autoComplete="off" required autoFocus placeholder="XXXXX-XXXXX" className={`${inputClass} font-mono tracking-widest uppercase`} />
         ) : (
           <input key="t" id="code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" maxLength={7} required autoFocus placeholder="123 456" className={`${inputClass} text-center font-mono text-xl tracking-[0.4em]`} />
         )}
-        <Help>{backup ? "Each backup code works once." : "Open your authenticator app and type the code shown for Base Camp Adventure."}</Help>
       </div>
       <Submit className="w-full" pending="Checking…">Continue</Submit>
       <button type="button" onClick={() => setBackup((b) => !b)} className="w-full text-center text-sm font-semibold text-pine hover:underline">
@@ -150,9 +149,8 @@ export function ResetForm({ token }: { token: string }) {
       {state?.error ? <Alert tone="red">{state.error}</Alert> : null}
       <input type="hidden" name="token" value={token} />
       <div>
-        <Label htmlFor="password">New password</Label>
+        <Label htmlFor="password" info={<>At least 12 characters. A short sentence you'll remember is ideal, e.g. "prayer flags over namche".</>}>New password</Label>
         <PasswordInput id="password" name="password" autoComplete="new-password" minLength={12} />
-        <Help>At least 12 characters. A short sentence you'll remember is ideal, e.g. "prayer flags over namche".</Help>
       </div>
       <div>
         <Label htmlFor="confirm">Type it again</Label>
