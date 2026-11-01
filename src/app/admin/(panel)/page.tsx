@@ -96,6 +96,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               ["/c/offers/new", "Create a festival offer"],
               ["/media", "Upload photos"],
               ["/seo", "Check SEO health"],
+              ["/singles/home-copy", "Edit homepage text"],
               ["/singles/home", "Change homepage trips"],
             ].map(([href, label]) => (
               <li key={href}>

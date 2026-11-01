@@ -11,7 +11,7 @@ import { Testimonials } from "@/components/home/testimonials";
 import { TripCarousel } from "@/components/home/trip-carousel";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { PhotoGlow } from "@/components/photo-glow";
-import { Accent, SectionHeading } from "@/components/section-heading";
+import { SectionHeading } from "@/components/section-heading";
 import { JourneyCollections } from "@/components/home/journey-collections";
 import homeTourImages from "@/content/home-tour-images.json";
 import {
@@ -32,7 +32,9 @@ import {
   getTripsIn,
   photo,
   termSummary,
+  getHomeCopy,
 } from "@/lib/content";
+import { headingLines } from "@/components/home/rich-heading";
 import { JsonLd } from "@/components/json-ld";
 import { YouTube } from "@/components/video";
 import { meta, videoLd } from "@/lib/seo";
@@ -106,58 +108,66 @@ export default function HomePage() {
   });
 
   const about = photo("hero-alpenglow");
+  const copy = getHomeCopy();
 
   return (
     <>
-      <HomeHero />
+      <HomeHero copy={copy.hero} />
 
       {/* 01 / Find your trail */}
+      {copy.find.show ? (
       <section id="find" className="scroll-mt-24 py-14 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-6">
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <SectionHeading eyebrow="01 / Find your trail" lines={["Where do you", <span key="g">want to <Accent>go?</Accent></span>]} />
+            <SectionHeading eyebrow={copy.find.eyebrow} lines={headingLines(copy.find.heading)} />
             <Reveal className="max-w-sm">
-              <p className="text-ink-soft">From the foothills to Everest Base Camp. Find a trip that fits your time and your sense of adventure.</p>
+              {copy.find.intro ? <p className="text-ink-soft">{copy.find.intro}</p> : null}
               <Link href="/trip/" className="mt-3 inline-block border-b-2 border-ink pb-1 text-sm font-bold">Explore the full collection</Link>
             </Reveal>
           </div>
           <FeaturedTrips groups={groups} regionNames={regionNames} regions={destinations.map((d) => ({ slug: d.slug, name: d.name }))} />
         </div>
       </section>
+      ) : null}
 
-      <JourneyCollections tours={[...helicopterTours.slice(0, 1), ...otherTours.slice(0, 3)]} luxury={luxury} regionNames={regionNames} />
+      {copy.collections.show ? <JourneyCollections tours={[...helicopterTours.slice(0, 1), ...otherTours.slice(0, 3)]} luxury={luxury} regionNames={regionNames} /> : null}
 
       {/* 02 / Get to know Nepal */}
+      {copy.regions.show ? (
       <section className="bg-pine relative overflow-hidden pt-7 pb-10 text-white sm:pt-8 sm:pb-12 lg:pt-9 lg:pb-14 dark:bg-pine-deep">
         <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-6">
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <SectionHeading tone="dark" eyebrow="02 / Get to know Nepal" lines={["Same country.", <Accent key="d">Different worlds.</Accent>]} />
+            <SectionHeading tone="dark" eyebrow={copy.regions.eyebrow} lines={headingLines(copy.regions.heading)} />
             <Reveal className="max-w-sm">
-              <p className="text-white/80">Everest, Annapurna, Langtang, Manaslu. There&apos;s more than one way into the Himalayas.</p>
+              {copy.regions.intro ? <p className="text-white/80">{copy.regions.intro}</p> : null}
             </Reveal>
           </div>
           <RegionShowcase regions={panels.map((panel) => ({ ...panel, href: ["kanchenjunga-base-camp-trek", "makalu-base-camp-trek"].includes(panel.slug) ? `/trip/${panel.slug}/` : `/destinations/${panel.slug}/` }))} moreTreks={moreTreks} />
         </div>
       </section>
+      ) : null}
 
       {/* Popular Trekking & Tour Packages */}
+      {copy.popular.show ? (
       <section className="bg-snow-2 overflow-hidden pt-8 pb-14 sm:pt-10 sm:pb-16 lg:pt-12 lg:pb-20">
         <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-6">
-          <SectionHeading eyebrow={`${popular.length} packages`} lines={["Popular trekking", <span key="p">& tour <Accent>packages.</Accent></span>]} />
+          <SectionHeading eyebrow={copy.popular.eyebrow || `${popular.length} packages`} lines={headingLines(copy.popular.heading)} />
           <div className="mt-6">
             <TripCarousel trips={popular.slice(0, 20)} regionNames={regionNames} moreHref="/trip/" moreLabel={`All ${cards.length} trips`} />
           </div>
         </div>
       </section>
+      ) : null}
 
       {/* Festival offers, or the trips on a reduced price today */}
-      <Offers offer={offer} trips={offerTrips} regionNames={regionNames} />
+      {copy.offers.show ? <Offers offer={offer} trips={offerTrips} regionNames={regionNames} /> : null}
 
       {/* 04 / The people behind the journey */}
+      {copy.story.show ? (
       <section className="story-community border-t border-line py-10 sm:py-11 lg:py-14">
         <div className="mx-auto grid max-w-site gap-8 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.35fr] lg:items-start lg:gap-10 lg:px-6">
           <div className="relative isolate lg:sticky lg:top-28">
-            <SectionHeading eyebrow="Our story & community" lines={["Local roots.", <Accent key="o">Open horizons.</Accent>]} />
+            <SectionHeading eyebrow={copy.story.eyebrow} lines={headingLines(copy.story.heading)} />
             <div className="relative mt-5">
             <PhotoGlow src={about.src} strength="lg" />
             <div className="relative aspect-[15/7] overflow-hidden rounded-xl bg-snow-2">
@@ -221,9 +231,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      ) : null}
 
 
-      {awards.length ? (
+      {copy.awards.show && awards.length ? (
         <section className="border-t border-line">
           <div className="mx-auto max-w-site px-4 py-10 sm:px-6 lg:px-6">
             <p className="eyebrow text-pine mb-4">Awards &amp; recognition</p>
@@ -233,10 +244,10 @@ export default function HomePage() {
       ) : null}
 
       {/* Videos from the trail */}
-      {videos.length ? (
+      {copy.videos.show && videos.length ? (
         <section className="border-t border-line py-14 sm:py-16">
           <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-6">
-            <SectionHeading eyebrow="Watch" lines={["Videos from", <Accent key="v">the trail.</Accent>]} />
+            <SectionHeading eyebrow={copy.videos.eyebrow} lines={headingLines(copy.videos.heading)} />
             <div className={`mt-10 grid gap-4 ${videos.length > 1 ? "md:grid-cols-2 lg:grid-cols-3" : "max-w-3xl"}`}>
               {videos.map((v) => (
                 <YouTube key={v.id} id={v.id} title={v.title} />
@@ -250,13 +261,14 @@ export default function HomePage() {
       ) : null}
 
       {/* Testimonials */}
-      <Testimonials reviews={reviews} tripadvisor={getTripadvisor()} />
+      {copy.testimonials.show ? <Testimonials reviews={reviews} tripadvisor={getTripadvisor()} /> : null}
 
       {/* From the journal */}
+      {copy.journal.show ? (
       <section className="border-t border-line py-14 sm:py-16">
         <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-6">
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <SectionHeading eyebrow="Journal" lines={["Notes from", <Accent key="t">the trail.</Accent>]} />
+            <SectionHeading eyebrow={copy.journal.eyebrow} lines={headingLines(copy.journal.heading)} />
             <Link href="/blogs/" className="border-b-2 border-ink pb-1 text-sm font-bold">Read our blogs</Link>
           </div>
           <Stagger className="rail grid gap-6 md:grid-cols-3">
@@ -277,6 +289,7 @@ export default function HomePage() {
           </Stagger>
         </div>
       </section>
+      ) : null}
     </>
   );
 }

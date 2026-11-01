@@ -1,3 +1,5 @@
+import { HOME_COPY_DEFAULTS } from "@/lib/home-copy";
+
 /**
  * What the office can edit, described once.
  *
@@ -519,7 +521,7 @@ export const TAXONOMY_KEYS = ["destinations", "activities", "difficulty", "tripT
 /* ------------------------------------------------------- single documents */
 
 /** One-off documents: homepage lists, menu, About page… */
-export type SingletonDef = { key: string; label: string; description: string; file: string; sections: Section[] };
+export type SingletonDef = { key: string; label: string; description: string; file: string; sections: Section[]; defaults?: Record<string, unknown> };
 
 const menuItem = (depth: number): Field[] => [
   { name: "label", label: "Label", type: "text" },
@@ -527,7 +529,47 @@ const menuItem = (depth: number): Field[] => [
   ...(depth < 2 ? [{ name: "children", label: "Sub-menu", type: "repeater", itemLabel: "link", titleField: "label", collapsed: true, wide: true, fields: menuItem(depth + 1) } as Field] : []),
 ];
 
+const HEADING_HELP = "Each line of text is a line on the page. Put a word in *stars* for the accent style, e.g. in the *Himalayas.*";
+const section = (key: string, title: string, withIntro = true): Section => ({
+  title,
+  fields: [
+    { name: `${key}.show`, label: "Show this section", type: "toggle" },
+    { name: `${key}.eyebrow`, label: "Small line above", type: "text" },
+    { name: `${key}.heading`, label: "Heading", type: "textarea", rows: 2, help: HEADING_HELP },
+    ...(withIntro ? [{ name: `${key}.intro`, label: "Introduction", type: "textarea", rows: 2 } as Field] : []),
+  ],
+});
+const toggle = (key: string, label: string): Field => ({ name: `${key}.show`, label, type: "toggle" });
+
 export const SINGLETONS: SingletonDef[] = [
+  {
+    key: "home-copy",
+    label: "Homepage text & sections",
+    description: "The words on the homepage and which sections are shown.",
+    file: "home-copy",
+    defaults: HOME_COPY_DEFAULTS as unknown as Record<string, unknown>,
+    sections: [
+      {
+        title: "Top of the page",
+        fields: [
+          { name: "hero.eyebrow", label: "Small line above", type: "text" },
+          { name: "hero.heading", label: "Main heading", type: "textarea", rows: 2, help: HEADING_HELP },
+          { name: "hero.text", label: "Text under the heading", type: "textarea", rows: 2 },
+          { name: "hero.button", label: "Button", type: "text" },
+        ],
+      },
+      section("find", "Find your trail"),
+      { title: "Collections", fields: [toggle("collections", "Show the tours, helicopter & luxury collections")] },
+      section("regions", "Regions"),
+      section("popular", "Popular trips", false),
+      { title: "Offers", fields: [toggle("offers", "Show the festival offer (when one is switched on in Offers)")] },
+      section("story", "Our story & community", false),
+      { title: "Awards", fields: [toggle("awards", "Show awards")] },
+      section("videos", "Videos", false),
+      { title: "Reviews", fields: [toggle("testimonials", "Show traveller reviews")] },
+      section("journal", "Journal (latest articles)", false),
+    ],
+  },
   {
     key: "home",
     label: "Homepage trip lists",

@@ -1,5 +1,6 @@
 import "server-only";
 import { ensureCompany } from "@/lib/company";
+import { withHomeDefaults } from "@/lib/home-copy";
 import { resolveOldPath } from "@/lib/redirects";
 import { tripInfo, type InfoOverrides } from "@/lib/trip-info";
 import { readFileSync, statSync } from "node:fs";
@@ -447,3 +448,8 @@ export function findRedirect(pathname: string): { to: string; permanent: boolean
 
 /** Public settings from the admin (chat widget, analytics…). */
 export const getPublicSettings = () => (ensureCompany(), load<Record<string, unknown>>("settings", {}));
+
+/* ------------------------------------------------------------- homepage */
+
+/** The homepage's words and which sections are shown (admin). */
+export const getHomeCopy = () => withHomeDefaults(load<Parameters<typeof withHomeDefaults>[0]>("home-copy", null));

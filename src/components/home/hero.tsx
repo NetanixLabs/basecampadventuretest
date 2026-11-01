@@ -1,5 +1,8 @@
 "use client";
 
+import { Fragment } from "react";
+import { headingParts, type HomeCopy } from "@/lib/home-copy";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -8,7 +11,8 @@ import { EASE } from "@/components/motion";
 import { openSearch } from "@/components/site/search";
 import { Search } from "lucide-react";
 
-export function HomeHero() {
+export function HomeHero({ copy }: { copy: HomeCopy["hero"] }) {
+  const lines = headingParts(copy.heading);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const heroRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
@@ -82,14 +86,17 @@ export function HomeHero() {
               </button>
             </motion.div>
             <div className="mt-36 text-white">
-              <motion.p {...entrance(0.35)} className="mb-4 text-xs font-semibold tracking-[0.2em] text-white/80 uppercase">Beyond the everyday</motion.p>
+              <motion.p {...entrance(0.35)} className="mb-4 text-xs font-semibold tracking-[0.2em] text-white/80 uppercase">{copy.eyebrow}</motion.p>
               <h1 className="max-w-3xl font-display text-[clamp(3rem,5.8vw,7rem)] leading-[0.98] font-bold tracking-[-0.055em]">
-                <motion.span {...entrance(0.5)} className="block">Find yourself</motion.span>
-                <motion.span {...entrance(0.7)} className="block">in the <span className="font-serif italic font-normal tracking-[-0.04em]">Himalayas.</span></motion.span>
+                {lines.map((parts, i) => (
+                  <motion.span key={i} {...entrance(0.5 + i * 0.2)} className="block">
+                    {parts.map((p, j) => (p.accent ? <span key={j} className="font-serif italic font-normal tracking-[-0.04em]">{p.text}</span> : <Fragment key={j}>{p.text}</Fragment>))}
+                  </motion.span>
+                ))}
               </h1>
               <motion.div {...entrance(0.95)} className="mt-7 flex flex-col gap-5 border-t border-white/25 pt-6 sm:flex-row sm:items-end sm:justify-between">
-                <p className="max-w-xs text-sm leading-relaxed text-white/85">Remarkable trails. Rich cultures.<br />An adventure that feels like yours.</p>
-                <Link href="/trip/" className="group inline-flex items-center gap-4 self-start rounded-full bg-white px-5 py-3.5 text-sm font-bold text-pine-deep sm:self-auto">Explore our trips <ArrowUpRight className="size-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden /></Link>
+                <p className="max-w-xs text-sm leading-relaxed text-white/85">{copy.text.split("\n").map((l, i) => <Fragment key={i}>{i ? <br /> : null}{l}</Fragment>)}</p>
+                <Link href="/trip/" className="group inline-flex items-center gap-4 self-start rounded-full bg-white px-5 py-3.5 text-sm font-bold text-pine-deep sm:self-auto">{copy.button} <ArrowUpRight className="size-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden /></Link>
               </motion.div>
             </div>
           </div>

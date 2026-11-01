@@ -15,5 +15,5 @@ export default async function SinglePage({ params }: { params: Promise<{ key: st
   const def = singleton((await params).key);
   if (!def) notFound();
   const row = await db.setting.findUnique({ where: { key: `doc:${def.key}` } });
-  return <DocEditor def={def} initial={(row?.value as Record<string, unknown>) ?? {}} options={await optionsFor(def.sections)} siteUrl={site.url} />;
+  return <DocEditor def={def} initial={(row?.value as Record<string, unknown>) ?? def.defaults ?? {}} options={await optionsFor(def.sections)} siteUrl={site.url} />;
 }
