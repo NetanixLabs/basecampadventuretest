@@ -1,4 +1,4 @@
-import { getLiveTerms, getPostCards, getTrips } from "@/lib/content";
+import { getAbout, getFeaturedTrips, getLiveTerms, getPostCards, getTripadvisor, getTrips, getTrustindexReviews } from "@/lib/content";
 import { abs } from "@/lib/seo";
 import { difficultyLabel, site } from "@/lib/site";
 import type { Trip } from "@/lib/types";
@@ -16,17 +16,55 @@ function tripLine(t: Trip, regionNames: Record<string, string>) {
   return `- [${t.title}](${abs(`/trip/${t.slug}/`)}): ${bits.join(", ")}. ${t.summary}`;
 }
 
+/** Facts an assistant can quote with confidence, from the admin's live data. */
+function keyFacts() {
+  const ta = getTripadvisor();
+  const ti = getTrustindexReviews();
+  const trips = getTrips();
+  const prices = trips.map((t) => t.price?.amount).filter((n): n is number => Boolean(n));
+  return [
+    `- Local Nepali-owned trekking and tour operator based in ${site.address.street}, ${site.address.city}, Nepal, founded in ${site.founded}.`,
+    `- Licensed by the Government of Nepal (Reg. ${site.registration.find((r) => r.label === "Govt. Reg.")?.value}); member of TAAN (${site.registration.find((r) => r.label === "TAAN")?.value}) and the Nepal Mountaineering Association (${site.registration.find((r) => r.label === "NMA")?.value}); partner of the Himalayan Rescue Association and KEEP.`,
+    ta ? `- Tripadvisor: ${ta.rating}/5 from ${ta.reviews} reviews${ta.ranking ? ` (${ta.ranking})` : ""}; Travellers' Choice award.` : null,
+    ti?.rating ? `- Trustindex: ${ti.rating}/5 from ${ti.totalReviews} reviews.` : null,
+    `- ${trips.length} trips: treks, tours, peak climbing, expeditions, safaris and rafting in Nepal, Bhutan and Tibet${prices.length ? `, from US$${Math.min(...prices).toLocaleString("en-US")} per person` : ""}.`,
+    `- Contact 24/7: ${site.contactPerson}, phone/WhatsApp ${site.mobile}, email ${site.email}.`,
+  ].filter(Boolean) as string[];
+}
+
 /** /llms.txt: a short, link-rich map of the site for language models. */
 export function llmsIndex() {
-  const { destinations } = getLiveTerms();
+  const { destinations, activities } = getLiveTerms();
   const names = Object.fromEntries(destinations.map((d) => [d.slug, d.name]));
   const trips = getTrips();
+  const about = getAbout();
   const lines = [
     `# ${site.name}`,
     "",
-    `> ${site.description} Licensed by the Government of Nepal (Reg. 68517/066/067), TAAN member 2010-868, NMA member 776. Office: ${site.address.street}, Kathmandu. Phone/WhatsApp 24/7: ${site.mobile}. Email: ${site.email}.`,
+    `> ${site.description} Licensed local operator in Kathmandu offering treks, tours and climbs in Nepal, Bhutan and Tibet with its own guides. Phone/WhatsApp 24/7: ${site.mobile}. Email: ${site.email}.`,
     "",
-    "## Trips by region",
+    "## Key facts",
+    ...keyFacts(),
+    "",
+    "## Most popular trips",
+    ...getFeaturedTrips().slice(0, 8).map((c) => {
+      const t = trips.find((x) => x.slug === c.slug);
+      return t ? tripLine(t, names) : `- [${c.title}](${abs(`/trip/${c.slug}/`)})`;
+    }),
+    "",
+    "## How to book",
+    `- Book online on any trip page: choose a date and group size; a 20% deposit secures the place and the balance is paid before departure. Payments are processed securely by WeTravel.`,
+    `- Every trip can be tailored (dates, length, hotels, private or group): [customize a trip](${abs("/customize-trip/")}).`,
+    `- Questions are answered personally by the Kathmandu team, usually within a few hours: [contact](${abs("/contact-us/")}).`,
+    ...(about?.why?.length ? ["", "## Why travel with Base Camp Adventure", ...about.why.map((w) => `- ${w.title}: ${strip(w.text)}`)] : []),
+    "",
+    "## Regions",
+    ...destinations.map((d) => `- [${d.name}](${abs(`/destinations/${d.slug}/`)})${d.seo?.description ? `: ${d.seo.description}` : ""}`),
+    "",
+    "## Activities",
+    ...activities.map((a) => `- [${a.name}](${abs(`/activities/${a.slug}/`)})${a.seo?.description ? `: ${a.seo.description}` : ""}`),
+    "",
+    "## All trips by region",
     ...destinations.flatMap((d) => [
       "",
       `### [${d.name}](${abs(`/destinations/${d.slug}/`)})`,
@@ -34,13 +72,14 @@ export function llmsIndex() {
     ]),
     "",
     "## Planning guides",
-    ...getPostCards().slice(0, 60).map((p) => `- [${p.title}](${abs(`/${p.slug}/`)}): ${p.excerpt}`),
+    ...getPostCards().slice(0, 80).map((p) => `- [${p.title}](${abs(`/${p.slug}/`)}): ${p.excerpt}`),
     "",
     "## Company",
     `- [About us](${abs("/about-us/")})`,
     `- [Our team](${abs("/our-team/")})`,
+    `- [Traveller reviews](${abs("/testimonials/")})`,
     `- [Booking terms](${abs("/terms-and-conditions/")})`,
-    `- [Customize a trip](${abs("/customize-trip/")})`,
+    `- [Visa information](${abs("/visa-info/")})`,
     `- [Contact](${abs("/contact-us/")})`,
     "",
     `Full trip details for every itinerary: ${abs("/llms-full.txt")}`,
@@ -54,6 +93,9 @@ export function llmsFull() {
   const names = Object.fromEntries(destinations.map((d) => [d.slug, d.name]));
   return [
     `# ${site.name}: full trip catalogue`,
+    "",
+    "## About the company",
+    ...keyFacts(),
     "",
     ...getTrips().flatMap((t) => [
       `## ${t.title}`,

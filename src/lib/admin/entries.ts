@@ -5,6 +5,7 @@ import { collection, type CollectionDef, type Field } from "@/lib/admin/collecti
 import { db } from "@/lib/admin/db";
 import { cleanHtml, plain, readingMinutes, slugify } from "@/lib/admin/html";
 import { getPath, setPath } from "@/lib/admin/paths";
+import { pingIndexNow } from "@/lib/admin/indexnow";
 import { refreshSite, writeCollection, writeRedirects } from "@/lib/admin/publish";
 
 type Data = Record<string, unknown>;
@@ -158,6 +159,7 @@ export async function saveEntry(userId: string, key: string, id: string | null, 
     if (before && before.slug !== slug && before.status === "published" && def.url) await addRedirect(def.url.replace("{slug}", before.slug), def.url.replace("{slug}", slug), `${def.singular} renamed`);
     await writeCollection(def);
     refreshSite();
+    if (def.url) pingIndexNow([def.url.replace("{slug}", slug), ...(before && before.slug !== slug ? [def.url.replace("{slug}", before.slug)] : [])]);
   }
   await audit(userId, publish ? "content.publish" : "content.save", key, entry.id, title);
   return { id: entry.id, slug, status: entry.status, url: def.url ? def.url.replace("{slug}", slug) : null };
@@ -178,6 +180,7 @@ export async function setStatus(userId: string, key: string, id: string, status:
   const e = await db.entry.update({ where: { id }, data: { status } });
   await writeCollection(def);
   refreshSite();
+  if (def.url) pingIndexNow([def.url.replace("{slug}", e.slug)]);
   await audit(userId, status === "draft" ? "content.unpublish" : "content.archive", key, id, e.title);
 }
 
@@ -188,6 +191,7 @@ export async function removeEntry(userId: string, key: string, id: string) {
   if (e.status === "published") {
     await writeCollection(def);
     refreshSite();
+    if (def.url) pingIndexNow([def.url.replace("{slug}", e.slug)]);
   }
   await audit(userId, "content.delete", key, id, e.title);
 }

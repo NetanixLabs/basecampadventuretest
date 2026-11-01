@@ -17,6 +17,7 @@ import sharp from "sharp";
 import { db } from "@/lib/admin/db";
 import { COLLECTIONS, SINGLETON_WRAP, SINGLETONS, TAXONOMY_KEYS } from "@/lib/admin/collections";
 import { hashPassword } from "@/lib/admin/password";
+import { ensureIndexNowKey } from "@/lib/admin/indexnow";
 import { publishEverything } from "@/lib/admin/publish";
 
 const FORCE = process.argv.includes("--force");
@@ -149,6 +150,7 @@ async function main() {
   await importContent();
   await importMedia();
   await owner();
+  await ensureIndexNowKey();
   await publishEverything();
   console.log("\nDone. The website now reads the published content from the admin.");
 }
