@@ -19,9 +19,39 @@ const isAdminHost = (host: string) => {
   return h === ADMIN_HOST || h.startsWith("admin.");
 };
 
+/**
+ * CSRF guard: a request that changes something must come from a page on the
+ * same site. Browsers always send Origin (or at least Referer) on such
+ * requests, so a forged form or script on another website is refused here,
+ * before any code runs. (On top of SameSite=Strict cookies and Next.js's own
+ * Origin check on server actions.)
+ */
+function crossSite(req: NextRequest, host: string) {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return false;
+  const source = req.headers.get("origin") ?? req.headers.get("referer");
+  if (!source) return null; // no browser context (e.g. a server-to-server call)
+  try {
+    return new URL(source).host.toLowerCase() !== host.toLowerCase();
+  } catch {
+    return true;
+  }
+}
+
+const forbidden = () => new NextResponse("Forbidden: cross-site request", { status: 403, headers: { "Cache-Control": "no-store" } });
+
 export function proxy(req: NextRequest) {
-  const host = req.headers.get("host") ?? "";
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
   const { pathname } = req.nextUrl;
+
+  if (isAdminHost(host)) {
+    // Admin: every change must come from the admin itself; a request with no
+    // origin at all is refused too, because only browsers use the admin.
+    const cross = crossSite(req, host);
+    if (cross === true || (cross === null && !["GET", "HEAD", "OPTIONS"].includes(req.method))) return forbidden();
+  } else if (pathname.startsWith("/api/") && !pathname.startsWith("/api/webhooks/") && crossSite(req, host) === true) {
+    // Public forms can only be sent from basecampadventure.com itself.
+    return forbidden();
+  }
 
   if (!isAdminHost(host)) {
     if (pathname === "/admin" || pathname.startsWith("/admin/")) {
@@ -31,7 +61,8 @@ export function proxy(req: NextRequest) {
   }
 
   // Shared static files (logo, fonts, uploaded images) are served as they are.
-  const isFile = (/\.[a-z0-9]{2,5}$/i.test(pathname) && !pathname.startsWith("/admin/")) || pathname.startsWith("/email-image") || pathname.startsWith("/coupon/");
+  // (Admin API routes such as /api/subscribers.csv are not files.)
+  const isFile = (/\.[a-z0-9]{2,5}$/i.test(pathname) && !pathname.startsWith("/admin/") && !pathname.startsWith("/api/")) || pathname.startsWith("/email-image") || pathname.startsWith("/coupon/");
   let res: NextResponse;
   if (isFile || pathname.startsWith("/admin/") || pathname === "/admin") {
     res = NextResponse.next();

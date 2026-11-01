@@ -33,7 +33,7 @@ export function FeaturedReviews({ items }: { items: Featured[] }) {
     >
       <div aria-hidden className="blueprint absolute inset-0 text-white opacity-[0.07]" />
       <Quote aria-hidden className="absolute -top-4 right-4 size-40 rotate-180 text-white/10 sm:size-52" />
-      <div className="relative flex gap-1" aria-label="5 out of 5">
+      <div className="relative flex gap-1" role="img" aria-label="5 out of 5">
         {Array.from({ length: 5 }).map((_, s) => (
           <Star key={s} className="size-4 fill-white text-white" aria-hidden />
         ))}

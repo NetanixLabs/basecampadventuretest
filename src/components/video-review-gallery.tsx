@@ -100,9 +100,9 @@ export function VideoReviewGallery({ items }: { items: VideoReview[] }) {
       className="no-scrollbar flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain overscroll-y-auto rounded-xl pb-3 select-none active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pine"
     >
       {items.map((item, index) => <article key={item.id} className="w-[72%] shrink-0 snap-start sm:w-[calc((100%_-_2rem)/3)] lg:w-[calc((100%_-_4rem)/5)]">
-        <button type="button" onClick={(event) => { opener.current = event.currentTarget; setSelected(item); }} aria-label={`Open video: ${item.title}`} className="group block w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pine">
+        <button type="button" onClick={(event) => { opener.current = event.currentTarget; setSelected(item); }} aria-label={`${item.title}: play video`} className="group block w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pine">
           <span className="relative block aspect-[2/3] overflow-hidden rounded-xl bg-pine/10">
-            {item.poster ? <Image src={item.poster} alt="" fill sizes="(max-width: 640px) 72vw, (max-width: 1024px) 33vw, 20vw" draggable={false} className="object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none" /> : <video src={item.src} preload="metadata" playsInline muted className="pointer-events-none h-full w-full object-cover" />}
+            {item.poster ? <Image src={item.poster} alt="" priority={index < 2} fill sizes="(max-width: 640px) 72vw, (max-width: 1024px) 33vw, 20vw" draggable={false} className="object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transition-none" /> : <video src={item.src} preload="metadata" playsInline muted className="pointer-events-none h-full w-full object-cover" />}
             <span className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
             <VideoMark size="sm" />
           </span>

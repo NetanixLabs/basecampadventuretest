@@ -46,10 +46,10 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
           return (
             <li key={x.slug}>
               <button type="button" onClick={() => { setOpen(i); setMoreOpen(false); }} onMouseEnter={() => { setOpen(i); setMoreOpen(false); }} aria-expanded={on} className="flex w-full items-center gap-4 py-4 text-left">
-                <span className="w-6 font-mono text-xs text-white/80">{String(i + 1).padStart(2, "0")}</span>
+                <span className="w-6 font-mono text-xs text-white">{String(i + 1).padStart(2, "0")}</span>
                 <span className="min-w-0 flex-1">
                   <span className={cn("block text-xl font-semibold tracking-tight transition-colors sm:text-2xl", on ? "text-glacier" : "text-white")}>{x.name}</span>
-                  <span className="mt-0.5 block truncate text-sm text-white/65">{x.trips} {x.trips === 1 ? "trip" : "trips"}</span>
+                  <span className="mt-0.5 block truncate text-sm text-white/80">{x.trips} {x.trips === 1 ? "trip" : "trips"}</span>
                 </span>
                 {on ? <Minus className="size-5 text-white" aria-hidden /> : <Plus className="size-5 text-white/70" aria-hidden />}
               </button>
@@ -66,7 +66,7 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
         })}
         <li>
           <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} aria-controls="home-more-treks" className="flex w-full items-center gap-4 py-4 text-left">
-            <span className="w-6 font-mono text-xs text-white/80">{String(regions.length + 1).padStart(2, "0")}</span>
+            <span className="w-6 font-mono text-xs text-white">{String(regions.length + 1).padStart(2, "0")}</span>
             <span className={cn("min-w-0 flex-1 text-xl font-semibold tracking-tight transition-colors sm:text-2xl", moreOpen ? "text-glacier" : "text-white")}>More Treks</span>
             <ChevronDown className={cn("size-5 text-white/70 transition-transform duration-300 motion-reduce:transition-none", moreOpen && "rotate-180")} aria-hidden />
           </button>
@@ -74,7 +74,7 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
             <div className="space-y-2 pb-5 pl-10">
               {moreTreks.map((trip) => (
                 <Link key={trip.slug} href={`/trip/${trip.slug}/`} className="flex items-center justify-between gap-4 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15">
-                  <span>{trip.name} <span className="font-normal text-white/65">– {trip.days} Days</span></span>
+                  <span>{trip.name} <span className="font-normal text-white/80">– {trip.days} Days</span></span>
                   <ArrowRight className="size-4 shrink-0" aria-hidden />
                 </Link>
               ))}

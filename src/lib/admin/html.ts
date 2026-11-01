@@ -13,7 +13,7 @@ const OPTIONS: sanitizeHtml.IOptions = {
     "figure", "figcaption", "img", "table", "thead", "tbody", "tr", "th", "td", "span", "div", "iframe", "code", "pre", "mark",
   ],
   allowedAttributes: {
-    a: ["href", "title", "target", "rel"],
+    a: ["href", "title", "target", "rel", "aria-label"],
     img: ["src", "alt", "width", "height", "loading", "decoding", "title"],
     iframe: ["src", "title", "allow", "allowfullscreen", "width", "height", "frameborder"],
     span: ["class", "data-meters"],

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientIpFrom } from "@/lib/ip";
 import { z } from "zod";
 import { getTrips } from "@/lib/content";
 import { saveBooking } from "@/lib/server/sales";
@@ -20,7 +21,7 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = clientIpFrom(req.headers);
   if (rateLimited(`pay:${ip}`, 8)) return NextResponse.json({ ok: false, error: "Too many attempts. Please try again shortly." }, { status: 429 });
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form" }, { status: 400 });

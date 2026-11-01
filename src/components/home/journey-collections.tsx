@@ -20,7 +20,7 @@ export function JourneyCollections({ tours, luxury, regionNames }: { tours: Card
           {items.map((trip, index) => {
             const isLuxury = luxurySlugs.has(trip.slug);
             const photoWidth = [0, 5].includes(index) ? "42vw" : [1, 3].includes(index) ? "25vw" : "33vw";
-            return <TripCard key={trip.slug} trip={trip} regionName={isLuxury ? regionNames[trip.destinations[0]] : "Nepal Tour"} label={isLuxury ? "Luxury" : undefined} imageSizes={`(max-width: 640px) 92vw, (max-width: 1024px) 46vw, ${photoWidth}`} imageQuality={isLuxury ? 80 : 95} />;
+            return <TripCard key={trip.slug} trip={trip} regionName={isLuxury ? regionNames[trip.destinations[0]] : "Nepal Tour"} label={isLuxury ? "Luxury" : undefined} imageSizes={`(max-width: 640px) 92vw, (max-width: 1024px) 46vw, ${photoWidth}`} imageQuality={80} />;
           })}
         </div>
         <div className="mt-8 flex justify-end"><Link href="/trip/" className="inline-flex items-center gap-2 rounded-full border border-pine/30 px-5 py-3 text-sm font-bold text-pine transition-colors hover:bg-pine hover:text-white">View more <ArrowRight className="size-4" aria-hidden /></Link></div>

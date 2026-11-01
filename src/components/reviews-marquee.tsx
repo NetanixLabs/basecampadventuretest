@@ -17,7 +17,7 @@ export function ReviewsMarquee({ reviews }: { reviews: R[] }) {
               <figure key={i} aria-hidden={i >= row.length} className="flex w-[22rem] shrink-0 flex-col justify-between rounded-[1.4rem] border border-line bg-card p-6 sm:w-[26rem]">
                 <div>
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-0.5" aria-label={`${rv.rating} out of 5`}>
+                    <div className="flex gap-0.5" role="img" aria-label={`${rv.rating} out of 5`}>
                       {Array.from({ length: 5 }).map((_, s) => (
                         <Star key={s} className={s < Math.round(rv.rating) ? "fill-marigold text-marigold size-4" : "size-4 text-line"} aria-hidden />
                       ))}

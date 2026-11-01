@@ -108,7 +108,7 @@ export function ReviewCarousel({ items }: { items: CarouselReview[] }) {
           const shown = d <= (narrow ? 1 : 2);
           const isActive = o === 0;
           return (
-            <motion.article
+            <motion.div
               key={i}
               role="group"
               aria-roledescription="slide"
@@ -139,7 +139,7 @@ export function ReviewCarousel({ items }: { items: CarouselReview[] }) {
                 {/* Soft light across the face of the card */}
                 <span aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(130deg,rgba(255,255,255,0.55),transparent_38%)] opacity-60 dark:bg-[linear-gradient(130deg,rgba(255,255,255,0.07),transparent_40%)]" />
                 <div className="relative flex items-center justify-between">
-                  <span className="flex gap-0.5" aria-label={`${r.rating} out of 5`}>
+                  <span className="flex gap-0.5" role="img" aria-label={`${r.rating} out of 5`}>
                     {Array.from({ length: 5 }).map((_, s) => (
                       <Star key={s} className={s < Math.round(r.rating) ? "fill-marigold text-marigold size-4" : "size-4 text-line"} aria-hidden />
                     ))}
@@ -182,7 +182,7 @@ export function ReviewCarousel({ items }: { items: CarouselReview[] }) {
                   <button type="button" onClick={() => go(o)} tabIndex={-1} aria-label={`Show review by ${r.name}`} className="absolute inset-0 cursor-pointer" />
                 ) : null}
               </div>
-            </motion.article>
+            </motion.div>
           );
         })}
       </motion.div>

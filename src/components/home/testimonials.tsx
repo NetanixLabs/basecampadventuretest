@@ -48,7 +48,7 @@ export function Testimonials({ reviews, tripadvisor }: { reviews: R[]; tripadvis
       <ul className="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto px-4 sm:mx-0 sm:min-w-0 sm:flex-1 sm:w-auto sm:px-0">
         {list.map((c) => (
           <li key={c.name} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-card px-2.5 py-1 text-xs font-semibold">
-            <Flag svg={c.flag} label={c.name} /> {c.name}
+            <Flag svg={c.flag} label={c.name} decorative /> {c.name}
           </li>
         ))}
       </ul>

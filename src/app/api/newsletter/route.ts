@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientIpFrom } from "@/lib/ip";
 import { z } from "zod";
 import { saveSubscriber } from "@/lib/server/sales";
 import { rateLimited } from "@/lib/server/store";
@@ -13,7 +14,7 @@ const schema = z.object({
 
 /** Newsletter sign-up: email only. The admin's email system sends the campaigns. */
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = clientIpFrom(req.headers);
   if (rateLimited(`newsletter:${ip}`, 5)) {
     return NextResponse.json({ ok: false, error: "Too many sign-ups from this connection. Please try again later." }, { status: 429 });
   }

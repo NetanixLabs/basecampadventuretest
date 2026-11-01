@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientIpFrom } from "@/lib/ip";
 import { z } from "zod";
 import { saveEnquiry } from "@/lib/server/sales";
 import { rateLimited, reference } from "@/lib/server/store";
@@ -27,7 +28,7 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const ip = clientIpFrom(req.headers);
   if (rateLimited(`enquiry:${ip}`)) {
     return NextResponse.json({ ok: false, error: "Too many messages from this connection. Please try again in a few minutes, or WhatsApp us." }, { status: 429 });
   }

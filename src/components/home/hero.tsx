@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { preload } from "react-dom";
 import { headingParts, type HomeCopy } from "@/lib/home-copy";
 
 import Link from "next/link";
@@ -20,6 +21,21 @@ export function HomeHero({ copy }: { copy: HomeCopy["hero"] }) {
   const reduce = useReducedMotion();
   const [activeClip, setActiveClip] = useState(0);
   const clips = ["/videos/home-hero.mp4", "/videos/home-hero-second.mp4"];
+  // The poster shows at once (it's the first thing people see); the video
+  // itself starts downloading only after the page has finished loading, so it
+  // never competes with the page for bandwidth on a phone.
+  preload("/videos/home-hero-poster.jpg", { as: "image", fetchPriority: "high" });
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const start = () => {
+      const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
+      if (idle) idle(() => setReady(true), { timeout: 2500 });
+      else window.setTimeout(() => setReady(true), 1200);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => window.removeEventListener("load", start);
+  }, []);
 
   useEffect(() => {
     let inView = true;
@@ -39,10 +55,10 @@ export function HomeHero({ copy }: { copy: HomeCopy["hero"] }) {
   useEffect(() => {
     videoRefs.current.forEach((video, index) => {
       if (!video) return;
-      if (index !== activeClip || reduce || !visible) video.pause();
+      if (!ready || index !== activeClip || reduce || !visible) video.pause();
       else void video.play().catch(() => {});
     });
-  }, [activeClip, reduce, visible]);
+  }, [activeClip, reduce, visible, ready]);
 
 
   const nextClip = () => {
@@ -56,7 +72,7 @@ export function HomeHero({ copy }: { copy: HomeCopy["hero"] }) {
     <section aria-label="Discover Nepal with Base Camp Adventure" className="px-4 pt-20 sm:px-6 lg:pt-[5.75rem]">
       <div ref={heroRef} className="relative isolate mx-auto grid max-w-site overflow-hidden rounded-[1.5rem] bg-[#142e34] lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]">
         {clips.map((src, index) => (
-          <video key={src} ref={(video) => { videoRefs.current[index] = video; }} src={src} poster={index === 0 ? "/videos/home-hero-poster.jpg" : "/videos/home-hero-second-poster.jpg"} muted playsInline preload={index === activeClip || warmNext ? "auto" : "metadata"} onTimeUpdate={(event) => { const video = event.currentTarget; if (index === activeClip && video.duration - video.currentTime < 6) setWarmNext(true); }} onEnded={nextClip} className={`pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-center transition-opacity duration-1000 motion-reduce:transition-none ${index === activeClip ? "opacity-100" : "opacity-0"}`} aria-hidden />
+          <video key={src} ref={(video) => { videoRefs.current[index] = video; }} src={ready ? src : undefined} poster={index === 0 ? "/videos/home-hero-poster.jpg" : warmNext || activeClip === index ? "/videos/home-hero-second-poster.jpg" : undefined} muted playsInline preload={ready && (index === activeClip || warmNext) ? "auto" : "none"} onTimeUpdate={(event) => { const video = event.currentTarget; if (index === activeClip && video.duration - video.currentTime < 6) setWarmNext(true); }} onEnded={nextClip} className={`pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-center transition-opacity duration-1000 motion-reduce:transition-none ${index === activeClip ? "opacity-100" : "opacity-0"}`} aria-hidden />
         ))}
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-[#071a20]/90 via-[#071a20]/10 to-[#071a20]/20" />
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#071a20]/85 via-transparent to-transparent" />

@@ -1,6 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { db } from "@/lib/admin/db";
+import { clientIpFrom } from "@/lib/ip";
 
 /**
  * Database-backed rate limits: they survive restarts, and going over the
@@ -37,9 +38,7 @@ export async function limit(key: string, rule: Rule): Promise<{ ok: boolean; ret
 export const clearLimit = (key: string) => db.rateLimit.deleteMany({ where: { key } });
 
 export async function clientIp() {
-  const h = await headers();
-  // Cloudflare's header first: behind it, x-forwarded-for's first hop is Cloudflare.
-  return h.get("cf-connecting-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "unknown";
+  return clientIpFrom(await headers());
 }
 
 export const waitText = (s: number) => (s >= 90 ? `${Math.ceil(s / 60)} minutes` : `${s} seconds`);

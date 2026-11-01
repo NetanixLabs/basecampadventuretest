@@ -108,3 +108,41 @@ restore the database:
 ```bash
 pg_restore --clean --no-owner -d "$DATABASE_URL" /srv/basecamp/backups/db-YYYY-MM-DD-HHMM.dump
 ```
+
+## Checks before and after launch
+
+Run these on the server against the live site. Each must end with everything passing.
+
+```bash
+cd /srv/basecamp/app
+node scripts/seo-audit.mjs https://basecampadventure.com          # every page: status, titles, canonicals, structured data, links
+node scripts/launch-check.mjs https://basecampadventure.com --admin-host admin.basecampadventure.com
+node scripts/security-check.mjs https://basecampadventure.com --admin-host admin.basecampadventure.com
+node scripts/check-urls.mjs https://basecampadventure.com --live https://old-site-address   # every old WordPress URL still works
+```
+
+After launch: add the site to Google Search Console and Bing Webmaster Tools and
+submit `https://basecampadventure.com/sitemap.xml`. Bing (and ChatGPT search)
+also hear about every publish instantly through IndexNow.
+
+## Security in place
+
+- Admin only on admin.basecampadventure.com (404 on the public site), never indexed.
+- Argon2id passwords (12+ characters), mandatory two-step sign-in with backup codes,
+  new session token after two-step sign-in, 72-hour sessions that end after 60 idle minutes.
+- Brute force: 5 wrong passwords or codes lock that account for 30–60 minutes; per-IP limits
+  on sign-in, password reset and every public form. The visitor's real IP comes from Caddy
+  (Cloudflare's header is trusted only from Cloudflare's network).
+- CSRF: SameSite=Strict, host-only `__Host-` cookie; every admin write must come from the
+  admin itself; public forms refuse other websites; Next.js checks the origin of every action.
+- XSS: everything written in the editor is cleaned (no scripts, event handlers or
+  `javascript:` links); strict Content-Security-Policy.
+- Headers: CSP, HSTS (preload), X-Frame-Options DENY, frame-ancestors none, nosniff,
+  Referrer-Policy, Permissions-Policy, COOP; admin pages no-store and noindex.
+- Uploads checked by content (not file name), re-encoded, camera/GPS data removed.
+- Keys encrypted (AES-256-GCM) in the database, never shown after saving.
+- WeTravel notifications verified by signature, replay-protected, processed once.
+- Every sign-in, change and email in the Activity log.
+
+If the server is ever restored from a backup, keep the same `ENCRYPTION_KEY`.
+Locked out completely? On the server: `npm run admin:user -- --email you@example.com --reset-password`.

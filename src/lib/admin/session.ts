@@ -3,6 +3,7 @@ import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import type { Role } from "@/generated/prisma/client";
 import { db } from "@/lib/admin/db";
+import { clientIpFrom } from "@/lib/ip";
 import { env } from "@/lib/admin/env";
 import { hashToken, randomToken } from "@/lib/admin/crypto";
 
@@ -28,7 +29,7 @@ export async function createSession(userId: string) {
       userId,
       tokenHash: hashToken(token),
       expiresAt,
-      ipAddress: h.get("cf-connecting-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      ipAddress: clientIpFrom(h),
       userAgent: h.get("user-agent")?.slice(0, 300) ?? null,
     },
   });
@@ -60,7 +61,22 @@ export const getAuth = cache(async (): Promise<Auth | null> => {
   };
 });
 
-export const markMfa = (sessionId: string) => db.session.update({ where: { id: sessionId }, data: { mfaVerifiedAt: new Date() } });
+/**
+ * Marks two-step sign-in as done and issues a brand-new session token
+ * (OWASP: renew the session on privilege change), so a token seen before
+ * the second step can never become a fully signed-in session.
+ */
+export async function markMfa(sessionId: string) {
+  const token = randomToken();
+  const s = await db.session.update({ where: { id: sessionId }, data: { mfaVerifiedAt: new Date(), tokenHash: hashToken(token), lastSeenAt: new Date() } });
+  (await cookies()).set(COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    expires: s.expiresAt,
+  });
+}
 
 export const revokeSession = (id: string) => db.session.update({ where: { id }, data: { revokedAt: new Date() } }).catch(() => undefined);
 
