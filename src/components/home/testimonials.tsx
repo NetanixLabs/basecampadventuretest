@@ -6,7 +6,7 @@ import { ReviewCarousel, type CarouselReview } from "@/components/home/review-ca
 import { ReviewSources } from "@/components/home/review-sources";
 import { Reveal } from "@/components/motion";
 import { Accent } from "@/components/section-heading";
-import type { TripadvisorFacts } from "@/lib/content";
+import { getReviewSources, type TripadvisorFacts } from "@/lib/content";
 import { reviewer } from "@/lib/reviewer";
 import type { Review } from "@/lib/types";
 
@@ -62,7 +62,7 @@ export function Testimonials({ reviews, tripadvisor }: { reviews: R[]; tripadvis
     <section className="bg-snow-2 relative overflow-hidden py-8 sm:py-9 lg:py-10">
       <div aria-hidden className="pointer-events-none absolute -top-32 left-1/2 h-72 w-[60rem] -translate-x-1/2 rounded-full bg-[#00afc4]/10 blur-3xl" />
       <div className="relative mx-auto max-w-site px-4 sm:px-6 lg:px-6">
-        <ReviewSources tripadvisorRating={tripadvisor?.rating} footer={countryFooter}>
+        <ReviewSources tripadvisorRating={tripadvisor?.rating} footer={countryFooter} sources={getReviewSources()}>
         <div className="grid gap-5">
           <div className="min-w-0">
           <p className="eyebrow text-pine">Testimonials</p>

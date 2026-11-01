@@ -7,13 +7,11 @@ import { VideoReviewCarousel } from "@/components/home/video-review-carousel";
 import { ReviewCarousel } from "@/components/home/review-carousel";
 import Image from "@/components/image";
 import { ArrowRight, ArrowUpRight, Play, Star } from "lucide-react";
-import videoReviews from "@/content/video-reviews.json";
-import google from "@/content/google-reviews.json";
-import trustindex from "@/content/trustindex-reviews.json";
-import tripadvisor from "@/content/tripadvisor.json";
+import type { ReviewSourcesData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function ReviewSources({ children, tripadvisorRating, footer }: { children: React.ReactNode; tripadvisorRating?: number; footer?: React.ReactNode }) {
+export function ReviewSources({ children, tripadvisorRating, footer, sources }: { children: React.ReactNode; tripadvisorRating?: number; footer?: React.ReactNode; sources: ReviewSourcesData }) {
+  const { videoReviews, google, trustindex, tripadvisorUrl } = sources;
   const [source, setSource] = useState("tripadvisor");
   const tabs: { id: string; label: string; logo?: string; rating?: number }[] = [
     { id: "tripadvisor", label: "Tripadvisor reviews", logo: "/brand/partners/tripadvisor.png", rating: tripadvisorRating },
@@ -24,7 +22,7 @@ export function ReviewSources({ children, tripadvisorRating, footer }: { childre
   const isGoogle = source === "google";
   const sourceLabel = isGoogle ? "Google" : "Trustindex";
   const sourceUrl = isGoogle ? google.url : trustindex.url;
-  const platformUrl = source === "tripadvisor" ? tripadvisor.url : sourceUrl;
+  const platformUrl = source === "tripadvisor" ? tripadvisorUrl : sourceUrl;
   const platformLabel = source === "tripadvisor" ? "Tripadvisor" : sourceLabel;
   const selectedReviews = isGoogle
     ? google.reviews.map((review) => ({ ...review, body: review.excerpt, title: "" }))

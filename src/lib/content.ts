@@ -19,6 +19,11 @@ import type {
   TripCard,
   Video,
   Award,
+  EquipmentList,
+  GoogleReviews,
+  ReviewSourcesData,
+  TrustindexReviews,
+  VideoReview,
 } from "@/lib/types";
 
 /**
@@ -29,7 +34,25 @@ import type {
  * change to this file only.
  */
 
-const dir = path.join(process.cwd(), "src", "content");
+/**
+ * Published content lives in CONTENT_DIR, written by the admin whenever
+ * something is published. Anything not published there yet falls back to the
+ * files in the repository, so a fresh checkout works with no database.
+ */
+const repoDir = path.join(process.cwd(), "src", "content");
+const liveDir = path.resolve(process.env.CONTENT_DIR || path.join(process.cwd(), ".storage", "content"));
+
+function fileFor(name: string): { file: string; modified: number } | null {
+  for (const d of [liveDir, repoDir]) {
+    const file = path.join(d, `${name}.json`);
+    try {
+      return { file, modified: statSync(file).mtimeMs };
+    } catch {
+      /* try the next place */
+    }
+  }
+  return null;
+}
 
 /**
  * Altitudes in the imported text arrive wrapped as
@@ -55,23 +78,22 @@ const directLinks = (s: string) =>
     return m;
   });
 
-const parsedContent = new Map<string, { modified: number; value: unknown }>();
+const parsedContent = new Map<string, { file: string; modified: number; value: unknown }>();
 
-function load<T>(name: string, fallback: T): T {
+/** Reads one content file, parsed once and kept until a newer version is published. */
+export function load<T>(name: string, fallback: T): T {
+  const f = fileFor(name);
+  if (!f) return fallback;
+  const existing = parsedContent.get(name);
+  if (existing?.file === f.file && existing.modified === f.modified) return existing.value as T;
   try {
-    const file = path.join(dir, `${name}.json`);
-    const existing = parsedContent.get(name);
-    // Published content is fixed for a build; local edits invalidate by file time.
-    if (existing && process.env.NODE_ENV === "production") return existing.value as T;
-    const modified = statSync(file).mtimeMs;
-    if (existing?.modified === modified) return existing.value as T;
-    const value = JSON.parse(readFileSync(file, "utf8"), (_k, v) => {
+    const value = JSON.parse(readFileSync(f.file, "utf8"), (_k, v) => {
       if (typeof v !== "string") return v;
       let s = v.includes('class="measurement"') ? withFeet(v) : v;
       if (s.includes('href="')) s = directLinks(s);
       return s;
     }) as T;
-    parsedContent.set(name, { modified, value });
+    parsedContent.set(name, { ...f, value });
     return value;
   } catch {
     return fallback;
@@ -387,3 +409,40 @@ export function getLiveTerms() {
       .filter((t) => t.trips > 0),
   };
 }
+
+/* ---------------------------------------------------------------- reviews */
+
+const TRIPADVISOR_URL = "https://www.tripadvisor.com/Attraction_Review-g293890-d2437309-Reviews-Base_Camp_Adventure-Kathmandu_Kathmandu_Valley_Bagmati_Zone_Central_Region.html";
+
+/** Traveller video reviews, in the office's order; hidden ones left out. */
+export const getVideoReviews = () => load<VideoReview[]>("video-reviews", []).filter((v) => !v.hidden);
+export const getGoogleReviews = () => load<GoogleReviews>("google-reviews", { business: "", website: "", placeId: "", url: "", sourceUrl: "", checked: "", reviews: [] } as unknown as GoogleReviews);
+export const getTrustindexReviews = () => load<TrustindexReviews>("trustindex-reviews", { business: "", url: "", rating: 0, totalReviews: 0, checked: "", reviews: [] } as unknown as TrustindexReviews);
+
+export function getReviewSources(): ReviewSourcesData {
+  return {
+    videoReviews: getVideoReviews(),
+    google: getGoogleReviews(),
+    trustindex: getTrustindexReviews(),
+    tripadvisorUrl: data().tripadvisor?.url ?? TRIPADVISOR_URL,
+  };
+}
+
+/** A trip's packing list (admin → Trips → Equipment). */
+export const getEquipment = (slug: string) => load<Record<string, EquipmentList>>("equipment", {})[slug] ?? null;
+
+/* -------------------------------------------------------------- redirects */
+
+/**
+ * Redirects made in the admin (including the automatic ones when a page's
+ * address changes). Checked before a page answers "not found".
+ */
+export function findRedirect(pathname: string): { to: string; permanent: boolean } | null {
+  const list = load<{ from: string; to: string; permanent: boolean }[]>("redirects", []);
+  const want = pathname.endsWith("/") ? pathname : `${pathname}/`;
+  const hit = list.find((r) => r.from === pathname || r.from === want);
+  return hit ? { to: hit.to, permanent: hit.permanent } : null;
+}
+
+/** Public settings from the admin (chat widget, analytics…). */
+export const getPublicSettings = () => load<Record<string, unknown>>("settings", {});

@@ -1,0 +1,379 @@
+// Base Camp Adventure: admin database.
+//
+// The database is the source of truth for everything the office edits.
+// The public site never queries it on a page view: publishing writes a
+// snapshot the site reads (src/lib/server/publish.ts), so pages stay static
+// and fast, and the site keeps working even while the database restarts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------------------ people
+
+enum Role {
+  owner // everything, including users and integrations
+  admin // everything except removing the owner
+  editor // content and media
+  sales // enquiries, bookings, subscribers; read-only content
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  role         Role       @default(editor)
+  status       UserStatus @default(active)
+  passwordHash String
+  /// AES-256-GCM encrypted TOTP secret. Null until 2FA is set up.
+  totpSecret   String?
+  totpEnabled  Boolean    @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  sessions    Session[]
+  backupCodes BackupCode[]
+  resets      PasswordResetToken[]
+  audit       AuditLog[]
+  revisions   Revision[]
+}
+
+model Session {
+  id            String    @id @default(cuid())
+  userId        String
+  /// SHA-256 of the cookie token; the token itself is never stored.
+  tokenHash     String    @unique
+  mfaVerifiedAt DateTime?
+  expiresAt     DateTime
+  lastSeenAt    DateTime  @default(now())
+  revokedAt     DateTime?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BackupCode {
+  id       String    @id @default(cuid())
+  userId   String
+  codeHash String
+  usedAt   DateTime?
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  requestedIp String?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RateLimit {
+  id           String    @id @default(cuid())
+  key          String
+  windowStart  DateTime
+  count        Int       @default(0)
+  blockedUntil DateTime?
+
+  @@unique([key, windowStart])
+  @@index([key])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  summary   String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+// ----------------------------------------------------------------- content
+
+enum EntryStatus {
+  draft
+  published
+  archived
+}
+
+/// One editable thing: a trip, a blog post, a page, a team member, an offer…
+/// `data` is the working copy; `live` is what the public site shows.
+model Entry {
+  id          String      @id @default(cuid())
+  collection  String
+  slug        String
+  title       String
+  status      EntryStatus @default(draft)
+  data        Json
+  live        Json?
+  sort        Int         @default(0)
+  publishedAt DateTime?
+  /// True when `data` has edits not yet published.
+  dirty       Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  revisions   Revision[]
+
+  @@unique([collection, slug])
+  @@index([collection, status])
+}
+
+model Revision {
+  id        String   @id @default(cuid())
+  entryId   String
+  data      Json
+  note      String?
+  userId    String?
+  createdAt DateTime @default(now())
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entryId, createdAt])
+}
+
+/// Site-wide settings and single documents (menu, homepage lists, contact
+/// details, integrations). Public ones are published with the content.
+model Setting {
+  key       String   @id
+  value     Json
+  public    Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model Media {
+  id           String   @id @default(cuid())
+  /// Public path, e.g. /uploads/2026/11/everest-sunrise-3f9a2c1b.webp
+  src          String   @unique
+  /// SHA-256 of the original upload; the same file is never stored twice.
+  hash         String   @unique
+  originalName String
+  mime         String
+  width        Int
+  height       Int
+  bytes        Int
+  alt          String   @default("")
+  caption      String?
+  credit       String?
+  folder       String   @default("uploads")
+  createdAt    DateTime @default(now())
+
+  @@index([folder, createdAt])
+}
+
+model Redirect {
+  id        String   @id @default(cuid())
+  from      String   @unique
+  to        String
+  permanent Boolean  @default(true)
+  hits      Int      @default(0)
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+// ------------------------------------------------------- customers & money
+
+enum EnquiryStatus {
+  new
+  replied
+  quoted
+  won
+  lost
+  spam
+}
+
+model Enquiry {
+  id        String        @id @default(cuid())
+  reference String        @unique
+  kind      String
+  status    EnquiryStatus @default(new)
+  name      String
+  email     String
+  phone     String?
+  country   String?
+  trip      String?
+  data      Json
+  notes     String?
+  ip        String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+enum BookingStatus {
+  requested
+  awaiting_payment
+  deposit_paid
+  paid
+  confirmed
+  cancelled
+  refunded
+}
+
+model Booking {
+  id             String        @id @default(cuid())
+  reference      String        @unique
+  status         BookingStatus @default(requested)
+  tripSlug       String
+  tripTitle      String
+  startDate      DateTime      @db.Date
+  pax            Int
+  currency       String        @default("USD")
+  each           Decimal       @db.Decimal(10, 2)
+  subtotal       Decimal       @db.Decimal(10, 2)
+  discountCode   String?
+  discount       Decimal       @default(0) @db.Decimal(10, 2)
+  total          Decimal       @db.Decimal(10, 2)
+  plan           String
+  due            Decimal       @db.Decimal(10, 2)
+  paid           Decimal       @default(0) @db.Decimal(10, 2)
+  leadName       String
+  leadEmail      String
+  leadPhone      String
+  leadCountry    String
+  notes          String?
+  internalNotes  String?
+  paymentUrl     String?
+  /// WeTravel's id for the payment link / trip, for matching webhooks.
+  wetravelId     String?
+  paymentError   String?
+  ip             String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  payments       Payment[]
+
+  @@index([status, createdAt])
+  @@index([leadEmail])
+  @@index([wetravelId])
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  bookingId  String?
+  provider   String   @default("wetravel")
+  providerId String   @unique
+  amount     Decimal  @db.Decimal(10, 2)
+  currency   String   @default("USD")
+  status     String
+  payerEmail String?
+  raw        Json
+  createdAt  DateTime @default(now())
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String
+  type        String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+
+  @@unique([provider, eventId])
+}
+
+model DiscountCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  label     String
+  /// "percent" or "fixed" (USD per booking)
+  kind      String    @default("percent")
+  value     Decimal   @db.Decimal(10, 2)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  maxUses   Int?
+  used      Int       @default(0)
+  /// Empty means every trip.
+  trips     String[]
+  minPax    Int       @default(1)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+}
+
+// ------------------------------------------------------------------- email
+
+enum SubscriberStatus {
+  pending
+  subscribed
+  unsubscribed
+}
+
+model Subscriber {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  name           String?
+  status         SubscriberStatus @default(subscribed)
+  source         String?
+  /// Random token for one-click unsubscribe links.
+  token          String           @unique
+  createdAt      DateTime         @default(now())
+  unsubscribedAt DateTime?
+}
+
+/// Editable wording for each automatic email. The layout is fixed in code so
+/// every message looks the same; the office edits subject and text.
+model EmailTemplate {
+  key       String   @id
+  subject   String
+  heading   String
+  body      String
+  button    String?
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model EmailLog {
+  id         String   @id @default(cuid())
+  to         String
+  template   String
+  subject    String
+  status     String
+  error      String?
+  providerId String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Campaign {
+  id         String    @id @default(cuid())
+  subject    String
+  heading    String
+  body       String
+  button     String?
+  buttonUrl  String?
+  status     String    @default("draft")
+  recipients Int       @default(0)
+  sentAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}

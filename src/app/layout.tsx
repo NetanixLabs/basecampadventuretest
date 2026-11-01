@@ -1,14 +1,6 @@
-import { ProseLightbox } from "@/components/prose-lightbox";
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, JetBrains_Mono, Manrope, Newsreader } from "next/font/google";
-import { JsonLd } from "@/components/json-ld";
-import { SiteFooter } from "@/components/site/footer";
-import { SiteHeader } from "@/components/site/header";
-import { SmoothScroll } from "@/components/site/smooth-scroll";
-import { Integrations } from "@/components/site/integrations";
-import { WhatsappFab } from "@/components/site/whatsapp-fab";
 import { themeScript } from "@/components/theme-toggle";
-import { organizationLd, websiteLd } from "@/lib/seo";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -47,17 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${serif.variable} ${sans.variable} ${mono.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body id="top" className="min-h-dvh">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <a href="#main" className="bg-marigold text-pine-night sr-only z-[100] rounded-full px-5 py-3 font-bold focus:not-sr-only focus:fixed focus:top-4 focus:left-4">
-          Skip to content
-        </a>
-        <SiteHeader />
-        <main id="main">{children}</main>
-        <SiteFooter />
-        <WhatsappFab />
-        <Integrations />
-        <SmoothScroll />
-        <ProseLightbox />
-        <JsonLd data={[organizationLd(), websiteLd()]} />
+        {children}
       </body>
     </html>
   );

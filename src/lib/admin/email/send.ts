@@ -1,0 +1,82 @@
+import "server-only";
+import nodemailer, { type Transporter } from "nodemailer";
+import { db } from "@/lib/admin/db";
+import { env } from "@/lib/admin/env";
+import { renderHtml, renderText, type EmailBlock, type EmailContent } from "@/lib/admin/email/layout";
+import { fill, templateDef } from "@/lib/admin/email/templates";
+
+/**
+ * Outgoing email through any SMTP service (Google Workspace, Zoho, Amazon SES,
+ * Resend, Brevo…). Without SMTP settings, emails are written to the server
+ * log, so development works with no account. Every send is logged in the
+ * admin (Emails → Sent).
+ */
+let transport: Transporter | null = null;
+function mailer() {
+  const e = env();
+  if (!e.SMTP_HOST) return null;
+  transport ??= nodemailer.createTransport({
+    host: e.SMTP_HOST,
+    port: e.SMTP_PORT,
+    secure: e.SMTP_PORT === 465,
+    auth: e.SMTP_USER ? { user: e.SMTP_USER, pass: e.SMTP_PASS } : undefined,
+  });
+  return transport;
+}
+
+export async function sendRaw(to: string, subject: string, content: EmailContent, template = "custom", replyTo?: string) {
+  const html = renderHtml(content);
+  const text = renderText(content);
+  let status = "sent";
+  let error: string | null = null;
+  let providerId: string | null = null;
+  const m = mailer();
+  try {
+    if (!m) {
+      status = "logged";
+      console.info(`\n[email] to ${to}\nSubject: ${subject}\n${text}\n`);
+    } else {
+      const info = await m.sendMail({
+        from: env().EMAIL_FROM,
+        to,
+        subject,
+        html,
+        text,
+        replyTo,
+        headers: content.unsubscribeUrl ? { "List-Unsubscribe": `<${content.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : undefined,
+      });
+      providerId = info.messageId ?? null;
+    }
+  } catch (cause) {
+    status = "failed";
+    error = cause instanceof Error ? cause.message : String(cause);
+    console.error("[email] failed", to, subject, error);
+  }
+  await db.emailLog.create({ data: { to, template, subject, status, error, providerId } }).catch(() => undefined);
+  return { ok: status !== "failed", error };
+}
+
+/**
+ * Sends one of the automatic emails, using the office's wording if it has
+ * been edited, plus any extra blocks (booking summary, button link).
+ */
+export async function sendTemplate(
+  key: string,
+  to: string,
+  vars: Record<string, string | number | null | undefined>,
+  extra: { details?: [string, string][]; buttonHref?: string; note?: string; replyTo?: string; unsubscribeUrl?: string } = {},
+) {
+  const def = templateDef(key);
+  if (!def) throw new Error(`Unknown email template ${key}`);
+  const saved = await db.emailTemplate.findUnique({ where: { key } }).catch(() => null);
+  if (saved && !saved.enabled) return { ok: true, error: null, skipped: true };
+  const t = { subject: saved?.subject ?? def.subject, heading: saved?.heading ?? def.heading, body: saved?.body ?? def.body, button: saved?.button ?? def.button };
+  const blocks: EmailBlock[] = [{ kind: "text", text: fill(t.body, vars) }];
+  if (extra.details?.length) blocks.push({ kind: "details", rows: extra.details });
+  if (t.button && extra.buttonHref) blocks.push({ kind: "button", label: fill(t.button, vars), href: extra.buttonHref });
+  if (extra.note) blocks.push({ kind: "note", text: extra.note });
+  const subject = fill(t.subject, vars);
+  return sendRaw(to, subject, { preview: subject, heading: fill(t.heading, vars), blocks, unsubscribeUrl: extra.unsubscribeUrl }, key, extra.replyTo);
+}
+
+export const officeEmail = () => env().OFFICE_EMAIL;

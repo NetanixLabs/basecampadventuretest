@@ -1,8 +1,10 @@
 import Image from "@/components/image";
 import Link from "next/link";
+import { SiteChrome } from "@/components/site/chrome";
 
 export default function NotFound() {
   return (
+    <SiteChrome>
     <section className="bg-pine-night relative isolate grid min-h-[90dvh] place-items-center overflow-hidden px-4 text-center text-white">
       <Image src="/photos/page-404.webp" alt="" fill sizes="100vw" className="-z-10 object-cover object-right-bottom opacity-60" />
       <div className="scrim-hero absolute inset-0 -z-10" />
@@ -22,5 +24,6 @@ export default function NotFound() {
         </div>
       </div>
     </section>
+    </SiteChrome>
   );
 }

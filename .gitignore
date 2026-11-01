@@ -9,3 +9,7 @@ next-env.d.ts
 .cache
 .data
 *.log
+
+# Admin
+src/generated
+.storage

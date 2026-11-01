@@ -215,3 +215,20 @@ export type Offer = {
   trips: string[];
   active: boolean;
 };
+
+/** A traveller's video review (admin → Reviews → Video reviews). */
+export type VideoReview = { id: string; title: string; src: string; poster?: string; preview?: boolean; hidden?: boolean };
+
+export type GoogleReviews = typeof import("@/content/google-reviews.json");
+export type TrustindexReviews = typeof import("@/content/trustindex-reviews.json");
+
+/** Everything the homepage's review tabs show, handed down from the server. */
+export type ReviewSourcesData = {
+  videoReviews: VideoReview[];
+  google: GoogleReviews;
+  trustindex: TrustindexReviews;
+  tripadvisorUrl: string;
+};
+
+/** Packing list shown on a trip page. */
+export type EquipmentList = { items: { name: string; description: string; image: string; category: string }[] };
