@@ -75,7 +75,8 @@ export async function saveCompany(input: unknown): Promise<R> {
 
 /* ------------------------------------------------------------------ users */
 
-const ROLES: Role[] = ["owner", "admin", "editor", "sales"];
+/** The two roles the office uses: main admin and editor (owner is the first main admin). */
+const ROLES: Role[] = ["admin", "editor"];
 
 export async function inviteUser(input: { email: string; name: string; role: Role }): Promise<R> {
   try {
@@ -83,7 +84,7 @@ export async function inviteUser(input: { email: string; name: string; role: Rol
     const email = input.email.trim().toLowerCase();
     if (!z.email().safeParse(email).success) throw new Error("!Enter a valid email.");
     if (!input.name.trim()) throw new Error("!Enter their name.");
-    if (!ROLES.includes(input.role) || (input.role === "owner" && user.role !== "owner")) throw new Error("!Only the owner can add another owner.");
+    if (!ROLES.includes(input.role)) throw new Error("!Choose Main admin or Editor.");
     if (await db.user.findUnique({ where: { email } })) throw new Error("!That email already has an account.");
     const u = await db.user.create({ data: { email, name: input.name.trim(), role: input.role, passwordHash: await hashPassword(randomBytes(32).toString("base64url")) } });
     const link = await issueResetLink(u.id, 3 * 24 * 3600_000);
@@ -110,7 +111,7 @@ export async function updateUser(id: string, change: { role?: Role; status?: "ac
     await db.user.update({
       where: { id },
       data: {
-        ...(change.role && ROLES.includes(change.role) ? { role: change.role } : {}),
+        ...(change.role && ROLES.includes(change.role) && target.role !== "owner" ? { role: change.role } : {}),
         ...(change.status ? { status: change.status } : {}),
         ...(change.resetTwoFactor ? { totpEnabled: false, totpSecret: null } : {}),
       },

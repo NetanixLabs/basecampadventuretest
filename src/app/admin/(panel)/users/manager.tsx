@@ -8,11 +8,10 @@ import type { Role } from "@/generated/prisma/browser";
 
 type U = { id: string; name: string; email: string; role: Role; status: "active" | "suspended"; totpEnabled: boolean; lastLoginAt: string | null };
 const ROLES: { v: Role; l: string; d: string }[] = [
-  { v: "owner", l: "Owner", d: "Everything, including team accounts" },
-  { v: "admin", l: "Admin", d: "Everything, including settings" },
-  { v: "editor", l: "Editor", d: "Trips, blog, pages, photos" },
-  { v: "sales", l: "Sales", d: "Enquiries, bookings, discounts, newsletter" },
+  { v: "admin", l: "Main admin", d: "Everything: bookings, payments, discounts, newsletter, settings, keys and team accounts, plus all website content." },
+  { v: "editor", l: "Editor", d: "Website content only: trips, blog, pages, SEO, redirects, photos, reviews and team profiles. No bookings, payments or settings." },
 ];
+const label = (r: Role) => (r === "owner" ? "Main admin (owner)" : r === "admin" ? "Main admin" : r === "editor" ? "Editor" : "Sales");
 
 export function UserManager({ me, users }: { me: { id: string; role: Role }; users: U[] }) {
   const router = useRouter();
@@ -33,9 +32,9 @@ export function UserManager({ me, users }: { me: { id: string; role: Role }; use
           <tr key={u.id}>
             <td><p className="font-semibold">{u.name}{u.id === me.id ? " (you)" : ""}</p><p className="text-xs text-muted">{u.email}</p></td>
             <td>
-              {u.id === me.id ? <Badge tone="pine">{u.role}</Badge> : (
+              {u.id === me.id || u.role === "owner" ? <Badge tone="pine">{label(u.role)}</Badge> : (
                 <select value={u.role} onChange={(e) => run(() => updateUser(u.id, { role: e.target.value as Role }))} className="rounded-lg border border-line bg-card px-2 py-1 text-sm" aria-label={`Role of ${u.name}`}>
-                  {ROLES.filter((r) => r.v !== "owner" || me.role === "owner").map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
+                  {ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
                 </select>
               )}
             </td>
@@ -56,7 +55,7 @@ export function UserManager({ me, users }: { me: { id: string; role: Role }; use
         <form className="grid gap-4 sm:grid-cols-[1fr_1fr_12rem_auto] sm:items-end" onSubmit={(e) => { e.preventDefault(); run(() => inviteUser(inv)); setInv({ name: "", email: "", role: "editor" }); }}>
           <div><Label htmlFor="in">Name</Label><input id="in" value={inv.name} onChange={(e) => setInv({ ...inv, name: e.target.value })} className={inputClass} required /></div>
           <div><Label htmlFor="ie">Email</Label><input id="ie" type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} className={inputClass} required /></div>
-          <div><Label htmlFor="ir">Role</Label><select id="ir" value={inv.role} onChange={(e) => setInv({ ...inv, role: e.target.value as Role })} className={inputClass}>{ROLES.filter((r) => r.v !== "owner" || me.role === "owner").map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</select></div>
+          <div><Label htmlFor="ir">Role</Label><select id="ir" value={inv.role} onChange={(e) => setInv({ ...inv, role: e.target.value as Role })} className={inputClass}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</select></div>
           <button type="submit" disabled={pending} className="rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">Send invitation</button>
         </form>
         <ul className="mt-4 grid gap-1 text-xs text-muted sm:grid-cols-2">{ROLES.map((r) => <li key={r.v}><strong className="text-ink">{r.l}:</strong> {r.d}</li>)}</ul>

@@ -62,7 +62,7 @@ export function AdminNav({ groups, user, signOut }: { groups: NavGroup[]; user: 
       <div className="border-t border-line p-3">
         <Link href="/account" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 hover:bg-pine/8">
           <span className="block truncate text-sm font-semibold">{user.name}</span>
-          <span className="block truncate text-xs text-muted">{user.email} · {user.role}</span>
+          <span className="block truncate text-xs text-muted">{user.email} · {user.role === "editor" ? "Editor" : "Main admin"}</span>
         </Link>
         <form action={signOut}>
           <button type="submit" className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-ink-soft hover:bg-pine/8 hover:text-pine">

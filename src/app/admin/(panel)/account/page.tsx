@@ -14,7 +14,7 @@ export default async function Account() {
   const device = (ua: string | null) => (!ua ? "Unknown device" : `${/iPhone|iPad/.test(ua) ? "iPhone/iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Computer"} · ${/Edg\//.test(ua) ? "Edge" : /Chrome/.test(ua) ? "Chrome" : /Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "Browser"}`);
   return (
     <>
-      <PageHeader title="My account" description={`${user.name} · ${user.email} · ${user.role}`} />
+      <PageHeader title="My account" description={`${user.name} · ${user.email} · ${user.role === "editor" ? "Editor" : "Main admin"}`} />
       <div className="grid gap-6 lg:grid-cols-2">
         <AccountForms totp={user.totpEnabled} />
         <Card title="Where you're signed in">
