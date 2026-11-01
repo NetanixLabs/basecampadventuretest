@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
       { source: "/enquiry-thankyou-page/", destination: "/thank-you/", permanent: true },
       { source: "/success/", destination: "/thank-you/", permanent: true },
       { source: "/cancel/", destination: "/booking/", permanent: true },
-      { source: "/feed/", destination: "/blogs/", permanent: false },
+      { source: "/feed/", destination: "/blogs/", permanent: true },
       { source: "/author/:path*", destination: "/our-team/", permanent: true },
       { source: "/tag/:path*", destination: "/blogs/", permanent: true },
       { source: "/difficulty/:path*", destination: "/trip/", permanent: true },

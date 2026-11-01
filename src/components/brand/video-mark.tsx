@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * reads on snow and sky. It never blocks taps or the video's controls.
  */
 export function VideoMark({ size = "md", className }: { size?: "sm" | "md" | "lg"; className?: string }) {
-  const width = size === "sm" ? "w-[26%] max-w-16" : size === "lg" ? "w-[22%] max-w-28" : "w-[24%] max-w-24";
+  const width = size === "sm" ? "w-[19%] max-w-12" : size === "lg" ? "w-[15%] max-w-20" : "w-[17%] max-w-16";
   return (
     <span aria-hidden className={cn("pointer-events-none absolute inset-0 z-[1] select-none", className)}>
       <span className="absolute right-0 bottom-0 size-1/2 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,0,0,0.28),transparent_70%)]" />
