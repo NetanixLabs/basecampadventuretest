@@ -81,6 +81,8 @@ export async function POST(req: Request) {
       wetravelId = link.id;
     } else paymentError = link.error;
   }
+  // No API key (or WeTravel unreachable): use the trip's own WeTravel checkout, if the office added one.
+  if (!paymentUrl && trip.wetravelUrl && /^https:\/\/([a-z0-9-]+\.)*wetravel\.com\//.test(trip.wetravelUrl)) paymentUrl = trip.wetravelUrl;
 
   await saveBooking({
     reference: ref,

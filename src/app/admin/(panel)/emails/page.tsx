@@ -18,7 +18,7 @@ export default async function Emails() {
           const s = saved.find((x) => x.key === t.key);
           return (
             <Link key={t.key} href={`/emails/${t.key}`} className="rounded-2xl border border-line bg-card p-5 hover:border-pine">
-              <div className="flex items-start justify-between gap-2"><p className="font-bold">{t.name}</p>{s && !s.enabled ? <Badge>Off</Badge> : s ? <Badge tone="pine">Edited</Badge> : null}</div>
+              <div className="flex items-start justify-between gap-2"><p className="font-bold">{t.name}</p>{(s ? !s.enabled : t.off) ? <Badge>Off</Badge> : s ? <Badge tone="pine">Edited</Badge> : null}</div>
               <p className="mt-1 text-xs text-muted">To the {t.to}</p>
               <p className="mt-3 line-clamp-2 text-sm text-ink-soft">{s?.subject ?? t.subject}</p>
             </Link>

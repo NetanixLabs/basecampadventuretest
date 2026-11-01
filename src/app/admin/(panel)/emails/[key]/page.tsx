@@ -16,7 +16,7 @@ export default async function EditEmail({ params }: { params: Promise<{ key: str
   return (
     <>
       <PageHeader title={def.name} description={`Sent to the ${def.to}.`} back={{ href: "/emails", label: "Email templates" }} />
-      <TemplateEditor keyName={key} vars={def.vars} initial={{ subject: s?.subject ?? def.subject, heading: s?.heading ?? def.heading, body: s?.body ?? def.body, button: s?.button ?? def.button ?? "", enabled: s?.enabled ?? true }} edited={Boolean(s)} />
+      <TemplateEditor keyName={key} vars={def.vars} initial={{ subject: s?.subject ?? def.subject, heading: s?.heading ?? def.heading, body: s?.body ?? def.body, button: s?.button ?? def.button ?? "", enabled: s?.enabled ?? !def.off }} edited={Boolean(s)} />
     </>
   );
 }

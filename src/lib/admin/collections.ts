@@ -123,6 +123,10 @@ const trips: CollectionDef = {
       description: "Prices are per person in US dollars. Bookings are always priced on the server from these numbers.",
       fields: [
         {
+          name: "wetravelUrl", label: "WeTravel checkout link (optional)", type: "text", mono: true, wide: true, placeholder: "https://www.wetravel.com/trips/…",
+          help: "Where the Pay button sends travellers when the WeTravel API key isn't set on the server. With the key, each booking gets its own WeTravel checkout with the exact price (including discount codes) and this link isn't needed.",
+        },
+        {
           name: "price", label: "Price", type: "group", wide: true,
           fields: [
             { name: "amount", label: "Price per person", type: "number", min: 0, step: 1, suffix: "USD" },

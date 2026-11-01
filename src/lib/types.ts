@@ -81,6 +81,8 @@ export type Trip = {
   faqs: { q: string; a: string }[];
   rating: { value: number; count: number } | null;
   reviews: Review[];
+  /** A ready-made WeTravel checkout for this trip (admin). */
+  wetravelUrl?: string | null;
 };
 
 /** The light version used in grids, so list pages do not ship itineraries. */

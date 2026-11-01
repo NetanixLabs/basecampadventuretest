@@ -69,7 +69,7 @@ export async function sendTemplate(
   const def = templateDef(key);
   if (!def) throw new Error(`Unknown email template ${key}`);
   const saved = await db.emailTemplate.findUnique({ where: { key } }).catch(() => null);
-  if (saved && !saved.enabled) return { ok: true, error: null, skipped: true };
+  if (saved ? !saved.enabled : def.off) return { ok: true, error: null, skipped: true };
   const t = { subject: saved?.subject ?? def.subject, heading: saved?.heading ?? def.heading, body: saved?.body ?? def.body, button: saved?.button ?? def.button };
   const blocks: EmailBlock[] = [{ kind: "text", text: fill(t.body, vars) }];
   if (extra.details?.length) blocks.push({ kind: "details", rows: extra.details });

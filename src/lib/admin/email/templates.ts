@@ -13,6 +13,8 @@ export type TemplateDef = {
   heading: string;
   body: string;
   button?: string;
+  /** Off until the office switches it on (e.g. WeTravel already sends this). */
+  off?: boolean;
 };
 
 export const TEMPLATES: TemplateDef[] = [
@@ -66,8 +68,9 @@ export const TEMPLATES: TemplateDef[] = [
   },
   {
     key: "payment-received",
-    name: "Payment received",
+    name: "Payment received (WeTravel sends its own receipt)",
     to: "traveller",
+    off: true,
     vars: ["name", "reference", "trip", "date", "amount", "balance"],
     subject: "Payment received for {{trip}} ({{reference}})",
     heading: "We've received your payment, {{name}}",
