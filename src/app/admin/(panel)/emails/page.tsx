@@ -2,13 +2,14 @@ import Link from "next/link";
 import { Badge, Card, PageHeader, Table, when } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { TEMPLATES } from "@/lib/admin/email/templates";
+import { cfg } from "@/lib/admin/config";
 import { requireUser } from "@/lib/admin/guards";
 
 export const metadata = { title: "Email templates" };
 
 export default async function Emails() {
   await requireUser("email");
-  const [saved, log, smtp] = await Promise.all([db.emailTemplate.findMany(), db.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 30 }), Promise.resolve(Boolean(process.env.SMTP_HOST))]);
+  const [saved, log, smtp] = await Promise.all([db.emailTemplate.findMany(), db.emailLog.findMany({ orderBy: { createdAt: "desc" }, take: 30 }), cfg("SMTP_HOST").then(Boolean)]);
   return (
     <>
       <PageHeader title="Email templates" description="Automatic emails to travellers, the office and the team." info="Open a template to change its subject, heading, text and button. The branded design, booking details and links are added automatically, so every email looks the same. Use Send me a test to check it in your inbox. Restore original brings back the starting wording." />

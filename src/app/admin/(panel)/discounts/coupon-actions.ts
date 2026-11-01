@@ -40,7 +40,7 @@ export async function sendCoupon(input: unknown, test: boolean): Promise<{ ok: b
     const to = test ? user.email : r.input.email;
     if (!to) return { ok: false, message: "Enter the traveller's email." };
     const subject = `${test ? "[Test] " : ""}${r.data.name ? `${r.data.name}, your` : "Your"} ${r.data.amount.toLowerCase()} Base Camp Adventure voucher`;
-    const s = await sendHtml(to, subject, r.html, r.text, "coupon", { replyTo: officeEmail() });
+    const s = await sendHtml(to, subject, r.html, r.text, "coupon", { replyTo: (await officeEmail()) });
     if (!test) await audit(user.id, "coupon.send", "discount", null, `${r.data.code} → ${to}`);
     return s.ok ? { ok: true, message: `Voucher sent to ${to}.` } : { ok: false, message: s.error ?? "Send failed" };
   } catch (e) {

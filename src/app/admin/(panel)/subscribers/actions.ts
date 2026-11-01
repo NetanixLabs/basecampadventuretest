@@ -85,7 +85,7 @@ export async function sendCampaign(input: unknown, test: boolean): Promise<{ ok:
     let sent = 0;
     for (const s of subs) {
       const n = { ...first.n, unsubscribeUrl: `${site()}/api/newsletter/unsubscribe/?t=${s.token}` };
-      const r = await sendHtml(s.email, c.subject, renderNewsletter(n), newsletterText(n), `campaign:${campaign.id}`, { replyTo: officeEmail(), unsubscribeUrl: n.unsubscribeUrl });
+      const r = await sendHtml(s.email, c.subject, renderNewsletter(n), newsletterText(n), `campaign:${campaign.id}`, { replyTo: (await officeEmail()), unsubscribeUrl: n.unsubscribeUrl });
       if (r.ok) sent++;
       await new Promise((res) => setTimeout(res, 120)); // gentle on the mail server
     }

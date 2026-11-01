@@ -68,7 +68,7 @@ export async function emailTraveller(id: string, template: (typeof EMAILS)[numbe
     const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://basecampadventure.com").replace(/\/$/, "");
     const r = await sendTemplate(template, b.leadEmail, vars, {
       buttonHref: template === "review-request" ? "https://www.tripadvisor.com/UserReviewEdit-g293890-d2437309" : template === "booking-confirmed" ? `${site}/trip/${b.tripSlug}/` : b.paymentUrl ?? undefined,
-      replyTo: officeEmail(),
+      replyTo: (await officeEmail()),
     });
     if (!r.ok) throw new Error(`!The email couldn't be sent: ${r.error}`);
     if (template === "booking-confirmed") await db.booking.update({ where: { id }, data: { status: "confirmed" } });

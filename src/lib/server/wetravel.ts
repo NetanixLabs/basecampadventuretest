@@ -1,4 +1,5 @@
 import "server-only";
+import { cfg } from "@/lib/admin/config";
 
 /**
  * WeTravel Partner API: payment links.
@@ -12,9 +13,9 @@ import "server-only";
  * "request" mode: the booking is recorded and the office sends the link.
  */
 
-const BASE = process.env.WETRAVEL_ENV === "production" ? "https://api.wetravel.com/v2" : "https://api.demo.wetravel.to/v2";
+const base = async () => ((await cfg("WETRAVEL_ENV")) === "production" ? "https://api.wetravel.com/v2" : "https://api.demo.wetravel.to/v2");
 
-export const wetravelEnabled = () => Boolean(process.env.WETRAVEL_API_KEY);
+export const wetravelEnabled = async () => Boolean(await cfg("WETRAVEL_API_KEY"));
 
 export async function createPaymentLink(input: {
   reference: string;
@@ -24,7 +25,7 @@ export async function createPaymentLink(input: {
   amount: number;
   deposit?: number;
 }): Promise<{ url: string; id: string | null } | { error: string }> {
-  const key = process.env.WETRAVEL_API_KEY;
+  const key = await cfg("WETRAVEL_API_KEY");
   if (!key) return { error: "WeTravel is not configured" };
 
   const start = new Date(`${input.startDate}T00:00:00Z`);
@@ -49,7 +50,7 @@ export async function createPaymentLink(input: {
   };
 
   try {
-    const res = await fetch(`${BASE}/payment_links?publish_immediately=true`, {
+    const res = await fetch(`${await base()}/payment_links?publish_immediately=true`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json", "X-Api-Key": key },
       body: JSON.stringify(body),

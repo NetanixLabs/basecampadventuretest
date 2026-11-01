@@ -1,6 +1,7 @@
 import "server-only";
 import nodemailer, { type Transporter } from "nodemailer";
 import { db } from "@/lib/admin/db";
+import { cfg } from "@/lib/admin/config";
 import { env } from "@/lib/admin/env";
 import { renderHtml, renderText, type EmailBlock, type EmailContent } from "@/lib/admin/email/layout";
 import { fill, templateDef } from "@/lib/admin/email/templates";
@@ -11,17 +12,16 @@ import { fill, templateDef } from "@/lib/admin/email/templates";
  * log, so development works with no account. Every send is logged in the
  * admin (Emails → Sent).
  */
-let transport: Transporter | null = null;
-function mailer() {
-  const e = env();
-  if (!e.SMTP_HOST) return null;
-  transport ??= nodemailer.createTransport({
-    host: e.SMTP_HOST,
-    port: e.SMTP_PORT,
-    secure: e.SMTP_PORT === 465,
-    auth: e.SMTP_USER ? { user: e.SMTP_USER, pass: e.SMTP_PASS } : undefined,
-  });
-  return transport;
+let transport: { sig: string; t: Transporter } | null = null;
+async function mailer() {
+  const [host, port, user, pass] = await Promise.all([cfg("SMTP_HOST"), cfg("SMTP_PORT"), cfg("SMTP_USER"), cfg("SMTP_PASS")]);
+  if (!host) return null;
+  const sig = `${host}|${port}|${user}|${pass}`;
+  if (transport?.sig !== sig) {
+    const p = Number(port) || 587;
+    transport = { sig, t: nodemailer.createTransport({ host, port: p, secure: p === 465, auth: user ? { user, pass } : undefined }) };
+  }
+  return transport.t;
 }
 
 export async function sendRaw(to: string, subject: string, content: EmailContent, template = "custom", replyTo?: string) {
@@ -33,14 +33,14 @@ export async function sendHtml(to: string, subject: string, html: string, text: 
   let status = "sent";
   let error: string | null = null;
   let providerId: string | null = null;
-  const m = mailer();
+  const m = await mailer();
   try {
     if (!m) {
       status = "logged";
       console.info(`\n[email] to ${to}\nSubject: ${subject}\n${text}\n`);
     } else {
       const info = await m.sendMail({
-        from: env().EMAIL_FROM,
+        from: (await cfg("EMAIL_FROM")) || env().EMAIL_FROM,
         to,
         subject,
         html,
@@ -82,4 +82,4 @@ export async function sendTemplate(
   return sendRaw(to, subject, { preview: subject, heading: fill(t.heading, vars), blocks, unsubscribeUrl: extra.unsubscribeUrl }, key, extra.replyTo);
 }
 
-export const officeEmail = () => env().OFFICE_EMAIL;
+export const officeEmail = async () => (await cfg("OFFICE_EMAIL")) || env().OFFICE_EMAIL;

@@ -84,8 +84,8 @@ export async function handleWetravelEvent(eventId: string, payload: Json) {
       const vars = { name: booking.leadName.split(" ")[0], reference: booking.reference, trip: booking.tripTitle, date: booking.startDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }), amount: usd(amount), balance: usd(Math.max(0, total - paid)) };
       const admin = `${(process.env.ADMIN_URL ?? "https://admin.basecampadventure.com").replace(/\/$/, "")}/bookings/${booking.id}`;
       await Promise.allSettled([
-        sendTemplate("payment-received", booking.leadEmail, vars, { details: [["Reference", booking.reference], ["Paid now", usd(amount)], ["Paid in total", usd(paid)], ["Trip total", usd(total)], ["Balance", usd(Math.max(0, total - paid))]], replyTo: officeEmail() }),
-        sendTemplate("payment-office", officeEmail(), { ...vars, name: booking.leadName }, { buttonHref: admin }),
+        sendTemplate("payment-received", booking.leadEmail, vars, { details: [["Reference", booking.reference], ["Paid now", usd(amount)], ["Paid in total", usd(paid)], ["Trip total", usd(total)], ["Balance", usd(Math.max(0, total - paid))]], replyTo: (await officeEmail()) }),
+        sendTemplate("payment-office", (await officeEmail()), { ...vars, name: booking.leadName }, { buttonHref: admin }),
       ]);
     }
     await db.webhookEvent.update({ where: { id: event.id }, data: { processedAt: new Date(), error: null } });

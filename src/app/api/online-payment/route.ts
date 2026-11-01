@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   let paymentUrl: string | null = null;
   let wetravelId: string | null = null;
   let paymentError: string | null = null;
-  if (wetravelEnabled()) {
+  if (await wetravelEnabled()) {
     const link = await createPaymentLink({ reference: ref, title: trip?.title ?? "Base Camp Adventure payment", startDate: input.date, days: trip?.days ?? 1, amount: input.amount });
     if ("url" in link) {
       paymentUrl = link.url;

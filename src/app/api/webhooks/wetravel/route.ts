@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cfg } from "@/lib/admin/config";
 import { adminConfigured } from "@/lib/admin/env";
 import { handleWetravelEvent } from "@/lib/server/payments";
 import { verifySvix } from "@/lib/server/svix";
@@ -9,7 +10,7 @@ import { verifySvix } from "@/lib/server/svix";
  * transaction.updated). Only signed messages are accepted.
  */
 export async function POST(req: Request) {
-  const secret = process.env.WETRAVEL_WEBHOOK_SECRET ?? "";
+  const secret = await cfg("WETRAVEL_WEBHOOK_SECRET");
   const body = await req.text();
   if (!secret || !verifySvix(secret, req.headers, body)) {
     return NextResponse.json({ error: "invalid signature" }, { status: 401 });

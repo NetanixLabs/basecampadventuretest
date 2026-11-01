@@ -31,8 +31,8 @@ export async function saveEnquiry(e: EnquiryInput) {
   const kindLabel = e.kind === "custom-trip" ? "tailor-made trip" : e.kind === "trip-request" ? "trip" : "contact";
   const details = Object.entries({ Name: e.name, Email: e.email, Phone: e.phone, Country: e.country, Trip: e.trip, ...flat(e.data) }).filter(([, v]) => v) as [string, string][];
   await Promise.allSettled([
-    sendTemplate("enquiry-received", e.email, { name: e.name.split(" ")[0], reference: e.reference, trip: e.trip }, { replyTo: officeEmail() }),
-    sendTemplate("enquiry-office", officeEmail(), { name: e.name, reference: e.reference, kind: kindLabel, trip: e.trip, email: e.email, phone: e.phone }, { details, buttonHref: adminLink(id ? `/enquiries/${id}` : "/enquiries"), replyTo: e.email }),
+    sendTemplate("enquiry-received", e.email, { name: e.name.split(" ")[0], reference: e.reference, trip: e.trip }, { replyTo: (await officeEmail()) }),
+    sendTemplate("enquiry-office", (await officeEmail()), { name: e.name, reference: e.reference, kind: kindLabel, trip: e.trip, email: e.email, phone: e.phone }, { details, buttonHref: adminLink(id ? `/enquiries/${id}` : "/enquiries"), replyTo: e.email }),
   ]);
 }
 
@@ -85,9 +85,9 @@ export async function saveBooking(b: BookingInput) {
   ];
   await Promise.allSettled([
     b.paymentUrl
-      ? sendTemplate("booking-received", b.lead.email, vars, { details, buttonHref: b.paymentUrl, replyTo: officeEmail() })
-      : sendTemplate("booking-request", b.lead.email, vars, { details, replyTo: officeEmail() }),
-    sendTemplate("booking-office", officeEmail(), { ...vars, name: b.lead.name }, { details: [...details, ["Lead", `${b.lead.name}, ${b.lead.country}`], ["Email", b.lead.email], ["Phone", b.lead.phone], ...(b.notes ? ([["Notes", b.notes]] as [string, string][]) : []), ...(b.paymentError ? ([["Payment link", `Not created: ${b.paymentError}`]] as [string, string][]) : [])], buttonHref: adminLink(id ? `/bookings/${id}` : "/bookings"), replyTo: b.lead.email }),
+      ? sendTemplate("booking-received", b.lead.email, vars, { details, buttonHref: b.paymentUrl, replyTo: (await officeEmail()) })
+      : sendTemplate("booking-request", b.lead.email, vars, { details, replyTo: (await officeEmail()) }),
+    sendTemplate("booking-office", (await officeEmail()), { ...vars, name: b.lead.name }, { details: [...details, ["Lead", `${b.lead.name}, ${b.lead.country}`], ["Email", b.lead.email], ["Phone", b.lead.phone], ...(b.notes ? ([["Notes", b.notes]] as [string, string][]) : []), ...(b.paymentError ? ([["Payment link", `Not created: ${b.paymentError}`]] as [string, string][]) : [])], buttonHref: adminLink(id ? `/bookings/${id}` : "/bookings"), replyTo: b.lead.email }),
   ]);
   return id;
 }
@@ -133,5 +133,5 @@ async function sendWelcome(email: string, token: string) {
     buttonUrl: `${site}/trip/`,
     unsubscribeUrl: `${site}/api/newsletter/unsubscribe/?t=${token}`,
   };
-  await sendHtml(email, saved?.subject ?? def.subject, renderNewsletter(n), newsletterText(n), def.key, { replyTo: officeEmail(), unsubscribeUrl: n.unsubscribeUrl });
+  await sendHtml(email, saved?.subject ?? def.subject, renderNewsletter(n), newsletterText(n), def.key, { replyTo: (await officeEmail()), unsubscribeUrl: n.unsubscribeUrl });
 }
