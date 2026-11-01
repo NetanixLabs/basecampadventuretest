@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import sharp from "sharp";
 import { couponFor } from "@/lib/admin/email/coupon-data";
 import { adminConfigured } from "@/lib/admin/env";
+import { rateLimited } from "@/lib/server/store";
 
 /**
  * The Base Camp gift voucher as an image (1200×600, JPEG): a Himalayan
@@ -25,6 +26,9 @@ const dataUrl = (buf: Buffer, type: string) => `data:${type};base64,${buf.toStri
 
 export async function GET(req: Request, { params }: { params: Promise<{ code: string }> }) {
   if (!adminConfigured()) return new Response("Not found", { status: 404 });
+  // The image shows whether a code exists, so guessing codes through it is throttled.
+  const ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  if (rateLimited(`coupon-image:${ip}`, 40)) return new Response("Too many requests", { status: 429 });
   const c = await couponFor(decodeURIComponent((await params).code));
   if (!c) return new Response("Not found", { status: 404 });
   const wanted = new URL(req.url).searchParams.get("photo") ?? "";
