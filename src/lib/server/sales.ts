@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/admin/db";
 import { adminConfigured, env } from "@/lib/admin/env";
 import { officeEmail, sendTemplate } from "@/lib/admin/email/send";
+import { notifyOffice } from "@/lib/server/notify";
 import { record } from "@/lib/server/store";
 
 /**
@@ -33,6 +34,7 @@ export async function saveEnquiry(e: EnquiryInput) {
   await Promise.allSettled([
     sendTemplate("enquiry-received", e.email, { name: e.name.split(" ")[0], reference: e.reference, trip: e.trip }, { replyTo: (await officeEmail()) }),
     sendTemplate("enquiry-office", (await officeEmail()), { name: e.name, reference: e.reference, kind: kindLabel, trip: e.trip, email: e.email, phone: e.phone }, { details, buttonHref: adminLink(id ? `/enquiries/${id}` : "/enquiries"), replyTo: e.email }),
+    notifyOffice("enquiry", `New ${kindLabel} enquiry ${e.reference}\n${e.name}${e.country ? ` (${e.country})` : ""}\n${e.email}${e.phone ? ` · ${e.phone}` : ""}${e.trip ? `\nTrip: ${e.trip}` : ""}\n${adminLink(id ? `/enquiries/${id}` : "/enquiries")}`),
   ]);
 }
 
@@ -88,6 +90,7 @@ export async function saveBooking(b: BookingInput) {
       ? sendTemplate("booking-received", b.lead.email, vars, { details, buttonHref: b.paymentUrl, replyTo: (await officeEmail()) })
       : sendTemplate("booking-request", b.lead.email, vars, { details, replyTo: (await officeEmail()) }),
     sendTemplate("booking-office", (await officeEmail()), { ...vars, name: b.lead.name }, { details: [...details, ["Lead", `${b.lead.name}, ${b.lead.country}`], ["Email", b.lead.email], ["Phone", b.lead.phone], ...(b.notes ? ([["Notes", b.notes]] as [string, string][]) : []), ...(b.paymentError ? ([["Payment link", `Not created: ${b.paymentError}`]] as [string, string][]) : [])], buttonHref: adminLink(id ? `/bookings/${id}` : "/bookings"), replyTo: b.lead.email }),
+    notifyOffice("booking", `New booking ${b.reference}\n${b.tripTitle}, ${dateText(b.startDate)}, ${b.pax} pax\nTotal ${usd(b.total)}, due now ${usd(b.due)}\n${b.lead.name} (${b.lead.country}) · ${b.lead.phone}\n${adminLink(id ? `/bookings/${id}` : "/bookings")}`),
   ]);
   return id;
 }

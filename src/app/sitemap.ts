@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { categoryPath } from "@/components/journal-list";
 import { getLiveTerms, getPages, getPosts, getTaxonomies, getTeam, getTrips } from "@/lib/content";
 import { abs } from "@/lib/seo";
+import { LANG_KEYS, translation, tripAlternates, tripPath } from "@/lib/i18n";
 import { visaGuides } from "@/content/visa-guides";
 
 const SKIP_PAGES = new Set([
@@ -44,7 +45,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.9,
       images: [...new Set([t.cover, ...t.gallery].filter(Boolean).map((i) => abs(i!.src)))],
+      alternates: tripAlternates(t) ? { languages: tripAlternates(t) } : undefined,
     })),
+    // German, French and Spanish versions (only those switched on and published).
+    ...trips.flatMap((t) =>
+      LANG_KEYS.filter((l) => translation(t, l)).map((l) => ({
+        url: abs(tripPath(t.slug, l)),
+        lastModified: date(t.modified),
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+        alternates: { languages: tripAlternates(t) },
+      })),
+    ),
     // Each trip's program PDF, so it can be found as a document in search.
     ...trips.map((t) => ({ url: abs(`/trip/${t.slug}/itinerary.pdf`), lastModified: date(t.modified), changeFrequency: "monthly" as const, priority: 0.5 })),
     ...destinations.map((d) => ({ url: abs(`/destinations/${d.slug}/`), changeFrequency: "weekly" as const, priority: 0.8 })),

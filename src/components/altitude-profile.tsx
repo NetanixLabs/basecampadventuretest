@@ -32,7 +32,10 @@ function fill(days: ProfileDay[]) {
  * a ResizeObserver), so on a phone it fits the screen with readable labels
  * instead of being squeezed or cut off.
  */
-export function AltitudeProfile({ days, tone = "dark", className }: { days: ProfileDay[]; tone?: "dark" | "light"; className?: string }) {
+export type ProfileWords = { highest: string; day: string; tap: string };
+const EN_WORDS: ProfileWords = { highest: "Highest", day: "day", tap: "Tap a day to see where you sleep." };
+
+export function AltitudeProfile({ days, tone = "dark", className, words = EN_WORDS }: { days: ProfileDay[]; tone?: "dark" | "light"; className?: string; words?: ProfileWords }) {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -113,7 +116,7 @@ export function AltitudeProfile({ days, tone = "dark", className }: { days: Prof
     <div ref={ref} className={cn("relative", className)}>
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className={cn("font-mono text-[0.7rem] tracking-wider uppercase", dark ? "text-white/55" : "text-muted")}>
-          Highest {fmt(peak.a)} · day {peak.d.day}
+          {words.highest} {fmt(peak.a)} · {words.day} {peak.d.day}
         </p>
       </div>
 
@@ -226,7 +229,7 @@ export function AltitudeProfile({ days, tone = "dark", className }: { days: Prof
           ) : null}
         </svg>
       </div>
-      <p className={cn("mt-2 text-center text-xs sm:hidden", dark ? "text-white/50" : "text-muted")}>Tap a day to see where you sleep.</p>
+      <p className={cn("mt-2 text-center text-xs sm:hidden", dark ? "text-white/50" : "text-muted")}>{words.tap}</p>
     </div>
   );
 }

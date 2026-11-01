@@ -38,6 +38,7 @@ mkdir -p /var/log/caddy && chown caddy:caddy /var/log/caddy
 echo "== App user and folders"
 id basecamp >/dev/null 2>&1 || useradd --system --create-home --home-dir /srv/basecamp --shell /bin/bash basecamp
 install -d -o basecamp -g basecamp /srv/basecamp/{content,uploads,backups,releases}
+install -d -m 700 -o basecamp -g basecamp /srv/basecamp/private
 chmod 711 /srv/basecamp
 chmod 755 /srv/basecamp/uploads
 # The code is checked out in repo/; each deploy builds a copy in releases/ and app points at the live one.
@@ -46,6 +47,7 @@ chmod 755 /srv/basecamp/uploads
 if [ ! -f /srv/basecamp/.env ]; then
   sed -e "s|postgresql://basecamp:CHANGE_ME@localhost:5432/basecamp|postgresql://basecamp:${DBPASS}@localhost:5432/basecamp|" \
       -e "s|^ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$(openssl rand -base64 32)|" \
+      -e "s|^CRON_SECRET=.*|CRON_SECRET=$(openssl rand -hex 32)|" \
       /srv/basecamp/repo/.env.example > /srv/basecamp/.env
   chown basecamp:basecamp /srv/basecamp/.env && chmod 600 /srv/basecamp/.env
   echo ">> Created /srv/basecamp/.env. Fill in SMTP_*, WETRAVEL_*, SEED_OWNER_EMAIL and SEED_OWNER_NAME now."
@@ -61,6 +63,12 @@ echo "basecamp ALL=(root) NOPASSWD: /usr/bin/systemctl restart basecamp" > /etc/
 
 echo "== Nightly backup at 02:30 Nepal time (20:45 UTC)"
 echo "45 20 * * * basecamp /srv/basecamp/repo/deploy/backup.sh >> /srv/basecamp/backups/backup.log 2>&1" > /etc/cron.d/basecamp-backup
+
+echo "== Scheduled jobs every 15 minutes (payment reminders, review emails, closing old traveller accounts)"
+cat > /etc/cron.d/basecamp-jobs <<'CRON'
+*/15 * * * * basecamp curl -fsS -m 120 -X POST -H "Authorization: Bearer $(grep -m1 '^CRON_SECRET=' /srv/basecamp/.env | cut -d= -f2-)" http://127.0.0.1:3000/api/cron/ >/dev/null 2>&1
+CRON
+chmod 644 /etc/cron.d/basecamp-jobs
 
 echo
 echo "Done. Next:"

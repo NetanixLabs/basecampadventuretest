@@ -29,6 +29,12 @@ const schema = z.object({
   EMAIL_FROM: z.string().default("Base Camp Adventure <info@basecampadventure.com>"),
   /** Where office notifications go (new enquiry, new booking, payment). */
   OFFICE_EMAIL: z.string().default("info@basecampadventure.com"),
+  /** Public address of the traveller portal, used in emailed links. */
+  PORTAL_URL: z.url().default("https://my.basecampadventure.com"),
+  /** Shared secret for the scheduled jobs (/api/cron), sent as a bearer token. */
+  CRON_SECRET: z.string().default(""),
+  /** Where travellers' documents are stored, encrypted. Never inside the website folder. */
+  PRIVATE_DIR: z.string().default(""),
 });
 
 export type AdminEnv = z.infer<typeof schema>;

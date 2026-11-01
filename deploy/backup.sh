@@ -8,7 +8,7 @@ STAMP="$(date -u +%Y-%m-%d-%H%M)"
 DIR=/srv/basecamp/backups
 mkdir -p "$DIR"
 pg_dump --format=custom --no-owner "$DATABASE_URL" > "$DIR/db-$STAMP.dump"
-tar -C /srv/basecamp -czf "$DIR/files-$STAMP.tar.gz" content uploads
+tar -C /srv/basecamp -czf "$DIR/files-$STAMP.tar.gz" content uploads private
 find "$DIR" -name 'db-*.dump' -mtime +14 -delete
 find "$DIR" -name 'files-*.tar.gz' -mtime +14 -delete
 if [ -n "${BACKUP_REMOTE:-}" ] && command -v rclone >/dev/null; then

@@ -9,9 +9,11 @@ export const metadata = { title: "Reviews & videos" };
 
 export default async function ReviewsHub() {
   await requireUser("content");
+  const waiting = await db.tripReview.count({ where: { status: "pending" } }).catch(() => 0);
   const counts = await db.entry.groupBy({ by: ["collection"], _count: true, where: { collection: { in: ["videoReviews", "videos", "awards"] } } });
   const n = (k: string) => counts.find((c) => c.collection === k)?._count ?? 0;
   const items = [
+    { href: "/reviews/traveller", icon: Star, title: waiting ? `Traveller reviews (${waiting} waiting)` : "Traveller reviews", text: "Star ratings travellers send after their trip. Approve them to show them on the trip page." },
     { href: "/c/videoReviews", icon: Film, title: "Video reviews", text: `${n("videoReviews")} portrait videos from travellers, shown in the homepage carousel with the Base Camp logo.` },
     { href: "/singles/tripadvisor", icon: Star, title: "Tripadvisor", text: "Rating, review count and ranking shown with the badge." },
     { href: "/singles/google-reviews", icon: Star, title: "Google reviews", text: "Reviews shown in the Google tab." },

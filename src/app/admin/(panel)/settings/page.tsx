@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
@@ -31,7 +32,7 @@ export default async function Settings() {
   const v = (k: string, fallback: string) => String(rows.find((r) => r.key === k)?.value ?? fallback);
   return (
     <>
-      <PageHeader title="Settings" description="Website integrations and how the system is connected." />
+      <PageHeader title="Settings" description="Company details, features, keys and integrations." actions={<Link href="/settings/features" className="rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep">Features & switches →</Link>} />
       <CompanyForm initial={company} />
       <div className="mt-6"><KeysForm status={await configStatus()} /></div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

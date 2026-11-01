@@ -4,18 +4,22 @@ import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
 import { site } from "@/lib/site";
 import { BookingControls } from "./controls";
+import { PortalCard } from "./portal-card";
+import { features } from "@/lib/admin/features";
+import { DETAIL_FIELDS, FILE_KINDS, eligible, readDetails } from "@/lib/server/portal";
 
 export const metadata = { title: "Booking" };
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser("sales");
-  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } } } });
+  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } } } });
   if (!b) notFound();
   const events = await db.$queryRaw<{ id: string; type: string; payload: unknown; error: string | null; createdAt: Date }[]>`
     SELECT id, type, payload, error, "createdAt" FROM "WebhookEvent"
     WHERE payload::text LIKE ${"%" + b.reference + "%"} OR payload::text LIKE ${"%" + (b.wetravelId ?? b.reference) + "%"}
     ORDER BY "createdAt" DESC LIMIT 10`.catch(() => []);
   const balance = Math.max(0, Number(b.total) - Number(b.paid));
+  const f = await features();
   const rows: [string, React.ReactNode][] = [
     ["Reference", <span key="r" className="font-mono">{b.reference}</span>],
     ["Trip", <a key="t" className="font-semibold text-pine" href={`${site.url}/trip/${b.tripSlug}/`} target="_blank" rel="noopener noreferrer">{b.tripTitle} ↗</a>],
@@ -64,6 +68,15 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               </details>
             ) : null}
           </Card>
+          <PortalCard
+            bookingId={b.id}
+            enabled={f.portal.enabled}
+            eligible={eligible(b)}
+            account={b.traveller ? { email: b.traveller.email, status: b.traveller.status, expiresAt: b.traveller.expiresAt.toISOString(), lastLoginAt: b.traveller.lastLoginAt?.toISOString() ?? null } : null}
+            files={b.files.map((x) => ({ id: x.id, name: x.name, kind: FILE_KINDS[x.kind as keyof typeof FILE_KINDS] ?? "Other", bytes: x.bytes, fromOffice: x.uploadedBy !== "traveller", date: x.createdAt.toISOString() }))}
+            details={readDetails(b.detailsEnc) as Record<string, string>}
+            fields={DETAIL_FIELDS}
+          />
         </div>
         <BookingControls id={b.id} status={b.status} notes={b.internalNotes ?? ""} paymentUrl={b.paymentUrl ?? ""} balance={balance} />
       </div>

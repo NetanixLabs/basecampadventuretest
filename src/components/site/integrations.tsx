@@ -9,11 +9,14 @@ import { useEffect } from "react";
  * Settings later; environment variables for now). Both wait until the page is
  * idle, so neither can slow the first paint or hurt Core Web Vitals.
  */
-export type IntegrationIds = { tawkProperty: string; tawkWidget: string; ga4: string };
+export type IntegrationIds = { tawkProperty: string; tawkWidget: string; ga4: string; tawkDetails?: boolean };
 
 type TawkWindow = Window & { Tawk_API?: Record<string, unknown>; Tawk_LoadStart?: Date };
 
-export function Integrations({ tawkProperty, tawkWidget, ga4 }: IntegrationIds) {
+export function Integrations({ tawkProperty, tawkWidget, ga4, tawkDetails = true }: IntegrationIds) {
+  useEffect(() => {
+    (window as Window & { __BCA_TAWK_DETAILS__?: boolean }).__BCA_TAWK_DETAILS__ = tawkDetails;
+  }, [tawkDetails]);
   const path = usePathname();
   // Trip pages have a booking bar along the bottom on phones: the chat bubble sits above it.
   const aboveBar = path.startsWith("/trip/") && path.split("/").filter(Boolean).length === 2;

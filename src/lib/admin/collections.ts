@@ -57,6 +57,33 @@ export type CollectionDef = {
   description?: string;
 };
 
+
+const translationFields = (lang: string): Field[] => [
+  { name: "published", label: `Publish the ${lang} page`, type: "toggle", help: "Only when the title, summary, overview and itinerary are translated. The page also needs the language switched on in Settings → Features." },
+  { name: "title", label: "Title", type: "text", wide: true },
+  { name: "summary", label: "Short summary", type: "textarea", rows: 2, wide: true },
+  { name: "seoTitle", label: "Google title", type: "text", max: 62, wide: true, help: "Up to about 60 characters. Leave empty to use the title." },
+  { name: "seoDescription", label: "Google description", type: "textarea", rows: 2, max: 160, wide: true },
+  { name: "overview", label: "Overview", type: "richtext", wide: true },
+  { name: "highlights", label: "Highlights", type: "strings", itemLabel: "highlight", wide: true },
+  {
+    name: "itinerary", label: "Itinerary (same order as the English days)", type: "repeater", itemLabel: "day", titleField: "title", collapsed: true, wide: true,
+    fields: [
+      { name: "title", label: "Day title", type: "text", wide: true },
+      { name: "body", label: "Description", type: "textarea", rows: 4, wide: true },
+    ],
+  },
+  { name: "includes", label: "What's included", type: "strings", itemLabel: "item", wide: true },
+  { name: "excludes", label: "Not included", type: "strings", itemLabel: "item", wide: true },
+  {
+    name: "faqs", label: "Questions and answers", type: "repeater", itemLabel: "question", titleField: "q", collapsed: true, wide: true,
+    fields: [
+      { name: "q", label: "Question", type: "text", wide: true },
+      { name: "a", label: "Answer", type: "textarea", rows: 3, wide: true },
+    ],
+  },
+];
+
 const seoSection: Section = {
   title: "Search engines & sharing",
   description: "How this page looks in Google and when shared on WhatsApp or Facebook. Leave empty to use the title and summary.",
@@ -225,6 +252,20 @@ const trips: CollectionDef = {
             { name: "category", label: "Group", type: "text", placeholder: "Trail essentials" },
             { name: "description", label: "Why", type: "text", wide: true },
             { name: "image", label: "Picture (path)", type: "text", mono: true, wide: true },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Translations",
+      description: "German, French and Spanish versions of this trip. Prices, dates, photos, maps and the altitude chart come from the English trip automatically.",
+      fields: [
+        {
+          name: "translations", label: "Languages", type: "group", wide: true,
+          fields: [
+            { name: "de", label: "Deutsch (German)", type: "group", wide: true, fields: translationFields("German") },
+            { name: "fr", label: "Français (French)", type: "group", wide: true, fields: translationFields("French") },
+            { name: "es", label: "Español (Spanish)", type: "group", wide: true, fields: translationFields("Spanish") },
           ],
         },
       ],

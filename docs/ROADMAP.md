@@ -58,12 +58,12 @@ mindmap
 
 ## In progress (approved)
 
-- [ ] Feature switches page (turn every feature on/off from the admin)
-- [ ] Abandoned booking follow-up (reminder if not paid after 24 h)
-- [ ] WhatsApp alerts to the office + booking/enquiry details in tawk.to chat
-- [ ] Review collection after the trip, moderated, shown on trip pages
-- [ ] Traveller portal on my.basecampadventure.com (secure login, documents, payments)
-- [ ] Languages: German, French, Spanish for the top 20 trips
+- [x] Feature switches page (turn every feature on/off from the admin)
+- [x] Abandoned booking follow-up (reminder if not paid after 24 h)
+- [x] WhatsApp alerts to the office + booking/enquiry details in tawk.to chat
+- [x] Review collection after the trip, moderated, shown on trip pages
+- [x] Traveller portal on my.basecampadventure.com (secure login, documents, payments)
+- [x] Languages: German, French, Spanish (system done; Everest Base Camp translated; 19 more trips to translate)
 
 ## Ideas to discuss with the client
 

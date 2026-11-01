@@ -1,5 +1,6 @@
 "use client";
 
+import { tellTawk } from "@/lib/tawk";
 import Image from "@/components/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -94,6 +95,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Something went wrong");
       setDone({ reference: json.reference, paymentUrl: json.paymentUrl, due: json.due });
+      tellTawk("booking", { name: form.name, email: form.email, phone: form.phone, reference: json.reference, trip: trip.title });
       if (json.paymentUrl) window.location.assign(json.paymentUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again or WhatsApp us.");

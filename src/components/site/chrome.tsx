@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site/header";
 import { SmoothScroll } from "@/components/site/smooth-scroll";
 import { Integrations } from "@/components/site/integrations";
 import { WhatsappFab } from "@/components/site/whatsapp-fab";
-import { getPublicSettings } from "@/lib/content";
+import { getFeatures, getPublicSettings } from "@/lib/content";
 import { organizationLd, websiteLd } from "@/lib/seo";
 import { site } from "@/lib/site";
 
@@ -17,6 +17,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     tawkProperty: s.tawkProperty || site.integrations.tawkProperty,
     tawkWidget: s.tawkWidget || site.integrations.tawkWidget || "default",
     ga4: s.ga4 || site.integrations.ga4,
+    tawkDetails: getFeatures().tawk.details,
   };
   return (
     <>

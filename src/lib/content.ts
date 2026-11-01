@@ -1,5 +1,6 @@
 import "server-only";
 import { ensureCompany } from "@/lib/company";
+import { withFeatureDefaults } from "@/lib/features";
 import { withHomeDefaults } from "@/lib/home-copy";
 import { resolveOldPath } from "@/lib/redirects";
 import { tripInfo, type InfoOverrides } from "@/lib/trip-info";
@@ -453,3 +454,6 @@ export const getPublicSettings = () => (ensureCompany(), load<Record<string, unk
 
 /** The homepage's words and which sections are shown (admin). */
 export const getHomeCopy = () => withHomeDefaults(load<Parameters<typeof withHomeDefaults>[0]>("home-copy", null));
+
+/** Feature switches published from the admin (languages, portal link…). */
+export const getFeatures = () => withFeatureDefaults(getPublicSettings().features);

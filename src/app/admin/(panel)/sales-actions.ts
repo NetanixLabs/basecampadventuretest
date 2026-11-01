@@ -47,6 +47,8 @@ export async function recordPayment(id: string, amount: number, note: string): P
     const status = paid >= Number(b.total) - 0.5 ? "paid" : "deposit_paid";
     await db.booking.update({ where: { id }, data: { paid, status: b.status === "confirmed" ? "confirmed" : status } });
     await audit(user.id, "booking.payment", "booking", id, `${usd(amount)} ${note}`);
+    const { autoInvite } = await import("@/lib/server/portal");
+    await autoInvite(id).catch(() => undefined);
     return { ok: true, message: `Recorded ${usd(amount)}.` };
   } catch (e) {
     return fail(e);
@@ -66,8 +68,15 @@ export async function emailTraveller(id: string, template: (typeof EMAILS)[numbe
     const vars = { name: b.leadName.split(" ")[0], reference: b.reference, trip: b.tripTitle, date: b.startDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }), pax: `${b.pax}`, total: usd(Number(b.total)), due: usd(Number(b.paid) > 0 ? due : Number(b.due)) };
     if ((template === "payment-reminder" || template === "booking-received") && !b.paymentUrl) throw new Error("!This booking has no WeTravel payment link yet. Add one first.");
     const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://basecampadventure.com").replace(/\/$/, "");
+    let reviewLink = "https://www.tripadvisor.com/UserReviewEdit-g293890-d2437309";
+    if (template === "review-request" && (await (await import("@/lib/admin/features")).features()).reviews.enabled) {
+      const { hashToken, randomToken } = await import("@/lib/admin/crypto");
+      const token = randomToken();
+      await db.booking.update({ where: { id }, data: { reviewRequestedAt: new Date(), reviewTokenHash: hashToken(token) } });
+      reviewLink = `${site}/review/?t=${token}`;
+    }
     const r = await sendTemplate(template, b.leadEmail, vars, {
-      buttonHref: template === "review-request" ? "https://www.tripadvisor.com/UserReviewEdit-g293890-d2437309" : template === "booking-confirmed" ? `${site}/trip/${b.tripSlug}/` : b.paymentUrl ?? undefined,
+      buttonHref: template === "review-request" ? reviewLink : template === "booking-confirmed" ? `${site}/trip/${b.tripSlug}/` : b.paymentUrl ?? undefined,
       replyTo: (await officeEmail()),
     });
     if (!r.ok) throw new Error(`!The email couldn't be sent: ${r.error}`);
@@ -83,7 +92,8 @@ export async function setPaymentLink(id: string, url: string): Promise<R> {
   try {
     const { user } = await assertUser("sales");
     if (url && !z.url().safeParse(url).success) throw new Error("!That doesn't look like a link.");
-    await db.booking.update({ where: { id }, data: { paymentUrl: url || null, status: url ? "awaiting_payment" : undefined } });
+    const b = await db.booking.findUnique({ where: { id }, select: { status: true } });
+    await db.booking.update({ where: { id }, data: { paymentUrl: url || null, status: url && b?.status === "requested" ? "awaiting_payment" : undefined } });
     await audit(user.id, "booking.link", "booking", id);
     return { ok: true, message: "Payment link saved." };
   } catch (e) {

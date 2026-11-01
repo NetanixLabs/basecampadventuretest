@@ -1,5 +1,6 @@
 "use client";
 
+import { tellTawk } from "@/lib/tawk";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -125,6 +126,7 @@ export function TripRequest({ trips }: { trips: RequestTrip[] }) {
       });
       const json = await res.json().catch(() => ({ ok: false }));
       if (!json.ok) throw new Error(json.error ?? "Something went wrong. Please try again or WhatsApp us.");
+      tellTawk("enquiry", { name: f.name, email: f.email, phone: f.phone, reference: json.reference, trip: chosen ? chosen.title : f.places.join(", ") });
       setRef(json.reference);
     } catch (e) {
       setError((e as Error).message);

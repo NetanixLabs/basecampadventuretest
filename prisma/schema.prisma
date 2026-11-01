@@ -265,9 +265,22 @@ model Booking {
   wetravelId     String?
   paymentError   String?
   ip             String?
+  /// Unpaid-booking reminder (sent once).
+  reminderSentAt     DateTime?
+  /// After-trip review request: when sent, and the hash of the link's token.
+  reviewRequestedAt  DateTime?
+  reviewTokenHash    String?   @unique
+  /// Traveller portal account this booking belongs to.
+  travellerId        String?
+  /// Details the traveller enters (passport, flights, emergency contact…),
+  /// AES-256-GCM encrypted JSON.
+  detailsEnc         String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   payments       Payment[]
+  traveller      Traveller?    @relation(fields: [travellerId], references: [id], onDelete: SetNull)
+  files          TravellerFile[]
+  reviews        TripReview[]
 
   @@index([status, createdAt])
   @@index([leadEmail])
@@ -381,4 +394,100 @@ model Campaign {
   sentAt     DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+}
+
+// ------------------------------------------------------- traveller portal
+
+enum TravellerStatus {
+  invited
+  active
+  disabled
+  expired
+}
+
+/// A temporary account on my.basecampadventure.com, created by the office
+/// after payment. It expires after the trip and its documents are deleted.
+model Traveller {
+  id           String          @id @default(cuid())
+  email        String          @unique
+  name         String
+  passwordHash String?
+  status       TravellerStatus @default(invited)
+  expiresAt    DateTime
+  lastLoginAt  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  bookings     Booking[]
+  sessions     TravellerSession[]
+  tokens       TravellerToken[]
+}
+
+model TravellerSession {
+  id          String    @id @default(cuid())
+  travellerId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  lastSeenAt  DateTime  @default(now())
+  revokedAt   DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  traveller   Traveller @relation(fields: [travellerId], references: [id], onDelete: Cascade)
+
+  @@index([travellerId])
+}
+
+/// One-time "choose your password" links (only the hash is stored).
+model TravellerToken {
+  id          String    @id @default(cuid())
+  travellerId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  traveller   Traveller @relation(fields: [travellerId], references: [id], onDelete: Cascade)
+}
+
+/// A document for a booking, stored encrypted outside the website folder.
+model TravellerFile {
+  id         String   @id @default(cuid())
+  bookingId  String
+  kind       String
+  name       String
+  mime       String
+  bytes      Int
+  /// Random file name inside the private documents folder.
+  storageKey String   @unique
+  uploadedBy String
+  createdAt  DateTime @default(now())
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+// ------------------------------------------------------------ reviews
+
+enum ReviewStatus {
+  pending
+  approved
+  rejected
+}
+
+/// A review sent by a traveller after their trip; shown once approved.
+model TripReview {
+  id         String       @id @default(cuid())
+  bookingId  String?
+  tripSlug   String
+  name       String
+  country    String?
+  rating     Int
+  title      String?
+  body       String
+  consent    Boolean      @default(false)
+  status     ReviewStatus @default(pending)
+  createdAt  DateTime     @default(now())
+  decidedAt  DateTime?
+  booking    Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
 }

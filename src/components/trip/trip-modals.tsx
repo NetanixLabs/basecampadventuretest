@@ -1,5 +1,6 @@
 "use client";
 
+import { tellTawk } from "@/lib/tawk";
 import Image from "@/components/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
@@ -167,6 +168,7 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Something went wrong");
       setDone({ reference: json.reference, paymentUrl: json.paymentUrl, due: json.due });
+      tellTawk("booking", { name: f.name, email: f.email, phone: f.phone, reference: json.reference, trip: trip.title });
       if (json.paymentUrl) window.location.assign(json.paymentUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -362,6 +364,7 @@ function EnquiryFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Something went wrong");
+      tellTawk("enquiry", { name: f.name, email: f.email, phone: f.phone, reference: json.reference, trip: trip.title });
       setRef(json.reference);
     } catch (err) {
       setError((err as Error).message);
@@ -444,6 +447,13 @@ export function CountrySelect({ id, value, onChange, required }: { id: string; v
 export function TripModals({ trip }: { trip: ModalTrip }) {
   const modal = useModal();
   const close = () => openTripModal(null);
+  // Links from the translated pages arrive as /trip/<slug>/#book and open the booking form.
+  useEffect(() => {
+    if (window.location.hash === "#book") {
+      openTripModal(trip.price ? "book" : "enquire");
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  }, [trip.price]);
   return (
     <Portal>
       <AnimatePresence>

@@ -19,6 +19,9 @@ export const CONFIG_KEYS = {
   SMTP_PASS: { label: "SMTP password", secret: true },
   EMAIL_FROM: { label: "Send emails from", secret: false },
   OFFICE_EMAIL: { label: "Office alerts go to", secret: false },
+  WHATSAPP_TOKEN: { label: "WhatsApp Business access token", secret: true },
+  WHATSAPP_PHONE_ID: { label: "WhatsApp Business phone number ID", secret: false },
+  CALLMEBOT_KEYS: { label: "CallMeBot key(s)", secret: true },
 } as const;
 export type ConfigKey = keyof typeof CONFIG_KEYS;
 

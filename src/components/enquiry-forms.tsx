@@ -1,5 +1,6 @@
 "use client";
 
+import { tellTawk } from "@/lib/tawk";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -12,6 +13,7 @@ async function send(payload: Record<string, unknown>) {
   const res = await fetch("/api/enquiry/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   const json = await res.json().catch(() => ({ ok: false }));
   if (!json.ok) throw new Error(json.error ?? "Something went wrong. Please try again or WhatsApp us.");
+  tellTawk("enquiry", { name: String(payload.name ?? ""), email: String(payload.email ?? ""), phone: String(payload.phone ?? ""), reference: json.reference, trip: String(payload.trip ?? "") });
   return json.reference as string;
 }
 

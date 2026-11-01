@@ -83,6 +83,22 @@ export type Trip = {
   reviews: Review[];
   /** A ready-made WeTravel checkout for this trip (admin). */
   wetravelUrl?: string | null;
+  /** German, French and Spanish versions (admin → the trip → Translations). */
+  translations?: Partial<Record<"de" | "fr" | "es", TripTranslation | null>>;
+};
+
+export type TripTranslation = {
+  published: boolean;
+  title: string;
+  summary: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  overview: string;
+  highlights: string[];
+  itinerary: { title: string; body: string }[];
+  includes: string[];
+  excludes: string[];
+  faqs: { q: string; a: string }[];
 };
 
 /** The light version used in grids, so list pages do not ship itineraries. */

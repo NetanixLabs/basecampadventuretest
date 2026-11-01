@@ -14,6 +14,7 @@ site uses about 1 GB of RAM, and the content plus photos are under 1 GB.
    - `basecampadventure.com`
    - `www`
    - `admin`
+   - `my` (travellers' trip pages)
 3. SSL/TLS → **Full (strict)**. Speed → enable Brotli. Caching → Standard.
 4. Optional extra lock for the admin: Zero Trust → Access → add an application
    for `admin.basecampadventure.com` allowing only your team's emails.
@@ -49,6 +50,7 @@ nano /srv/basecamp/.env
 | `WETRAVEL_WEBHOOK_SECRET` | See step 5 |
 | `NEXT_PUBLIC_GA4_ID` | `G-XGW9MS2DX0` (the old site's, to keep history) |
 | `NEXT_PUBLIC_TAWK_PROPERTY_ID` | From tawk.to (can also be set later in Admin → Settings) |
+| `PORTAL_URL`, `PORTAL_HOST`, `PRIVATE_DIR`, `CRON_SECRET` | Already filled in by the setup script; leave as they are |
 | `BACKUP_REMOTE` | Optional: an rclone remote for off-site backups |
 
 For the email address to look trustworthy and land in inboxes, add the SPF and
@@ -104,9 +106,42 @@ build works, and switches back automatically if the site doesn't answer.
 Undo the last deploy: `sudo -u basecamp bash /srv/basecamp/repo/deploy/rollback.sh`.
 See DEVELOPING.md for changing layouts safely.
 
+## New features and their switches
+
+Admin → Settings → **Features** turns each one on or off:
+
+- **Reminder for unpaid bookings**: one friendly email with the payment link after 24 hours (adjustable).
+- **Reviews after the trip**: an email with stars a few days after the trip; you approve each review before it shows.
+- **Traveller accounts** on my.basecampadventure.com: only for bookings with a payment received, created from the booking page in the admin. Passwords are chosen by the traveller and stored hashed (Argon2id); documents and details are encrypted and deleted after the trip.
+- **WhatsApp alerts** for new bookings, enquiries and payments (CallMeBot or the official WhatsApp Business API).
+- **tawk.to**: the visitor's name, email and reference appear in the chat after they book or enquire.
+- **Languages**: German, French and Spanish trip pages with hreflang, for trips that have a published translation.
+
+These run on a timer every 15 minutes (set up by `setup-server.sh`). To check it by hand:
+
+```bash
+curl -X POST -H "Authorization: Bearer $(grep -m1 '^CRON_SECRET=' /srv/basecamp/.env | cut -d= -f2-)" http://127.0.0.1:3000/api/cron/
+```
+
+**If your server was set up before these features:** run these once as root:
+
+```bash
+install -d -m 700 -o basecamp -g basecamp /srv/basecamp/private
+```
+
+```bash
+grep -q '^CRON_SECRET=' /srv/basecamp/.env || echo "CRON_SECRET=$(openssl rand -hex 32)" >> /srv/basecamp/.env
+```
+
+```bash
+printf 'PORTAL_URL=https://my.basecampadventure.com\nPORTAL_HOST=my.basecampadventure.com\nPRIVATE_DIR=/srv/basecamp/private\n' >> /srv/basecamp/.env
+```
+
+then copy the scheduled-jobs line from `deploy/setup-server.sh` into `/etc/cron.d/basecamp-jobs`, copy `deploy/Caddyfile` to `/etc/caddy/Caddyfile`, run `systemctl reload caddy`, and deploy.
+
 ## Backups
 
-Every night: the database, the published content and all uploads, kept 14 days
+Every night: the database, the published content, all uploads and the travellers' encrypted documents, kept 14 days
 in `/srv/basecamp/backups`. Plus the hosting company's own 4 backups. To
 restore the database:
 

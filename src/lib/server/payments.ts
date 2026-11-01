@@ -2,6 +2,7 @@ import "server-only";
 import type { Booking } from "@/generated/prisma/client";
 import { db } from "@/lib/admin/db";
 import { officeEmail, sendTemplate } from "@/lib/admin/email/send";
+import { notifyOffice } from "@/lib/server/notify";
 
 /**
  * Turns a WeTravel notification into a recorded payment on the right booking.
@@ -86,7 +87,10 @@ export async function handleWetravelEvent(eventId: string, payload: Json) {
       await Promise.allSettled([
         sendTemplate("payment-received", booking.leadEmail, vars, { details: [["Reference", booking.reference], ["Paid now", usd(amount)], ["Paid in total", usd(paid)], ["Trip total", usd(total)], ["Balance", usd(Math.max(0, total - paid))]], replyTo: (await officeEmail()) }),
         sendTemplate("payment-office", (await officeEmail()), { ...vars, name: booking.leadName }, { buttonHref: admin }),
+        notifyOffice("payment", `Payment received ${usd(amount)} · ${booking.reference}\n${booking.leadName} · ${booking.tripTitle}\nPaid ${usd(paid)} of ${usd(total)}\n${admin}`),
       ]);
+      const { autoInvite } = await import("@/lib/server/portal");
+      await autoInvite(booking.id).catch((e) => console.error("[portal] auto invite failed", e));
     }
     await db.webhookEvent.update({ where: { id: event.id }, data: { processedAt: new Date(), error: null } });
     return { matched: true, status: updated.status };

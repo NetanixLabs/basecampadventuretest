@@ -30,6 +30,8 @@ import { whatsappHref } from "@/lib/site";
 import { formatDate } from "@/lib/utils";
 import { costTitle } from "@/lib/cost-title";
 import { Equipment } from "@/components/trip/equipment";
+import { LangSwitch } from "@/components/trip/localized-trip";
+import { tripAlternates } from "@/lib/i18n";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -44,7 +46,9 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const trip = getTrip(slug);
   if (!trip) return {};
-  return meta({ path: `/trip/${trip.slug}/`, title: trip.title, description: trip.summary, seo: trip.seo, image: trip.cover, lead: tripLead(trip), price: trip.price?.amount });
+  const m = meta({ path: `/trip/${trip.slug}/`, title: trip.title, description: trip.summary, seo: trip.seo, image: trip.cover, lead: tripLead(trip), price: trip.price?.amount });
+  const languages = tripAlternates(trip);
+  return languages ? { ...m, alternates: { ...m.alternates, languages } } : m;
 }
 
 const INFO_ICONS: Record<InfoKey, LucideIcon> = {
@@ -164,6 +168,7 @@ export default async function TripPage({ params }: Props) {
               <PlanTripButton priced={Boolean(trip.price)} />
             </Reveal>
           </div>
+          <LangSwitch trip={trip} current="en" label="This trip in" />
         </div>
         <div className="mx-auto mt-7 max-w-site px-4 sm:px-6 lg:px-6">
           <TripSlider images={[...(sharpest ? [sharpest] : []), ...photos.filter((p) => p.src !== sharpest?.src)]} title={trip.title} />

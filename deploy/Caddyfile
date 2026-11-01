@@ -16,7 +16,7 @@ www.basecampadventure.com {
 	redir https://basecampadventure.com{uri} permanent
 }
 
-basecampadventure.com, admin.basecampadventure.com {
+basecampadventure.com, admin.basecampadventure.com, my.basecampadventure.com {
 	encode zstd gzip
 
 	# Uploaded photos and videos: straight from disk, cached for a year
