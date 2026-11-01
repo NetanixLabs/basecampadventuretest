@@ -68,6 +68,22 @@ await check("every sitemap page answers 200 (Googlebot)", async () => {
   return `${pages.length} pages`;
 });
 
+await check("every address Google already knows still works (docs/url-baseline.txt)", async () => {
+  // The URLs indexed before launch must never change or disappear. New pages may be added.
+  const { readFileSync, existsSync } = await import("node:fs");
+  if (!existsSync("docs/url-baseline.txt")) return "no baseline file";
+  const baseline = readFileSync("docs/url-baseline.txt", "utf8").split("\n").map((l) => l.trim()).filter(Boolean);
+  const current = new Set(sitemapUrls.map((u) => u.replace(SITE, "")));
+  const missing = baseline.filter((p) => !current.has(p));
+  assert(!missing.length, `${missing.length} known URLs missing from the sitemap: ${missing.slice(0, 5).join(", ")}`);
+  const bad = [];
+  for (let i = 0; i < baseline.length; i += 12) {
+    await Promise.all(baseline.slice(i, i + 12).map(async (p) => { const r = await get(p, { headers: { "User-Agent": GOOGLEBOT } }); if (r.status !== 200) bad.push(`${p} ${r.status}`); }));
+  }
+  assert(!bad.length, bad.slice(0, 5).join(", "));
+  return `${baseline.length} known URLs unchanged`;
+});
+
 await check("canonical on every sample page is its own absolute https URL", async () => {
   for (const p of SAMPLE) {
     const c = canonicalOf(await html(p));
