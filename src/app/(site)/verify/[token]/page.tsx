@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BadgeCheck, CircleAlert, CircleX } from "lucide-react";
-import { db } from "@/lib/admin/db";
-import { isGenuine } from "@/lib/server/receipts";
+import { isGenuine, receiptByToken } from "@/lib/server/receipts";
 import { site } from "@/lib/site";
 import { headers } from "next/headers";
 import { clientIpFrom } from "@/lib/ip";
@@ -15,11 +14,10 @@ const mask = (name: string) => name.split(/\s+/).map((w, i) => (i === 0 ? w : `$
 const fmt = (n: number, cur: string) => `${cur} ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** Anyone with the QR code can confirm a receipt or bill is genuine. Shows only what's printed on it, with the surname shortened. */
-export default async function VerifyPage({ params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params;
-  const code10 = code.toUpperCase();
+export default async function VerifyPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const limited = rateLimited(`verify:${clientIpFrom(await headers())}`, 30);
-  const r = !limited && /^[2-9A-Z]{10}$/.test(code10) ? await db.receipt.findUnique({ where: { code: code10 } }).catch(() => null) : null;
+  const r = limited ? null : await receiptByToken(token).catch(() => null);
   const ok = r ? isGenuine(r) : false;
   const state = !r ? "missing" : !ok ? "tampered" : r.voidedAt ? "void" : "genuine";
   const look = {
@@ -41,6 +39,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
             <dt className="text-ink-soft">Issued</dt><dd>{r.issuedAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kathmandu" })}</dd>
             <dt className="text-ink-soft">{r.kind === "bill" ? "Billed to" : "Received from"}</dt><dd>{mask(r.customerName)}</dd>
             <dt className="text-ink-soft">{r.kind === "bill" ? "Amount due" : "Amount"}</dt><dd className="font-semibold">{fmt(Number(r.total), r.currency)}</dd>
+            <dt className="text-ink-soft">Verification code</dt><dd className="font-mono text-sm tracking-widest">{r.code}</dd>
             <dt className="text-ink-soft">Fingerprint</dt><dd className="font-mono text-xs leading-5 tracking-wider">{r.signature.slice(0, 20).toUpperCase().replace(/(.{4})(?=.)/g, "$1 ")}</dd>
           </dl>
           <p className="mt-3 text-xs text-ink-soft">The fingerprint printed on your document must match exactly. It is calculated from every amount, name and date on the document with a secret key only we hold, so any change makes it fail.</p>

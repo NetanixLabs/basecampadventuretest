@@ -1,5 +1,5 @@
 import "server-only";
-import { createHmac, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import type { Receipt } from "@/generated/prisma/client";
 import { db } from "@/lib/admin/db";
 import { env } from "@/lib/admin/env";
@@ -17,7 +17,7 @@ import { getBrand } from "@/lib/server/receipt-brand";
  */
 export type ReceiptItem = { description: string; qty: number; unitPrice: number };
 /** Where the booking stands, in cents, printed under the totals. */
-export type ReceiptSummary = { tripTotal: number; paidBefore: number; thisPayment: number; balance: number };
+export type ReceiptSummary = { tripTotal: number; paidBefore: number; thisPayment: number; balance: number; tripPrice?: number; discount?: number; discountCode?: string | null };
 export type ReceiptInput = {
   kind: "receipt" | "bill";
   bookingId?: string | null;
@@ -54,9 +54,29 @@ function canonical(r: Pick<Receipt, "number" | "kind" | "code" | "customerName" 
 function summaryShape(s: unknown) {
   if (!s || typeof s !== "object") return null;
   const x = s as ReceiptSummary;
-  return [Number(x.tripTotal), Number(x.paidBefore), Number(x.thisPayment), Number(x.balance)];
+  return [Number(x.tripTotal), Number(x.paidBefore), Number(x.thisPayment), Number(x.balance), Number(x.tripPrice ?? 0), Number(x.discount ?? 0), String(x.discountCode ?? "")];
 }
 const sign = (data: Parameters<typeof canonical>[0]) => createHmac("sha256", hmacKey()).update(canonical(data)).digest("hex");
+
+/**
+ * The secret part of the QR link: 43 characters derived from the receipt's
+ * number and code with the server's key. Nobody can guess or list it; the
+ * database keeps only its SHA-256, and the PDF can be re-made at any time.
+ */
+export function verifyToken(r: Pick<Receipt, "number" | "code">) {
+  return createHmac("sha256", hmacKey()).update(`verify-link-v1|${r.number}|${r.code}`).digest("base64url");
+}
+export const verifyHashOf = (token: string) => createHash("sha256").update(token).digest("hex");
+const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "https://basecampadventure.com").replace(/\/$/, "");
+export const verifyUrl = (r: Pick<Receipt, "number" | "code">) => `${siteUrl()}/verify/${verifyToken(r)}/`;
+
+/** Finds a receipt from the token in its QR link. */
+export async function receiptByToken(token: string) {
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const r = await db.receipt.findUnique({ where: { verifyHash: verifyHashOf(token) } });
+  // Belt and braces: the token must also re-derive from the receipt itself.
+  return r && safeEqual(verifyToken(r), token) ? r : null;
+}
 
 export function isGenuine(r: Receipt) {
   return safeEqual(sign({ ...r, items: r.items }), r.signature);
@@ -83,7 +103,17 @@ export async function createReceipt(input: ReceiptInput, by: { id: string | null
   const subtotal = fromCents(subtotalCents);
   const vat = fromCents(vatCents);
   const total = fromCents(totalCents);
-  const summary = input.summary ? { tripTotal: Math.round(input.summary.tripTotal), paidBefore: Math.round(input.summary.paidBefore), thisPayment: Math.round(input.summary.thisPayment), balance: Math.round(input.summary.balance) } : null;
+  const summary = input.summary
+    ? {
+        tripTotal: Math.round(input.summary.tripTotal),
+        paidBefore: Math.round(input.summary.paidBefore),
+        thisPayment: Math.round(input.summary.thisPayment),
+        balance: Math.round(input.summary.balance),
+        tripPrice: Math.round(input.summary.tripPrice ?? input.summary.tripTotal),
+        discount: Math.round(input.summary.discount ?? 0),
+        discountCode: input.summary.discountCode ? String(input.summary.discountCode).slice(0, 40) : null,
+      }
+    : null;
   const year = new Date().getUTCFullYear();
   const prefix = `${input.kind === "bill" ? brand.billPrefix : brand.receiptPrefix}-${year}-`;
 
@@ -120,6 +150,7 @@ export async function createReceipt(input: ReceiptInput, by: { id: string | null
           issuedById: by.id,
           issuedByName: by.name,
           signature: sign(base),
+          verifyHash: verifyHashOf(verifyToken(base)),
         },
       });
     } catch (e) {
@@ -157,7 +188,7 @@ export async function receiptForPayment(paymentId: string, by: { id: string | nu
       currency: p.currency,
       paidVia: p.provider === "manual" ? raw?.note?.slice(0, 60) || "Paid at the office" : "Card via WeTravel",
       paidAt: p.createdAt,
-      summary: { tripTotal, paidBefore, thisPayment, balance: Math.max(0, tripTotal - paidBefore - thisPayment) },
+      summary: { tripTotal, paidBefore, thisPayment, balance: Math.max(0, tripTotal - paidBefore - thisPayment), tripPrice: cents(Number(b.subtotal)), discount: cents(Number(b.discount)), discountCode: b.discountCode },
     },
     by,
   );

@@ -6,9 +6,8 @@ import { audit } from "@/lib/admin/audit";
 import { db } from "@/lib/admin/db";
 import { officeEmail, sendTemplate } from "@/lib/admin/email/send";
 import { Denied, assertUser } from "@/lib/admin/guards";
-import { createReceipt, isGenuine, receiptForPayment } from "@/lib/server/receipts";
+import { createReceipt, isGenuine, receiptForPayment, verifyUrl } from "@/lib/server/receipts";
 import { receiptFileName, receiptPdf } from "@/lib/server/receipt-pdf";
-import { site } from "@/lib/site";
 
 type R = { ok: boolean; message: string; id?: string };
 const fail = (e: unknown): R => ({ ok: false, message: e instanceof Denied ? e.message : e instanceof Error && e.message.startsWith("!") ? e.message.slice(1) : "Something went wrong. Please try again." });
@@ -41,7 +40,7 @@ export async function createReceiptAction(input: unknown): Promise<R> {
       const tripTotal = c(Number(booking.total));
       const paidBefore = c(Number(booking.paid));
       const thisPayment = d.kind === "receipt" ? d.items.reduce((s, i) => s + Math.round(Number(i.qty)) * c(Number(i.unitPrice)), 0) : 0;
-      summary = { tripTotal, paidBefore, thisPayment, balance: Math.max(0, tripTotal - paidBefore - thisPayment) };
+      summary = { tripTotal, paidBefore, thisPayment, balance: Math.max(0, tripTotal - paidBefore - thisPayment), tripPrice: c(Number(booking.subtotal)), discount: c(Number(booking.discount)), discountCode: booking.discountCode };
     }
     const r = await createReceipt({ ...d, customerEmail: d.customerEmail || null, paidAt: d.paidAt ? new Date(`${d.paidAt}T12:00:00Z`) : null, summary }, { id: user.id, name: user.name });
     await audit(user.id, `${r.kind}.create`, "receipt", r.id, `${r.number} ${r.currency} ${r.total}`);
@@ -72,7 +71,7 @@ export async function emailReceipt(id: string): Promise<R> {
     if (!r) return { ok: false, message: "Not found." };
     if (!r.customerEmail) return { ok: false, message: "This receipt has no email address." };
     if (r.voidedAt) return { ok: false, message: "Cancelled receipts can't be sent." };
-    const url = `${site.url}/verify/${r.code}/`;
+    const url = verifyUrl(r);
     const pdf = await receiptPdf(r, url, isGenuine(r));
     const total = `${r.currency} ${Number(r.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
     const sent = await sendTemplate(r.kind === "bill" ? "bill-email" : "receipt-email", r.customerEmail, { name: r.customerName.split(" ")[0], number: r.number, total }, { buttonHref: url, replyTo: await officeEmail(), attachments: [{ filename: receiptFileName(r), content: pdf, contentType: "application/pdf" }] });

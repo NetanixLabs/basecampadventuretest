@@ -536,6 +536,8 @@ model Receipt {
   kind            ReceiptKind @default(receipt)
   /// Short random code printed as a QR link: /verify/<code>/
   code            String      @unique
+  /// SHA-256 of the secret verification token in the QR link (the token itself is never stored).
+  verifyHash      String?     @unique
   bookingId       String?
   paymentId       String?     @unique
   customerName    String

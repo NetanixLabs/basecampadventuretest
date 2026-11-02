@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { Badge, Card, PageHeader, day, when } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
-import { isGenuine, type ReceiptItem } from "@/lib/server/receipts";
-import { site } from "@/lib/site";
+import { isGenuine, verifyUrl, type ReceiptItem } from "@/lib/server/receipts";
 import { ReceiptActions } from "./actions-ui";
 
 export const metadata = { title: "Receipt" };
@@ -25,7 +24,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             <dt className="text-muted">{r.kind === "bill" ? "Billed to" : "Received from"}</dt><dd>{r.customerName}{r.customerEmail ? ` · ${r.customerEmail}` : ""}</dd>
             {r.booking ? <><dt className="text-muted">Booking</dt><dd><Link href={`/bookings/${r.booking.id}`} className="font-semibold text-pine">{r.booking.reference}</Link></dd></> : null}
             {r.paidVia ? <><dt className="text-muted">Paid by</dt><dd>{r.paidVia}{r.paidAt ? ` on ${day(r.paidAt)}` : ""}</dd></> : null}
-            <dt className="text-muted">Verification</dt><dd><a href={`${site.url}/verify/${r.code}/`} target="_blank" rel="noopener noreferrer" className="font-mono text-pine">{r.code} ↗</a></dd>
+            <dt className="text-muted">Verification</dt><dd><a href={verifyUrl(r)} target="_blank" rel="noopener noreferrer" className="font-mono text-pine">Code {r.code} ↗</a></dd>
             {r.voidReason ? <><dt className="text-muted">Cancelled because</dt><dd>{r.voidReason}</dd></> : null}
           </dl>
           <table className="mt-5 w-full text-sm">

@@ -141,8 +141,15 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   if (sum) {
     y += 6;
     const c = (n: number) => fmt(n / 100, r.currency);
+    const discounted = (sum.discount ?? 0) > 0;
     const rows: [string, string, boolean][] = [
-      ["Trip total", c(sum.tripTotal), false],
+      ...(discounted
+        ? ([
+            ["Trip price", c(sum.tripPrice ?? sum.tripTotal), false],
+            [`Discount${sum.discountCode ? ` (code ${sum.discountCode})` : ""}`, `− ${c(sum.discount ?? 0)}`, false],
+          ] as [string, string, boolean][])
+        : []),
+      [discounted ? "Trip total after discount" : "Trip total", c(sum.tripTotal), false],
       ["Paid before (advance)", c(sum.paidBefore), false],
       ...(isBill ? [] : ([["This payment", c(sum.thisPayment), false]] as [string, string, boolean][])),
       ["Total paid so far", c(sum.paidBefore + (isBill ? 0 : sum.thisPayment)), false],
@@ -193,7 +200,7 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   doc.roundedRect(M, by, 290, 112, 8).lineWidth(0.8).strokeColor(C.line).stroke();
   doc.image(qr, M + 10, by + 10, { width: 92 });
   doc.font("Bold").fontSize(7).fillColor(C.teal).text("VERIFY THIS DOCUMENT", M + 112, by + 12, { characterSpacing: 0.9 });
-  doc.font("Body").fontSize(8).fillColor(C.soft).text(`Scan the QR code or visit ${verifyUrl.replace(/^https?:\/\//, "")}`, M + 112, by + 24, { width: 170, lineGap: 1.2 });
+  doc.font("Body").fontSize(8).fillColor(C.soft).text(`Scan the QR code, or go to ${site.url.replace(/^https?:\/\//, "")}/verify and enter the ${isBill ? "bill" : "receipt"} number and this code.`, M + 112, by + 24, { width: 170, lineGap: 1.2 });
   doc.font("Bold").fontSize(6.6).fillColor(C.muted).text("VERIFICATION CODE", M + 112, doc.y + 6, { characterSpacing: 0.8 });
   doc.font("Semi").fontSize(9).fillColor(C.ink).text(r.code, M + 112, doc.y + 1.5, { characterSpacing: 1.2 });
   doc.font("Bold").fontSize(6.6).fillColor(C.muted).text("SECURITY FINGERPRINT", M + 112, doc.y + 5, { characterSpacing: 0.8 });
