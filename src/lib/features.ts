@@ -11,6 +11,10 @@ export type Features = {
   languages: { de: boolean; fr: boolean; es: boolean };
   payments: { wetravel: boolean; hbl: boolean; preferred: "wetravel" | "hbl"; hblCurrency: "USD" | "NPR"; nprRate: number };
   pretrip: { enabled: boolean; d30: boolean; d7: boolean };
+  /** Approximate prices in the visitor's currency; rates are "1 US$ = x". */
+  currency: { enabled: boolean; eur: number; gbp: number; aud: number };
+  /** Saved trips: a list emailed to the visitor, and one reminder a few days later. */
+  saved: { enabled: boolean; reminderDays: number };
 };
 
 export const FEATURE_DEFAULTS: Features = {
@@ -22,6 +26,8 @@ export const FEATURE_DEFAULTS: Features = {
   languages: { de: false, fr: false, es: false },
   payments: { wetravel: true, hbl: false, preferred: "wetravel", hblCurrency: "USD", nprRate: 133 },
   pretrip: { enabled: true, d30: true, d7: true },
+  currency: { enabled: true, eur: 0.86, gbp: 0.75, aud: 1.52 },
+  saved: { enabled: true, reminderDays: 3 },
 };
 
 export function withFeatureDefaults(saved: unknown): Features {

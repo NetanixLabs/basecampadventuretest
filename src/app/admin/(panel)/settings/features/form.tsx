@@ -54,6 +54,18 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
           <label className="flex items-center justify-between gap-3 text-sm font-semibold">7 days before<Switch on={f.pretrip.d7} onChange={(v) => set("pretrip", { d7: v })} label="7 days before" /></label>
         </Feature>
 
+        <Feature title="Prices in the visitor's currency" info="Trip pages show an approximate price in euros, pounds or Australian dollars next to the US$ price, picked from the visitor's browser language (they can change it). Bookings are always charged in US$. Update the rates now and then." on={f.currency.enabled} onChange={(v) => set("currency", { enabled: v })}>
+          <div className="grid grid-cols-3 gap-3">
+            {([["eur", "EUR (€)"], ["gbp", "GBP (£)"], ["aud", "AUD (A$)"]] as const).map(([k, l]) => (
+              <div key={k}><Label htmlFor={`fx-${k}`}>{`1 US$ = ${l}`}</Label><input id={`fx-${k}`} inputMode="decimal" value={f.currency[k]} onChange={(e) => set("currency", { [k]: e.target.value as unknown as number })} className={`${inputClass} font-mono`} /></div>
+            ))}
+          </div>
+        </Feature>
+
+        <Feature title="Save a trip" info="Visitors tap the heart on trips to keep a shortlist, and can email it to themselves. We send one friendly reminder after the number of days below (only if they ticked the box to hear from us)." on={f.saved.enabled} onChange={(v) => set("saved", { enabled: v })}>
+          <div><Label htmlFor="sv-d">Reminder after (days)</Label><input id="sv-d" inputMode="numeric" value={f.saved.reminderDays} onChange={(e) => set("saved", { reminderDays: num(e.target.value) })} className={inputClass} /></div>
+        </Feature>
+
         <Feature title="Traveller details in tawk.to chat" info="When someone books or sends an enquiry, their name, email and reference are added to their tawk.to chat, so your team knows who they are talking to." on={f.tawk.details} onChange={(v) => set("tawk", { details: v })} />
 
         <Feature title="WhatsApp alerts to the office" info="A WhatsApp message to the office for new bookings, enquiries and payments. CallMeBot is free and quick to set up for a personal number; Meta's WhatsApp Business API is the official option for a business number (needs an approved message template)." on={f.whatsapp.enabled} onChange={(v) => set("whatsapp", { enabled: v })}>

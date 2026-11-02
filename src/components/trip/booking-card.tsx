@@ -7,6 +7,7 @@ import { openTripModal } from "@/components/trip/trip-modals";
 import { site, whatsappHref } from "@/lib/site";
 import type { Price } from "@/lib/types";
 import { usd } from "@/lib/utils";
+import { ApproxPrice, CurrencyPicker } from "@/components/currency";
 
 /**
  * The booking box: discount and "From" price per adult, Book Now, Customize
@@ -24,6 +25,12 @@ export function BookingCard({ slug, title, price }: { slug: string; title: strin
           <div className="relative mt-2 flex flex-wrap items-end gap-x-3 gap-y-1">
             {price.regular ? <span className="pb-1 text-lg text-white/60 line-through">{usd(price.regular)}</span> : null}
             <span className="font-display text-5xl leading-none">{usd(price.amount)}</span>
+          </div>
+        ) : null}
+        {price ? (
+          <div className="relative mt-2 flex min-h-6 items-center gap-2 text-sm text-white/80">
+            <ApproxPrice usd={price.amount} />
+            <CurrencyPicker tone="dark" className="ml-auto" />
           </div>
         ) : (
           <p className="font-display relative mt-2 text-4xl leading-none">Price on request</p>
@@ -93,6 +100,7 @@ export function MobileBookingBar({ price }: { slug: string; title: string; price
               <p className="font-display text-3xl leading-none">
                 {usd(price.amount)} <span className="text-sm font-semibold text-muted normal-case">/ Adult</span>
               </p>
+              <ApproxPrice usd={price.amount} className="text-xs text-muted" />
             </>
           ) : (
             <p className="text-sm font-bold">Price on request</p>

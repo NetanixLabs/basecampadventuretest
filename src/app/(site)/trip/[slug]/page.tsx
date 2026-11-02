@@ -5,6 +5,8 @@ import { missing } from "@/lib/not-found";
 import { ArrowRight, Backpack, Check, Clock, Compass, FileDown, Flag, Gauge, Info, MapPin, Mountain, Route, Star, Sun, Users, X, type LucideIcon } from "lucide-react";
 import { TripSidebar } from "@/components/trip/trip-sidebar";
 import { TripAwards } from "@/components/trip/trip-awards";
+import { ReviewUs } from "@/components/trip/review-us";
+import { VideoReviewGallery } from "@/components/video-review-gallery";
 import { TripProse } from "@/components/trip/trip-prose";
 import { AltitudeProfile } from "@/components/altitude-profile";
 import { Faq } from "@/components/faq";
@@ -19,7 +21,7 @@ import { Itinerary } from "@/components/trip/itinerary";
 import { SectionNav } from "@/components/trip/section-nav";
 import { TripModals } from "@/components/trip/trip-modals";
 import { TripCard } from "@/components/trip-card";
-import { getActivity, getDestination, getGuidesForRegion, getRelatedTrips, getTravellerPhotos, getTrip, getEquipment, getTripInfo, getTrips, getVideosForTrip } from "@/lib/content";
+import { getActivity, getDestination, getGuidesForRegion, getRelatedTrips, getTravellerPhotos, getTrip, getEquipment, getTripInfo, getTrips, getVideoReviews, getVideosForTrip } from "@/lib/content";
 import type { InfoKey } from "@/lib/trip-info";
 import { meta, tripLd, tripLead, videoLd } from "@/lib/seo";
 import { YouTube } from "@/components/video";
@@ -92,6 +94,7 @@ export default async function TripPage({ params }: Props) {
   const photos = [trip.cover, ...trip.gallery].filter((x, i, a): x is NonNullable<typeof x> => Boolean(x) && a.findIndex((y) => y?.src === x?.src) === i);
   const travellerPhotos = getTravellerPhotos(trip.slug);
   const videos = getVideosForTrip(trip.slug);
+  const videoReviews = getVideoReviews().filter((v) => !v.preview).slice(0, 10);
   const altitudeDays = trip.itinerary.filter((d) => d.altitude).length >= 3 ? trip.itinerary : [];
 
   const info = getTripInfo(trip);
@@ -137,7 +140,7 @@ export default async function TripPage({ params }: Props) {
     ...(videos.length ? [{ id: "videos", label: "Videos" }] : []),
     { id: "gallery", label: "Gallery" },
     ...(trip.faqs.length ? [{ id: "faqs", label: "FAQs" }] : []),
-    ...(trip.reviews.length ? [{ id: "reviews", label: "Reviews" }] : []),
+    ...(trip.reviews.length || videoReviews.length ? [{ id: "reviews", label: "Reviews" }] : []),
   ];
 
   return (
@@ -338,7 +341,7 @@ export default async function TripPage({ params }: Props) {
             </section>
           ) : null}
 
-          {trip.reviews.length ? (
+          {trip.reviews.length || videoReviews.length ? (
             <section id="reviews" className="scroll-mt-40">
               <div className="flex flex-wrap items-end justify-between gap-6">
                 <SectionHeading eyebrow="Reviews" lines={["From the", <Accent key="t">trail.</Accent>]} />
@@ -394,6 +397,16 @@ export default async function TripPage({ params }: Props) {
                   View more Reviews <ArrowRight className="size-4" aria-hidden />
                 </Link>
               </div>
+              {videoReviews.length ? (
+                <div id="video-reviews" className="mt-12 scroll-mt-40">
+                  <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                    <h3 className="font-display text-2xl font-bold tracking-tight">Video reviews</h3>
+                    <p className="max-w-xs text-sm text-ink-soft">Travellers in their own words. Tap a video to watch.</p>
+                  </div>
+                  <VideoReviewGallery items={videoReviews} />
+                </div>
+              ) : null}
+              <div className="mt-10 lg:hidden"><ReviewUs /></div>
             </section>
           ) : null}
         </article>
@@ -402,6 +415,7 @@ export default async function TripPage({ params }: Props) {
           <TripSidebar>
             <BookingCard slug={trip.slug} title={trip.title} price={trip.price} days={trip.days} />
             <TripAwards />
+            <ReviewUs />
           </TripSidebar>
         </aside>
       </div>
