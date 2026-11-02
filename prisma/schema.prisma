@@ -656,7 +656,13 @@ model PortalMessage {
   bookingId  String
   fromOffice Boolean
   authorName String
+  /// AES-256-GCM encrypted text ("enc1:" prefix); only the server can read it.
   body       String
+  /// Optional attachment, encrypted in the private folder.
+  fileKey    String?   @unique
+  fileName   String?
+  fileMime   String?
+  fileSize   Int?
   readAt     DateTime?
   createdAt  DateTime  @default(now())
   booking    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)

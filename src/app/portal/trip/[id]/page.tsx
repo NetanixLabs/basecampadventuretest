@@ -7,7 +7,9 @@ import { getTrip } from "@/lib/content";
 import { DETAIL_FIELDS, FILE_KINDS, getTraveller, ownBooking, readDetails, tripEnd } from "@/lib/server/portal";
 import { PortalShell } from "../../shell";
 import { DetailsForm, Documents } from "./client";
-import { BottomNav, Messages, PortalReview } from "./extra";
+import { BottomNav, PortalReview } from "./extra";
+import { Chat } from "@/components/chat";
+import { markRead, thread, unreadFor } from "@/lib/server/messages";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your trip" };
@@ -27,16 +29,19 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const b = await ownBooking(t.id, id);
   if (!b) notFound();
   const trip = getTrip(b.tripSlug);
-  const [payments, files, count, messages, photos, receipts, reviewed] = await Promise.all([
+  const [payments, files, count, unread, photos, receipts, reviewed] = await Promise.all([
     db.payment.findMany({ where: { bookingId: b.id, status: "succeeded" }, orderBy: { createdAt: "asc" } }),
     db.travellerFile.findMany({ where: { bookingId: b.id }, orderBy: { createdAt: "desc" } }),
     db.booking.count({ where: { travellerId: t.id } }),
-    db.portalMessage.findMany({ where: { bookingId: b.id }, orderBy: { createdAt: "asc" } }),
+    unreadFor(b.id, "traveller"),
     db.tripPhoto.findMany({ where: { departure: { tripSlug: b.tripSlug, startDate: b.startDate } }, orderBy: { createdAt: "desc" }, select: { id: true } }),
     db.receipt.findMany({ where: { bookingId: b.id, voidedAt: null }, orderBy: { issuedAt: "desc" } }),
     db.tripReview.count({ where: { bookingId: b.id } }),
   ]);
   const f = await features();
+  const messages = await thread(b.id);
+  // Opening the trip page shows the conversation, so the office sees "Seen".
+  if (unread) await markRead(b.id, "traveller");
   const tripOver = daysUntil(tripEnd(b)) < 0;
   const total = Number(b.total);
   const paid = Number(b.paid);
@@ -92,9 +97,9 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       </section>
 
       <section id="messages" className="mt-6 scroll-mt-20 rounded-2xl border border-line bg-card p-6 shadow-sm">
-        <h2 className="font-display text-lg font-bold">Messages</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">Messages{unread ? <span className="rounded-full bg-crimson px-2 py-0.5 text-xs text-white">{unread} new</span> : null}</h2>
         <p className="mt-1 text-sm text-muted">Questions about your trip or documents? Write to our office here.</p>
-        <Messages bookingId={b.id} messages={messages.map((m) => ({ id: m.id, fromOffice: m.fromOffice, authorName: m.authorName, body: m.body, at: m.createdAt.toISOString() }))} />
+        <Chat bookingId={b.id} side="traveller" initial={messages} empty="Ask us anything about your trip: flights, permits, gear, documents." />
       </section>
 
       {photos.length ? (
@@ -147,7 +152,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           </ul>
         </section>
       ) : null}
-      <BottomNav photos={photos.length > 0} />
+      <BottomNav photos={photos.length > 0} unread={unread} />
     </PortalShell>
   );
 }

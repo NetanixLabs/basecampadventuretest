@@ -142,7 +142,7 @@ export const TEMPLATES: TemplateDef[] = [
     vars: ["name", "reference", "trip"],
     subject: "New message from {{name}} ({{reference}})",
     heading: "{{name}} sent a message",
-    body: "A traveller wrote to you from their trip page about **{{trip}}**. Reply from the booking in the admin so the answer appears on their trip page too.",
+    body: "A traveller wrote to you from their trip page about **{{trip}}**. For privacy, messages are only shown in the admin, never in emails. Reply from the booking so the answer appears on their trip page too.",
     button: "Open the booking",
   },
   {
@@ -152,7 +152,7 @@ export const TEMPLATES: TemplateDef[] = [
     vars: ["name", "trip"],
     subject: "New message about your {{trip}}",
     heading: "Namaste {{name}}, you have a new message",
-    body: "Our team sent you a message about **{{trip}}**. Open your trip page to read it and reply.",
+    body: "Our team sent you a message about **{{trip}}**. For your privacy we don't put messages in emails: sign in to your trip page to read it and reply.",
     button: "Read the message",
   },
   {

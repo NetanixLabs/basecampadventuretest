@@ -4,6 +4,7 @@ import { db } from "@/lib/admin/db";
 import { can, requireUser } from "@/lib/admin/guards";
 import { AgentSelect } from "./agent-select";
 import { BookingMessages } from "./messages";
+import { markRead, thread, unreadFor } from "@/lib/server/messages";
 import { site } from "@/lib/site";
 import { BookingControls } from "./controls";
 import { PortalCard } from "./portal-card";
@@ -16,8 +17,10 @@ export const metadata = { title: "Booking" };
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = await requireUser("sales");
-  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } }, receipts: { orderBy: { issuedAt: "desc" } }, messages: { orderBy: { createdAt: "asc" } } } });
+  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } }, receipts: { orderBy: { issuedAt: "desc" } } } });
   if (!b) notFound();
+  const unread = await unreadFor(b.id, "office");
+  if (unread) await markRead(b.id, "office");
   const events = await db.$queryRaw<{ id: string; type: string; payload: unknown; error: string | null; createdAt: Date }[]>`
     SELECT id, type, payload, error, "createdAt" FROM "WebhookEvent"
     WHERE payload::text LIKE ${"%" + b.reference + "%"} OR payload::text LIKE ${"%" + (b.wetravelId ?? b.reference) + "%"}
@@ -73,7 +76,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               </details>
             ) : null}
           </Card>
-          <BookingMessages bookingId={b.id} messages={b.messages.map((m) => ({ id: m.id, fromOffice: m.fromOffice, authorName: m.authorName, body: m.body, at: m.createdAt.toISOString() }))} />
+          <BookingMessages bookingId={b.id} messages={await thread(b.id)} unread={unread} />
           <Card title="Receipts & bills" info="Every successful payment gets a numbered, signed receipt automatically. Open the PDF, email it, or make a bill for the balance." actions={<Link href={`/receipts/new?booking=${b.id}&kind=bill`} className="text-sm font-semibold text-pine hover:underline">New bill</Link>}>
             {b.receipts.length ? (
               <ul className="divide-y divide-line text-sm">

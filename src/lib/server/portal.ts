@@ -233,6 +233,11 @@ export async function purgeTraveller(travellerId: string) {
   const bookings = await db.booking.findMany({ where: { travellerId }, select: { id: true } });
   const files = await db.travellerFile.findMany({ where: { bookingId: { in: bookings.map((b) => b.id) } }, select: { id: true } });
   for (const f of files) await deleteFile(f.id).catch(() => undefined);
+  // Messages and their encrypted attachments go too.
+  const ids = bookings.map((b) => b.id);
+  const att = await db.portalMessage.findMany({ where: { bookingId: { in: ids }, fileKey: { not: null } }, select: { fileKey: true } });
+  for (const a of att) if (a.fileKey) await removePrivate(a.fileKey).catch(() => undefined);
+  await db.portalMessage.deleteMany({ where: { bookingId: { in: ids } } });
   await db.booking.updateMany({ where: { travellerId }, data: { detailsEnc: null } });
   await db.travellerSession.updateMany({ where: { travellerId, revokedAt: null }, data: { revokedAt: new Date() } });
   await db.travellerToken.deleteMany({ where: { travellerId } });

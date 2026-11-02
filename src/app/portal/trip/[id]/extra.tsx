@@ -1,39 +1,10 @@
 "use client";
 
 import { FileText, Images, MessageCircle, Mountain, UserRound } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 import { useState, useTransition } from "react";
 import { inputClass } from "@/components/admin/ui";
-import { sendPortalMessage, writePortalReview } from "../../actions";
-
-type M = { id: string; fromOffice: boolean; authorName: string; body: string; at: string };
-
-export function Messages({ bookingId, messages }: { bookingId: string; messages: M[] }) {
-  const router = useRouter();
-  const [text, setText] = useState("");
-  const [msg, setMsg] = useState("");
-  const [pending, start] = useTransition();
-  return (
-    <div className="mt-4">
-      {messages.length ? (
-        <ul className="mb-4 max-h-[28rem] space-y-3 overflow-y-auto">
-          {messages.map((m) => (
-            <li key={m.id} className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${m.fromOffice ? "bg-pine/8" : "ml-auto bg-pine text-white"}`}>
-              <p className="whitespace-pre-wrap">{m.body}</p>
-              <p className={`mt-1 text-[11px] ${m.fromOffice ? "text-muted" : "text-white/75"}`}>{m.fromOffice ? `${m.authorName}, Base Camp Adventure` : "You"} · {new Date(m.at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <form onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await sendPortalMessage(bookingId, text); setMsg(r.message); if (r.ok) setText(""); router.refresh(); }); }} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <textarea rows={2} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} className={inputClass} aria-label="Your message" placeholder="Write a message…" />
-        <button disabled={pending || text.trim().length < 2} className="shrink-0 rounded-full bg-pine px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{pending ? "Sending…" : "Send"}</button>
-      </form>
-      {msg ? <p role="status" className="mt-2 text-sm text-pine">{msg}</p> : null}
-    </div>
-  );
-}
+import { writePortalReview } from "../../actions";
 
 export function PortalReview({ bookingId, country }: { bookingId: string; country: string }) {
   const [v, setV] = useState({ rating: 0, title: "", body: "", consent: false, country });
@@ -58,7 +29,7 @@ export function PortalReview({ bookingId, country }: { bookingId: string; countr
 }
 
 /** App-style tab bar on phones. */
-export function BottomNav({ photos }: { photos: boolean; unread?: boolean }) {
+export function BottomNav({ photos, unread = 0 }: { photos: boolean; unread?: number }) {
   const items = [
     { href: "#trip", label: "Trip", Icon: Mountain },
     { href: "#documents", label: "Documents", Icon: FileText },
@@ -72,7 +43,12 @@ export function BottomNav({ photos }: { photos: boolean; unread?: boolean }) {
       <nav aria-label="Trip sections" className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         <ul className="mx-auto flex max-w-lg justify-around">
           {items.map(({ href, label, Icon }) => (
-            <li key={href}><a href={href} className="flex flex-col items-center gap-0.5 px-3 py-2 text-[11px] font-semibold text-muted hover:text-pine"><Icon className="size-5" aria-hidden />{label}</a></li>
+            <li key={href}>
+              <a href={href} className="relative flex flex-col items-center gap-0.5 px-3 py-2 text-[11px] font-semibold text-muted hover:text-pine">
+                <Icon className="size-5" aria-hidden />{label}
+                {href === "#messages" && unread ? <span className="absolute top-1 right-2 grid min-w-4 place-items-center rounded-full bg-crimson px-1 text-[10px] leading-4 text-white">{unread}<span className="sr-only"> new</span></span> : null}
+              </a>
+            </li>
           ))}
         </ul>
       </nav>
