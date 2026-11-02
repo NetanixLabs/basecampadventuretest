@@ -13,6 +13,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { PhotoGlow } from "@/components/photo-glow";
+import { CardActions } from "@/components/shortlist";
 import type { TripCard as Card } from "@/lib/types";
 import { cn, usd } from "@/lib/utils";
 
@@ -133,6 +134,9 @@ export function TripCard({
 
         {tilt ? <motion.span aria-hidden style={{ backgroundImage: glare }} className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" /> : null}
       </Link>
+      <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[3/2]">
+        <CardActions slug={trip.slug} title={trip.title} className="pointer-events-auto absolute right-3 bottom-3" />
+      </div>
     </motion.article>
   );
 }

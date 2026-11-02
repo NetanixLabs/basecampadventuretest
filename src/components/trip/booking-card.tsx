@@ -8,6 +8,7 @@ import { site, whatsappHref } from "@/lib/site";
 import type { Price } from "@/lib/types";
 import { usd } from "@/lib/utils";
 import { ApproxPrice, CurrencyPicker } from "@/components/currency";
+import { TripPageActions } from "@/components/shortlist";
 
 /**
  * The booking box: discount and "From" price per adult, Book Now, Customize
@@ -49,6 +50,7 @@ export function BookingCard({ slug, title, price }: { slug: string; title: strin
         <a href={`/trip/${slug}/itinerary.pdf`} download className="hover:text-pine flex w-full items-center justify-center gap-2 py-2 text-sm font-semibold text-ink-soft">
           <FileDown className="size-4" aria-hidden /> Download trip program (PDF)
         </a>
+        <TripPageActions slug={slug} title={title} />
         <div className="rounded-xl bg-snow-2 p-3.5 text-center">
           <p className="text-sm font-semibold">Need help with booking?</p>
           <button type="button" onClick={() => openTripModal("enquire")} className="text-pine mt-0.5 inline-flex items-center gap-1.5 text-sm font-bold hover:underline">

@@ -77,13 +77,21 @@ async function assets(trip: Trip, origin: string) {
     const box = winH < height ? { left: 0, top: Math.round(p * (height - winH)), width, height: winH } : { left: width - winW, top: 0, width: winW, height };
     photo = await img.extract(box).resize(1600).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
   }
-  return { logo, photo };
+  // Up to three gallery photos for the brochure strip.
+  const gallery: Buffer[] = [];
+  for (const g of trip.gallery.slice(0, 6)) {
+    if (gallery.length >= 3) break;
+    const b = await fetchBuffer(`${origin}${g.src}`);
+    if (!b) continue;
+    try { gallery.push(await sharp(b).resize(900, 600, { fit: "cover" }).jpeg({ quality: 78, mozjpeg: true }).toBuffer()); } catch { /* skip */ }
+  }
+  return { logo, photo, gallery };
 }
 
 /* -------------------------------------------------------------- render */
 
 export async function programPdf(trip: Trip, origin: string, info: InfoItem[]): Promise<Buffer> {
-  const { logo, photo } = await assets(trip, origin);
+  const { logo, photo, gallery } = await assets(trip, origin);
   const url = `${site.url}/trip/${trip.slug}/`;
   const doc = new PDFDocument({
     size: "A4",
@@ -159,6 +167,60 @@ export async function programPdf(trip: Trip, origin: string, info: InfoItem[]): 
   if (trip.highlights.length) {
     heading("Highlights");
     for (const h of trip.highlights.slice(0, 10)) bullet(decode(h.replace(/<[^>]+>/g, "")));
+  }
+
+  /* Photo strip */
+  if (gallery.length >= 2) {
+    room(140);
+    doc.moveDown(1.2);
+    const gw = (CW - (gallery.length - 1) * 8) / gallery.length;
+    const gh = Math.round(gw * 0.66);
+    const gy = doc.y;
+    gallery.forEach((g, i) => {
+      const x = M + i * (gw + 8);
+      doc.save().roundedRect(x, gy, gw, gh, 8).clip().image(g, x, gy, { width: gw, height: gh, cover: [gw, gh], align: "center", valign: "center" }).restore();
+    });
+    doc.y = gy + gh;
+  }
+
+  /* Altitude profile */
+  const pts = trip.itinerary.filter((d) => d.altitude && d.altitude > 0).map((d) => ({ day: d.day, alt: d.altitude as number }));
+  if (pts.length >= 3) {
+    room(220);
+    heading("Altitude profile");
+    const ch = 150;
+    const top = doc.y + 4;
+    const left = M + 34;
+    const width = CW - 40;
+    const maxA = Math.ceil(Math.max(...pts.map((p) => p.alt)) / 1000) * 1000;
+    const minA = Math.max(0, Math.floor(Math.min(...pts.map((p) => p.alt)) / 1000) * 1000);
+    const lastDay = Math.max(...pts.map((p) => p.day));
+    const firstDay = Math.min(...pts.map((p) => p.day));
+    const X = (day: number) => left + ((day - firstDay) / Math.max(1, lastDay - firstDay)) * width;
+    const Y = (a: number) => top + ch - ((a - minA) / Math.max(1, maxA - minA)) * ch;
+    // Recessive grid: one line per 1,000 m
+    for (let a = minA; a <= maxA; a += 1000) {
+      doc.moveTo(left, Y(a)).lineTo(left + width, Y(a)).lineWidth(0.4).strokeColor(C.line).stroke();
+      doc.font("Body").fontSize(6.8).fillColor(C.muted).text(`${(a / 1000).toLocaleString("en-US")}k m`, M - 4, Y(a) - 3.5, { width: 34, align: "right", lineBreak: false });
+    }
+    // Area, then the line on top
+    doc.save().moveTo(X(pts[0].day), top + ch);
+    pts.forEach((p) => doc.lineTo(X(p.day), Y(p.alt)));
+    doc.lineTo(X(pts.at(-1)!.day), top + ch).closePath().fillOpacity(0.14).fill(C.teal).restore();
+    doc.save().moveTo(X(pts[0].day), Y(pts[0].alt));
+    pts.slice(1).forEach((p) => doc.lineTo(X(p.day), Y(p.alt)));
+    doc.lineWidth(1.8).lineJoin("round").strokeColor(C.teal).stroke().restore();
+    pts.forEach((p) => doc.circle(X(p.day), Y(p.alt), 2.2).fill(C.teal));
+    // Highest point
+    const hi = pts.reduce((a, b) => (b.alt > a.alt ? b : a));
+    doc.circle(X(hi.day), Y(hi.alt), 4).lineWidth(1.5).fillAndStroke("#ffffff", C.teal);
+    const label = `${hi.alt.toLocaleString("en-US")} m · Day ${hi.day}`;
+    doc.font("Bold").fontSize(7.5).fillColor(C.ink).text(label, Math.min(X(hi.day) - 50, left + width - 100), Y(hi.alt) - 15, { width: 100, align: "center", lineBreak: false });
+    // Day ticks
+    const step = Math.max(1, Math.ceil((lastDay - firstDay + 1) / 12));
+    for (let d = firstDay; d <= lastDay; d += step) doc.font("Body").fontSize(6.8).fillColor(C.muted).text(`D${d}`, X(d) - 10, top + ch + 5, { width: 20, align: "center", lineBreak: false });
+    doc.y = top + ch + 20;
+    doc.x = M;
   }
 
   /* Itinerary */

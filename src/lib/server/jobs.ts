@@ -1,4 +1,5 @@
 import "server-only";
+import { savedReminders } from "@/lib/server/saved";
 import { db } from "@/lib/admin/db";
 import { hashToken, randomToken } from "@/lib/admin/crypto";
 import { officeEmail, sendTemplate } from "@/lib/admin/email/send";
@@ -89,7 +90,7 @@ export async function expirePortal() {
 
 export async function runJobs() {
   const out: Record<string, number | string> = {};
-  for (const [name, job] of Object.entries({ reminders: paymentReminders, preTrip: preTripEmails, reviews: reviewRequests, portalExpired: expirePortal })) {
+  for (const [name, job] of Object.entries({ reminders: paymentReminders, preTrip: preTripEmails, reviews: reviewRequests, portalExpired: expirePortal, savedReminders })) {
     try {
       out[name] = await job();
     } catch (e) {

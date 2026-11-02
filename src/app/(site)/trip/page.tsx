@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
 import { PageHero } from "@/components/page-hero";
 import { TripExplorer } from "@/components/trip-explorer";
@@ -30,6 +32,12 @@ export default function TripsPage() {
         crumbs={[{ name: "All trips", path: "/trip/" }]}
       />
       <section className="mx-auto max-w-site px-4 pb-24 sm:px-6">
+        <Link href="/trip-finder/" className="group mb-8 flex items-center gap-4 rounded-2xl border border-line bg-card p-4 transition-colors hover:border-pine sm:p-5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-pine/10 text-pine transition-colors group-hover:bg-pine group-hover:text-white"><Sparkles className="size-5" aria-hidden /></span>
+          <span className="min-w-0 flex-1"><span className="block font-bold">Not sure where to start?</span><span className="block text-sm text-muted">Answer 5 quick questions and we&apos;ll suggest the trips that fit you best.</span></span>
+          <span className="hidden items-center gap-1.5 text-sm font-bold text-pine sm:inline-flex">Try the trip finder <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden /></span>
+          <ArrowRight className="size-5 shrink-0 text-pine sm:hidden" aria-hidden />
+        </Link>
         <Suspense fallback={<TripGrid trips={trips.slice(0, 12)} regionNames={regionNames} />}>
           <TripExplorer trips={trips} regions={destinations.map(opt)} activities={activities.map(opt)} regionNames={regionNames} />
         </Suspense>
