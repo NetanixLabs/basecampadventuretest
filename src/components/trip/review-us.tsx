@@ -1,4 +1,7 @@
 import google from "@/content/google-reviews.json";
+import Link from "next/link";
+import { Play } from "lucide-react";
+import { getVideoReviews } from "@/lib/content";
 import { site } from "@/lib/site";
 
 /** "Write a review" links for Tripadvisor and Google, from the links set in Admin → Settings → Company. */
@@ -38,7 +41,8 @@ export function ReviewUs() {
     l.tripadvisor ? { href: l.tripadvisor, name: "Tripadvisor", Logo: TripadvisorLogo } : null,
     l.google ? { href: l.google, name: "Google", Logo: GoogleLogo } : null,
   ].filter(Boolean) as { href: string; name: string; Logo: () => React.JSX.Element }[];
-  if (!items.length) return null;
+  const videos = getVideoReviews().length;
+  if (!items.length && !videos) return null;
   return (
     <section aria-label="Review us" className="mt-6">
       <h2 className="text-sm font-bold tracking-wide text-ink">Travelled with us?</h2>
@@ -51,6 +55,12 @@ export function ReviewUs() {
             <span className="leading-tight"><span className="block text-[10px] text-muted">Review us on</span><span className="block text-sm font-bold text-ink">{name}</span></span>
           </a>
         ))}
+        {videos ? (
+          <Link href="/testimonials/#video-stories" className="group col-span-2 flex items-center gap-2.5 rounded-xl border border-line bg-card px-3 py-2.5 shadow-sm transition-colors hover:border-pine focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-pine text-white transition-transform group-hover:scale-110"><Play className="size-3 translate-x-px fill-current" aria-hidden /></span>
+            <span className="leading-tight"><span className="block text-[10px] text-muted">Travellers in their own words</span><span className="block text-sm font-bold text-ink">Watch video reviews</span></span>
+          </Link>
+        ) : null}
       </div>
     </section>
   );
