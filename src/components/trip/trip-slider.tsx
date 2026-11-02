@@ -8,10 +8,13 @@ import { cropFor } from "@/lib/banner";
 import { GalleryButton } from "@/components/trip/gallery";
 import { openTripModal } from "@/components/trip/trip-modals";
 import type { Img } from "@/lib/types";
+import { useChromeLang } from "@/components/site/tr";
+import { word } from "@/lib/chrome-words";
 
 /** The prototype's trip photograph slider: arrows, swipe, and the full set in a viewer. */
 export function TripSlider({ images, title }: { images: Img[]; title: string }) {
   const [i, setI] = useState(0);
+  const lang = useChromeLang();
   if (!images.length) return null;
   const go = (d: number) => setI((n) => (n + d + images.length) % images.length);
   const img = images[i];
@@ -47,10 +50,10 @@ export function TripSlider({ images, title }: { images: Img[]; title: string }) 
 
       {images.length > 1 ? (
         <>
-          <button type="button" onClick={() => go(-1)} aria-label="Previous photograph" className="absolute top-1/2 left-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#242a2c] shadow-md transition hover:bg-white sm:left-5">
+          <button type="button" onClick={() => go(-1)} aria-label={word(lang, "Previous photo")} className="absolute top-1/2 left-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#242a2c] shadow-md transition hover:bg-white sm:left-5">
             <ChevronLeft className="size-5" aria-hidden />
           </button>
-          <button type="button" onClick={() => go(1)} aria-label="Next photograph" className="absolute top-1/2 right-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#242a2c] shadow-md transition hover:bg-white sm:right-5">
+          <button type="button" onClick={() => go(1)} aria-label={word(lang, "Next photo")} className="absolute top-1/2 right-3 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-[#242a2c] shadow-md transition hover:bg-white sm:right-5">
             <ChevronRight className="size-5" aria-hidden />
           </button>
         </>

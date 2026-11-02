@@ -1,5 +1,6 @@
 "use client";
 
+import { Tr } from "@/components/site/tr";
 import Image from "@/components/image";
 import { useState } from "react";
 import { Images } from "lucide-react";
@@ -22,7 +23,7 @@ export function GalleryButton({ images, title }: { images: Img[]; title: string 
           ))}
         </div>
         <button type="button" onClick={() => setIndex(0)} className="glass-dark inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white hover:bg-white/20">
-          <Images className="size-4" aria-hidden /> View {images.length} photos
+          <Images className="size-4" aria-hidden /> <Tr vars={{ n: images.length }}>{"View {n} photos"}</Tr>
         </button>
       </div>
       <Lightbox images={images} index={index} onIndex={setIndex} title={title} />

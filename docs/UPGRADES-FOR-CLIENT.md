@@ -26,7 +26,7 @@ can add next. Each idea has a short reason so it's easy to decide.
 | **tawk.to chat details** | When someone books or asks a question, their name, email and booking number show in the chat. | Your team knows who they are talking to. |
 | **Reviews after the trip** | After the trip, travellers get an email to rate it with stars and write a review. You approve good ones and they appear on the trip page. | More real reviews mean more trust and better Google results. |
 | **Traveller account (my.basecampadventure.com)** | After payment, and only when you approve it, the traveller gets a private account to see their trip and payments, upload their passport and insurance, add flight details and download their documents. The account closes itself after the trip. | No more chasing documents by email; everything for each trip is in one safe place. |
-| **German, French and Spanish pages** | Trips in three more languages, each switchable on or off. Everest Base Camp is already translated; the other top trips are translated in the admin (Trips → the trip → Translations). | These are big trekking markets, and people book more in their own language. |
+| **German, French and Spanish pages** | Our 20 most popular trips in three more languages, each language switchable on or off. A native speaker should read them once before they go live. | These are big trekking markets, and people book more in their own language. |
 
 ---
 

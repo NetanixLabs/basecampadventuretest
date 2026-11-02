@@ -13,6 +13,7 @@ import { SiteSearch } from "@/components/site/search";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { site, whatsappHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { langOfPath, regionWord, word } from "@/lib/chrome-words";
 
 export type HeaderRegion = { slug: string; name: string; count: number; photo: string; href: string };
 
@@ -34,6 +35,8 @@ const VISA_OPTIONS: HeaderRegion[] = [
 
 export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]; tripOptions: HeaderRegion[] }) {
   const pathname = usePathname();
+  const lang = langOfPath(pathname);
+  const w = (en: string) => word(lang, en);
   const [scrolled, setScrolled] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
@@ -104,7 +107,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                       aria-expanded={openMenu === l.href}
                       className={cn("relative inline-flex items-center gap-1 rounded-full px-3 py-2 text-[0.95rem] font-semibold transition-colors", isActive(l.href) || openMenu === l.href ? "text-pine" : "text-ink hover:text-pine")}
                     >
-                      {l.label}
+                      {w(l.label)}
                       <ChevronDown className={cn("size-4 transition-transform", openMenu === l.href && "rotate-180")} aria-hidden />
                     </Link>
                     <AnimatePresence>
@@ -126,8 +129,8 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                                       <Image src={r.photo} alt="" fill sizes="40px" className="object-cover" />
                                     </span>
                                     <span className="min-w-0">
-                                      <span className="block truncate text-sm font-semibold group-hover:text-pine">{r.name}</span>
-                                      <span className="block text-xs text-muted">{l.href === "/visa-info/" ? "Fees, documents & application steps" : `${r.count} ${r.slug === "nepal" ? "tours" : "trips"}`}</span>
+                                      <span className="block truncate text-sm font-semibold group-hover:text-pine">{regionWord(lang, r.name)}</span>
+                                      <span className="block text-xs text-muted">{l.href === "/visa-info/" ? w("Fees, documents & application steps") : `${r.count} ${w(r.slug === "nepal" ? "tours" : "trips")}`}</span>
                                     </span>
                                   </Link>
                                 </li>
@@ -146,7 +149,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                     aria-current={isActive(l.href) ? "page" : undefined}
                     className={cn("rounded-full px-3 py-2 text-[0.95rem] font-semibold transition-colors", isActive(l.href) ? "text-pine" : "text-ink hover:text-pine")}
                   >
-                    {l.label}
+                    {w(l.label)}
                   </Link>
                 ),
               )}
@@ -156,7 +159,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
               <div className="flex shrink-0 flex-col gap-0.5 rounded-xl border border-pine/15 border-l-2 border-l-pine bg-pine/[0.035] px-2 py-1.5 sm:gap-1 sm:px-3">
                 <div className="flex items-center justify-between gap-3 text-xs leading-tight sm:text-sm">
                   <span className="font-bold tracking-wide text-ink">{site.contactPerson.split(" ")[0]}</span>
-                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-muted"><span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />Available Now</span>
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap text-muted"><span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />{w("Available Now")}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <a href={`tel:${site.mobileHref}`} className="inline-flex items-center gap-1.5 whitespace-nowrap text-[0.65rem] font-bold tracking-tight text-pine hover:underline sm:text-sm"><Phone className="size-3 shrink-0 sm:size-3.5" aria-hidden />{site.mobile}</a>
@@ -200,7 +203,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                 {LINKS.map((l, i) => (
                   <motion.div key={l.href} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 * i, duration: 0.3 }}>
                     <Link href={l.href} className="flex items-center justify-between border-b border-line py-4 text-[1.35rem] font-bold tracking-tight">
-                      {l.label} <ArrowRight className="size-5 text-muted" aria-hidden />
+                      {w(l.label)} <ArrowRight className="size-5 text-muted" aria-hidden />
                     </Link>
                     {l.menu ? (
                       <div className="py-3">
@@ -211,7 +214,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                               <Image src={r.photo} alt="" fill sizes="40px" className="object-cover" />
                             </span>
                             <span>
-                            {r.name.replace(" Region", "")} {l.href !== "/visa-info/" ? <span className="text-xs font-normal text-muted">{r.count}</span> : null}
+                            {regionWord(lang, r.name).replace(" Region", "")} {l.href !== "/visa-info/" ? <span className="text-xs font-normal text-muted">{r.count}</span> : null}
                             </span>
                           </Link>
                         ))}
@@ -221,13 +224,13 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                   </motion.div>
                 ))}
                 <Link href="/contact-us/" className="flex items-center justify-between border-b border-line py-4 text-[1.35rem] font-bold tracking-tight">
-                  Contact <ArrowRight className="size-5 text-muted" aria-hidden />
+                  {w("Contact")} <ArrowRight className="size-5 text-muted" aria-hidden />
                 </Link>
               </nav>
               <div className="grid shrink-0 gap-2 border-t border-line bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
                 <div className="grid grid-cols-2 gap-2">
                   <a href={`tel:${site.mobileHref}`} className="flex items-center justify-center gap-2 rounded-lg border border-line py-3 text-sm font-bold">
-                    <Phone className="size-4" aria-hidden /> Call 24/7
+                    <Phone className="size-4" aria-hidden /> {w("Call 24/7")}
                   </a>
                   <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-[#25D366] py-3 text-sm font-bold text-white">
                     <WhatsappIcon className="size-4" /> WhatsApp

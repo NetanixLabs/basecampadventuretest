@@ -63,31 +63,40 @@ mindmap
 - [x] WhatsApp alerts to the office + booking/enquiry details in tawk.to chat
 - [x] Review collection after the trip, moderated, shown on trip pages
 - [x] Traveller portal on my.basecampadventure.com (secure login, documents, payments)
-- [x] Languages: German, French, Spanish (system done; Everest Base Camp translated; 19 more trips to translate)
+- [x] Languages: German, French, Spanish for the top 20 trips (native-speaker check pending)
 
-## Left to do (next session)
+## Left to do
 
-1. **Translate the other 19 top trips** into German, French and Spanish
-   (Trips → the trip → Translations; same JSON shape as
-   `src/content/trip-translations.json`, which the first import loads).
-   A native speaker should check them before publishing.
-2. **Translate the last English words on /de, /fr, /es trip pages**: the main
-   menu (header/footer) and "View N photos" in `TripSlider`
-   (`src/components/trip/trip-slider.tsx`); pass words in like
-   `AltitudeProfile`'s `words` prop.
-3. **Before launch**: add the `my` DNS record in Cloudflare (orange cloud);
-   enter WhatsApp keys (CallMeBot or WhatsApp Business) in Settings → Features
-   if the office wants alerts; switch languages on only after translations
-   are checked.
-4. Optional: build notice "Encountered unexpected file in NFT list" (file
-   tracing via `src/lib/content.ts`) is harmless and existed before; could be
-   silenced later.
+Done on 2 Nov 2026: the top 20 trips are translated into German, French and
+Spanish (`src/content/trip-translations.json`), and the menu, footer,
+newsletter box and photo slider switch language on /de, /fr and /es pages.
+
+1. **Native-speaker check** of the translations before switching the
+   languages on (Settings → Features → Languages). Edit them in the admin:
+   Trips → the trip → Translations.
+2. **Before launch**: add the `my` DNS record in Cloudflare (orange cloud);
+   enter WhatsApp keys in Settings → Features if the office wants alerts.
+3. **Fix these mistakes in the English trips** (found while translating;
+   the translations avoid them, but the English pages still show them):
+   - Annapurna Base Camp: day 9 gives Bamboo 2,920 m (about 2,310 m);
+     day 10 gives "Pokhara (2,345 m)"; one FAQ says 13 days, the trip is 12.
+   - Ghorepani Poon Hill: "highest point" field says 2,860 m; Poon Hill is 3,210 m.
+   - Gokyo Valley: day 9 says "44,200 m" (4,200 m).
+   - Everest Base Camp and Gokyo: day 12 Machhermo "15,715 ft" (14,665 ft);
+     day 13 "33,440 m" (3,440 m).
+   - Gokyo with Renjo La: day 4 "33,440 m" (3,440 m).
+   - Everest Three Passes: Cho La is 5,368 m on day 11 but 5,420 m in the highlights.
+   - Everest Base Camp Tour (Tibet): returns via Zhangmu, a border closed to
+     tourists since 2015 (tours now use Kerung/Gyirong). Update the route.
+   - Pikey Peak: day 2 text says "after a 6–7-hour drive" on a walking day.
+4. Optional: the build notice "Encountered unexpected file in NFT list" is
+   harmless (content files are read at runtime) and existed before.
 
 How to check after changes: `npm run build`, then with `next start -p 3100`:
 `node scripts/seo-audit.mjs http://localhost:3100`,
 `node scripts/launch-check.mjs http://localhost:3100 --admin-host admin.localhost:3100`,
 `node scripts/security-check.mjs http://localhost:3100 --admin-host admin.localhost:3100`.
-Last results: 0 SEO errors/warnings, 27/27 launch, 18/18 security.
+Last results (2 Nov 2026): 0 SEO errors/warnings, 27/27 launch, 18/18 security.
 Never set `NEXT_PUBLIC_SITE_URL` to localhost in `.env` before a build: it
 changes canonicals and the sitemap.
 
