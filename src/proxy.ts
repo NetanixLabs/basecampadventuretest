@@ -67,6 +67,13 @@ export function proxy(req: NextRequest) {
     if (inside(pathname, "admin") || inside(pathname, "portal")) {
       return new NextResponse("Not found", { status: 404, headers: { "X-Robots-Tag": "noindex" } });
     }
+    // Partner agent links (?ref=CODE): remembered for 30 days, then used at booking.
+    const ref = req.nextUrl.searchParams.get("ref");
+    if (ref && /^[A-Za-z0-9-]{3,20}$/.test(ref) && req.method === "GET") {
+      const res = NextResponse.next();
+      res.cookies.set("bca_ref", ref.toUpperCase(), { maxAge: 30 * 86400, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production", path: "/" });
+      return res;
+    }
     return NextResponse.next();
   }
   // Each host sees only its own app.

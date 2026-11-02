@@ -7,6 +7,7 @@ import { saveBooking } from "@/lib/server/sales";
 import { rateLimited, reference } from "@/lib/server/store";
 import { createPaymentLink, wetravelEnabled } from "@/lib/server/wetravel";
 import { features } from "@/lib/admin/features";
+import { db } from "@/lib/admin/db";
 import { hblEnabled } from "@/lib/server/hbl";
 import { payLink } from "@/lib/server/gateway";
 
@@ -97,6 +98,10 @@ export async function POST(req: Request) {
   // No API key (or WeTravel unreachable): use the trip's own WeTravel checkout, if the office added one.
   if (gateway === "wetravel" && !paymentUrl && trip.wetravelUrl && /^https:\/\/([a-z0-9-]+\.)*wetravel\.com\//.test(trip.wetravelUrl)) paymentUrl = trip.wetravelUrl;
 
+  // Credited to a partner agent if the traveller came through their link.
+  const refCode = /(?:^|;\s*)bca_ref=([A-Z0-9-]{3,20})/.exec(req.headers.get("cookie") ?? "")?.[1];
+  const agent = refCode ? await db.agent.findFirst({ where: { code: refCode, active: true }, select: { id: true } }).catch(() => null) : null;
+
   await saveBooking({
     reference: ref,
     tripSlug: trip.slug,
@@ -117,6 +122,7 @@ export async function POST(req: Request) {
     paymentError,
     ip,
     gateway,
+    agentId: agent?.id ?? null,
   });
 
   return NextResponse.json({ ok: true, reference: ref, paymentUrl, total, discount, due });

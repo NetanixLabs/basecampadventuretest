@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { Badge, Card, PageHeader, day, money, when } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
-import { requireUser } from "@/lib/admin/guards";
+import { can, requireUser } from "@/lib/admin/guards";
+import { AgentSelect } from "./agent-select";
 import { site } from "@/lib/site";
 import { BookingControls } from "./controls";
 import { PortalCard } from "./portal-card";
@@ -13,7 +14,7 @@ import { DETAIL_FIELDS, FILE_KINDS, eligible, readDetails } from "@/lib/server/p
 export const metadata = { title: "Booking" };
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser("sales");
+  const { user } = await requireUser("sales");
   const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } }, receipts: { orderBy: { issuedAt: "desc" } } } });
   if (!b) notFound();
   const events = await db.$queryRaw<{ id: string; type: string; payload: unknown; error: string | null; createdAt: Date }[]>`
@@ -22,6 +23,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
     ORDER BY "createdAt" DESC LIMIT 10`.catch(() => []);
   const balance = Math.max(0, Number(b.total) - Number(b.paid));
   const f = await features();
+  const agents = can(user, "operations") ? await db.agent.findMany({ where: { OR: [{ active: true }, { id: b.agentId ?? "" }] }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true, code: true } }) : null;
   const rows: [string, React.ReactNode][] = [
     ["Reference", <span key="r" className="font-mono">{b.reference}</span>],
     ["Trip", <a key="t" className="font-semibold text-pine" href={`${site.url}/trip/${b.tripSlug}/`} target="_blank" rel="noopener noreferrer">{b.tripTitle} ↗</a>],
@@ -94,7 +96,10 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
             fields={DETAIL_FIELDS}
           />
         </div>
+        <div className="space-y-6">
+        {agents ? <AgentSelect bookingId={b.id} agentId={b.agentId} agents={agents.map((a) => ({ id: a.id, label: `${a.company || a.name} (${a.code})` }))} /> : null}
         <BookingControls id={b.id} status={b.status} notes={b.internalNotes ?? ""} paymentUrl={b.paymentUrl ?? ""} balance={balance} />
+        </div>
       </div>
     </>
   );

@@ -56,6 +56,7 @@ export type BookingInput = {
   lead: { name: string; email: string; phone: string; country: string }; notes?: string;
   paymentUrl: string | null; wetravelId: string | null; paymentError: string | null; ip: string;
   gateway?: string | null;
+  agentId?: string | null;
 };
 
 export async function saveBooking(b: BookingInput) {
@@ -69,7 +70,7 @@ export async function saveBooking(b: BookingInput) {
           reference: b.reference, status: b.paymentUrl ? "awaiting_payment" : "requested", tripSlug: b.tripSlug, tripTitle: b.tripTitle,
           startDate: new Date(`${b.startDate}T00:00:00Z`), pax: b.pax, each: b.each, subtotal: b.subtotal, discountCode: b.discountCode, discount: b.discount,
           total: b.total, plan: b.plan, due: b.due, leadName: b.lead.name, leadEmail: b.lead.email.toLowerCase(), leadPhone: b.lead.phone, leadCountry: b.lead.country,
-          notes: b.notes || null, paymentUrl: b.paymentUrl, wetravelId: b.wetravelId, paymentError: b.paymentError, ip: b.ip, gateway: b.gateway ?? null,
+          notes: b.notes || null, paymentUrl: b.paymentUrl, wetravelId: b.wetravelId, paymentError: b.paymentError, ip: b.ip, gateway: b.gateway ?? null, agentId: b.agentId ?? null,
         },
       });
     });
