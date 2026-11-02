@@ -73,6 +73,18 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
           )}
         </Feature>
 
+        <Card title="Payments" info="Choose how travellers pay. WeTravel is the main checkout. Himalayan Bank (HBL) is a second card option; switch it on only after its keys are entered in Settings → Keys and a sandbox test payment worked. If both are on, travellers choose at checkout; the preferred one is selected first.">
+          <div className="space-y-3 text-sm">
+            <label className="flex items-center justify-between gap-3 font-semibold">WeTravel<Switch on={f.payments.wetravel} onChange={(v) => set("payments", { wetravel: v })} label="WeTravel on/off" /></label>
+            <label className="flex items-center justify-between gap-3 font-semibold">Himalayan Bank (cards)<Switch on={f.payments.hbl} onChange={(v) => set("payments", { hbl: v })} label="HBL on/off" /></label>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div><Label htmlFor="pay-pref">Preferred</Label><select id="pay-pref" value={f.payments.preferred} onChange={(e) => set("payments", { preferred: e.target.value as "wetravel" | "hbl" })} className={inputClass}><option value="wetravel">WeTravel</option><option value="hbl">Himalayan Bank</option></select></div>
+              <div><Label htmlFor="pay-cur" info="The currency HBL charges in. Bookings are always kept in US dollars; NPR uses the rate on the right.">HBL charges in</Label><select id="pay-cur" value={f.payments.hblCurrency} onChange={(e) => set("payments", { hblCurrency: e.target.value as "USD" | "NPR" })} className={inputClass}><option value="USD">US dollars</option><option value="NPR">Nepali rupees</option></select></div>
+              {f.payments.hblCurrency === "NPR" ? <div className="col-span-2"><Label htmlFor="pay-rate">1 US$ = NPR</Label><input id="pay-rate" inputMode="decimal" value={f.payments.nprRate} onChange={(e) => set("payments", { nprRate: Number(e.target.value.replace(/[^0-9.]/g, "")) || 0 })} className={inputClass} /></div> : null}
+            </div>
+          </div>
+        </Card>
+
         <Card title="Languages" info="Turn on a language to publish the trips translated into it (Trips → a trip → Translations). Only trips with a published translation get a page in that language, with proper language tags for Google.">
           <ul className="space-y-3">
             {(Object.keys(LANGS) as (keyof typeof LANGS)[]).map((l) => (

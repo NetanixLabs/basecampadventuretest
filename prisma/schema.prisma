@@ -38,6 +38,9 @@ model User {
   /// AES-256-GCM encrypted TOTP secret. Null until 2FA is set up.
   totpSecret   String?
   totpEnabled  Boolean    @default(false)
+  /// Custom permissions chosen by the owner. Empty = the role's defaults.
+  permissions  String[]   @default([])
+  phone        String?
   lastLoginAt  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -238,49 +241,59 @@ enum BookingStatus {
 }
 
 model Booking {
-  id             String        @id @default(cuid())
-  reference      String        @unique
-  status         BookingStatus @default(requested)
-  tripSlug       String
-  tripTitle      String
-  startDate      DateTime      @db.Date
-  pax            Int
-  currency       String        @default("USD")
-  each           Decimal       @db.Decimal(10, 2)
-  subtotal       Decimal       @db.Decimal(10, 2)
-  discountCode   String?
-  discount       Decimal       @default(0) @db.Decimal(10, 2)
-  total          Decimal       @db.Decimal(10, 2)
-  plan           String
-  due            Decimal       @db.Decimal(10, 2)
-  paid           Decimal       @default(0) @db.Decimal(10, 2)
-  leadName       String
-  leadEmail      String
-  leadPhone      String
-  leadCountry    String
-  notes          String?
-  internalNotes  String?
-  paymentUrl     String?
+  id                String          @id @default(cuid())
+  reference         String          @unique
+  status            BookingStatus   @default(requested)
+  tripSlug          String
+  tripTitle         String
+  startDate         DateTime        @db.Date
+  pax               Int
+  currency          String          @default("USD")
+  each              Decimal         @db.Decimal(10, 2)
+  subtotal          Decimal         @db.Decimal(10, 2)
+  discountCode      String?
+  discount          Decimal         @default(0) @db.Decimal(10, 2)
+  total             Decimal         @db.Decimal(10, 2)
+  plan              String
+  due               Decimal         @db.Decimal(10, 2)
+  paid              Decimal         @default(0) @db.Decimal(10, 2)
+  leadName          String
+  leadEmail         String
+  leadPhone         String
+  leadCountry       String
+  notes             String?
+  internalNotes     String?
+  paymentUrl        String?
   /// WeTravel's id for the payment link / trip, for matching webhooks.
-  wetravelId     String?
-  paymentError   String?
-  ip             String?
+  wetravelId        String?
+  paymentError      String?
+  ip                String?
   /// Unpaid-booking reminder (sent once).
-  reminderSentAt     DateTime?
+  reminderSentAt    DateTime?
   /// After-trip review request: when sent, and the hash of the link's token.
-  reviewRequestedAt  DateTime?
-  reviewTokenHash    String?   @unique
+  reviewRequestedAt DateTime?
+  reviewTokenHash   String?         @unique
   /// Traveller portal account this booking belongs to.
-  travellerId        String?
+  travellerId       String?
   /// Details the traveller enters (passport, flights, emergency contact…),
   /// AES-256-GCM encrypted JSON.
-  detailsEnc         String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  payments       Payment[]
-  traveller      Traveller?    @relation(fields: [travellerId], references: [id], onDelete: SetNull)
-  files          TravellerFile[]
-  reviews        TripReview[]
+  detailsEnc        String?
+  /// Partner agency that brought this booking.
+  agentId           String?
+  /// Payment gateway chosen for this booking: "wetravel" or "hbl".
+  gateway           String?
+  /// Pre-trip emails (30 and 7 days before departure).
+  pretrip30At       DateTime?
+  pretrip7At        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  payments          Payment[]
+  traveller         Traveller?      @relation(fields: [travellerId], references: [id], onDelete: SetNull)
+  agent             Agent?          @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  receipts          Receipt[]
+  messages          PortalMessage[]
+  files             TravellerFile[]
+  reviews           TripReview[]
 
   @@index([status, createdAt])
   @@index([leadEmail])
@@ -315,24 +328,24 @@ model WebhookEvent {
 }
 
 model DiscountCode {
-  id        String    @id @default(cuid())
-  code      String    @unique
-  label     String
+  id           String    @id @default(cuid())
+  code         String    @unique
+  label        String
   /// "percent" or "fixed" (USD per booking)
-  kind      String    @default("percent")
-  value     Decimal   @db.Decimal(10, 2)
-  startsAt  DateTime?
-  endsAt    DateTime?
-  maxUses   Int?
-  used      Int       @default(0)
+  kind         String    @default("percent")
+  value        Decimal   @db.Decimal(10, 2)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  maxUses      Int?
+  used         Int       @default(0)
   /// Where the code works. All three empty = every trip; otherwise a trip
   /// qualifies if it is listed, or is in a listed region or activity.
   trips        String[]
-  destinations String[] @default([])
-  activities   String[] @default([])
-  minPax    Int       @default(1)
-  active    Boolean   @default(true)
-  createdAt DateTime  @default(now())
+  destinations String[]  @default([])
+  activities   String[]  @default([])
+  minPax       Int       @default(1)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 }
 
 // ------------------------------------------------------------------- email
@@ -408,15 +421,15 @@ enum TravellerStatus {
 /// A temporary account on my.basecampadventure.com, created by the office
 /// after payment. It expires after the trip and its documents are deleted.
 model Traveller {
-  id           String          @id @default(cuid())
-  email        String          @unique
+  id           String             @id @default(cuid())
+  email        String             @unique
   name         String
   passwordHash String?
-  status       TravellerStatus @default(invited)
+  status       TravellerStatus    @default(invited)
   expiresAt    DateTime
   lastLoginAt  DateTime?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   bookings     Booking[]
   sessions     TravellerSession[]
   tokens       TravellerToken[]
@@ -475,19 +488,189 @@ enum ReviewStatus {
 
 /// A review sent by a traveller after their trip; shown once approved.
 model TripReview {
-  id         String       @id @default(cuid())
-  bookingId  String?
-  tripSlug   String
-  name       String
-  country    String?
-  rating     Int
-  title      String?
-  body       String
-  consent    Boolean      @default(false)
-  status     ReviewStatus @default(pending)
-  createdAt  DateTime     @default(now())
-  decidedAt  DateTime?
-  booking    Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  id        String       @id @default(cuid())
+  bookingId String?
+  tripSlug  String
+  name      String
+  country   String?
+  rating    Int
+  title     String?
+  body      String
+  consent   Boolean      @default(false)
+  status    ReviewStatus @default(pending)
+  createdAt DateTime     @default(now())
+  decidedAt DateTime?
+  booking   Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+}
+
+/// Everyone who has booked or written to us, found by email.
+model Customer {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  name       String
+  phone      String?
+  country    String?
+  /// Extra private details (address, date of birth, preferences), AES-256-GCM encrypted JSON.
+  detailsEnc String?
+  notes      String?
+  tags       String[] @default([])
+  source     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([name])
+}
+
+enum ReceiptKind {
+  receipt
+  bill
+}
+
+/// A receipt for money received, or a manual bill. Numbered, signed (HMAC)
+/// and checkable by anyone through its QR code.
+model Receipt {
+  id              String      @id @default(cuid())
+  number          String      @unique
+  kind            ReceiptKind @default(receipt)
+  /// Short random code printed as a QR link: /verify/<code>/
+  code            String      @unique
+  bookingId       String?
+  paymentId       String?     @unique
+  customerName    String
+  customerEmail   String?
+  customerAddress String?
+  items           Json
+  currency        String      @default("USD")
+  subtotal        Decimal     @db.Decimal(10, 2)
+  vatRate         Decimal     @default(0) @db.Decimal(5, 2)
+  vatMode         String      @default("none")
+  vat             Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  paidVia         String?
+  paidAt          DateTime?
+  /// Booking position at the time: trip total, paid before, this payment, balance (cents).
+  summary         Json?
+  notes           String?
+  issuedById      String?
+  issuedByName    String?
+  issuedAt        DateTime    @default(now())
+  voidedAt        DateTime?
+  voidReason      String?
+  /// HMAC of the receipt's contents; a changed receipt fails verification.
+  signature       String
+  booking         Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([issuedAt])
+}
+
+enum StaffRole {
+  guide
+  leader
+  porter
+  driver
+  cook
+  other
+}
+
+/// Field team: guides, porters, drivers.
+model Guide {
+  id          String           @id @default(cuid())
+  name        String
+  role        StaffRole        @default(guide)
+  phone       String?
+  email       String?
+  languages   String[]         @default([])
+  licenceNo   String?
+  photo       String?
+  notes       String?
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  assignments DepartureStaff[]
+}
+
+/// Partner travel agencies that send us travellers.
+model Agent {
+  id            String    @id @default(cuid())
+  name          String
+  company       String?
+  email         String?
+  phone         String?
+  country       String?
+  code          String    @unique
+  commissionPct Decimal   @default(10) @db.Decimal(5, 2)
+  notes         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+}
+
+/// One group leaving on one date. Bookings are matched by trip + start date.
+model Departure {
+  id        String           @id @default(cuid())
+  tripSlug  String
+  startDate DateTime         @db.Date
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  staff     DepartureStaff[]
+  photos    TripPhoto[]
+
+  @@unique([tripSlug, startDate])
+}
+
+model DepartureStaff {
+  id          String    @id @default(cuid())
+  departureId String
+  guideId     String
+  role        StaffRole @default(guide)
+  departure   Departure @relation(fields: [departureId], references: [id], onDelete: Cascade)
+  guide       Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@unique([departureId, guideId])
+}
+
+/// Photos our team shares with everyone on a departure (stored privately).
+model TripPhoto {
+  id          String    @id @default(cuid())
+  departureId String
+  storageKey  String    @unique
+  width       Int
+  height      Int
+  bytes       Int
+  caption     String?
+  createdAt   DateTime  @default(now())
+  departure   Departure @relation(fields: [departureId], references: [id], onDelete: Cascade)
+
+  @@index([departureId])
+}
+
+/// Messages between a traveller and the office about one booking.
+model PortalMessage {
+  id         String    @id @default(cuid())
+  bookingId  String
+  fromOffice Boolean
+  authorName String
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  booking    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+/// Trips a visitor saved, with an optional reminder email.
+model SavedList {
+  id         String    @id @default(cuid())
+  email      String
+  trips      String[]
+  token      String    @unique
+  remindAt   DateTime?
+  remindedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([remindAt])
 }

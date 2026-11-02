@@ -1,5 +1,6 @@
 "use client";
 
+import { PayMethodChoice, usePayMethods, type PayMethod } from "@/components/pay-method";
 import { tellTawk } from "@/lib/tawk";
 import Image from "@/components/image";
 import Link from "next/link";
@@ -36,6 +37,9 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
   const [pax, setPax] = useState(Math.min(30, Math.max(1, Number(params.get("pax")) || 1)));
   const [plan, setPlan] = useState<"deposit" | "full">("deposit");
   const [step, setStep] = useState<1 | 2>(1);
+  const { methods: payMethods, preferred } = usePayMethods();
+  const [methodChoice, setMethod] = useState<PayMethod | null>(null);
+  const method: PayMethod = methodChoice ?? preferred;
   const [form, setForm] = useState({ name: "", email: "", phone: "", country: "", notes: "", terms: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -90,7 +94,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
       const res = await fetch("/api/booking/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trip: trip.slug, date, pax, plan, ...form, discountCode: promo?.code ?? "" }),
+        body: JSON.stringify({ trip: trip.slug, date, pax, plan, ...form, discountCode: promo?.code ?? "", method }),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Something went wrong");
@@ -240,6 +244,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
                 </div>
                 {promoMsg ? <p role="status" className={`mt-2 text-sm ${promo ? "text-moss font-semibold" : "text-crimson"}`}>{promoMsg}</p> : null}
               </Field>
+              <PayMethodChoice value={method} onChange={setMethod} methods={payMethods} />
               <label className="flex cursor-pointer gap-3 text-sm text-ink-soft">
                 <input type="checkbox" checked={form.terms} onChange={(e) => setForm({ ...form, terms: e.target.checked })} className="accent-[var(--pine)] mt-0.5 size-4" />
                 <span>

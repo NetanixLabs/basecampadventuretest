@@ -19,8 +19,11 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     ga4: s.ga4 || site.integrations.ga4,
     tawkDetails: getFeatures().tawk.details,
   };
+  const p = getFeatures().payments;
+  const pay = { methods: [...(p.wetravel ? ["wetravel"] : []), ...(p.hbl ? ["hbl"] : [])], preferred: p.preferred };
   return (
     <>
+      <script dangerouslySetInnerHTML={{ __html: `window.__BCA_PAY__=${JSON.stringify(pay)}` }} />
       <a href="#main" className="bg-marigold text-pine-night sr-only z-[100] rounded-full px-5 py-3 font-bold focus:not-sr-only focus:fixed focus:top-4 focus:left-4">
         Skip to content
       </a>

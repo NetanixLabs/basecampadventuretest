@@ -8,7 +8,7 @@ import { FacebookIcon, InstagramIcon, WhatsappIcon, XIcon } from "@/components/i
 import { Newsletter } from "@/components/newsletter";
 import { FooterPlan } from "@/components/site/footer-plan";
 import { getTrip } from "@/lib/content";
-import { site, whatsappHref } from "@/lib/site";
+import { regNo, site, whatsappHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 /** The card brands' own vector logos (transparent), in their original colours. */
@@ -162,9 +162,9 @@ export function SiteFooter() {
               <Accreditations variant="compact" surface="dark" />
             </div>
             <p className="text-center text-xs leading-relaxed text-white/50 lg:text-right">
-              Government Reg. No: 68517/066/067 · VAT No: 303970392
+              {[regNo("Govt. Reg.") && `Government Reg. No: ${regNo("Govt. Reg.")}`, regNo("VAT") && `VAT No: ${regNo("VAT")}`, regNo("NTB Licence") && `Tourism Licence: ${regNo("NTB Licence")}`].filter(Boolean).join(" · ")}
               <br />
-              NMA Membership No: 776 · TAAN Member: 2010-868
+              {[regNo("NMA") && `NMA Membership No: ${regNo("NMA")}`, regNo("TAAN") && `TAAN Member: ${regNo("TAAN")}`].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>

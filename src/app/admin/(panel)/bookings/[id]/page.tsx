@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/admin/guards";
 import { site } from "@/lib/site";
 import { BookingControls } from "./controls";
 import { PortalCard } from "./portal-card";
+import { MissingReceipts } from "./missing-receipts";
+import Link from "next/link";
 import { features } from "@/lib/admin/features";
 import { DETAIL_FIELDS, FILE_KINDS, eligible, readDetails } from "@/lib/server/portal";
 
@@ -12,7 +14,7 @@ export const metadata = { title: "Booking" };
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser("sales");
-  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } } } });
+  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } }, receipts: { orderBy: { issuedAt: "desc" } } } });
   if (!b) notFound();
   const events = await db.$queryRaw<{ id: string; type: string; payload: unknown; error: string | null; createdAt: Date }[]>`
     SELECT id, type, payload, error, "createdAt" FROM "WebhookEvent"
@@ -67,6 +69,20 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
                 <ul className="mt-2 space-y-2">{events.map((e) => <li key={e.id} className="rounded-lg bg-pine/5 p-2"><p className="text-xs font-semibold">{e.type} · {when(e.createdAt)}{e.error ? ` · ${e.error}` : ""}</p><pre className="mt-1 max-h-40 overflow-auto text-[11px]">{JSON.stringify(e.payload, null, 2)}</pre></li>)}</ul>
               </details>
             ) : null}
+          </Card>
+          <Card title="Receipts & bills" info="Every successful payment gets a numbered, signed receipt automatically. Open the PDF, email it, or make a bill for the balance." actions={<Link href={`/receipts/new?booking=${b.id}&kind=bill`} className="text-sm font-semibold text-pine hover:underline">New bill</Link>}>
+            {b.receipts.length ? (
+              <ul className="divide-y divide-line text-sm">
+                {b.receipts.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <Link href={`/receipts/${r.id}`} className="font-mono font-semibold text-pine">{r.number}</Link>
+                    <span>{money(Number(r.total), r.currency)}</span>
+                    {r.voidedAt ? <Badge tone="red">Cancelled</Badge> : <Badge tone={r.kind === "bill" ? "amber" : "green"}>{r.kind === "bill" ? "Bill" : "Paid"}</Badge>}
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-muted">No receipts yet.</p>}
+            <MissingReceipts payments={b.payments.filter((p) => p.status === "succeeded" && !b.receipts.some((r) => r.paymentId === p.id)).map((p) => ({ id: p.id, label: `${money(Number(p.amount))} · ${when(p.createdAt)}` }))} />
           </Card>
           <PortalCard
             bookingId={b.id}

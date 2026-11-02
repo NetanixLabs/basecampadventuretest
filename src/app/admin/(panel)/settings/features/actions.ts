@@ -16,6 +16,9 @@ export async function saveFeatures(input: Features, secrets: { WHATSAPP_TOKEN?: 
     f.reviews.afterDays = Math.min(60, Math.max(0, Math.round(Number(f.reviews.afterDays) || 2)));
     f.portal.expiryDays = Math.min(365, Math.max(1, Math.round(Number(f.portal.expiryDays) || 30)));
     f.portal.inviteHours = Math.min(336, Math.max(1, Math.round(Number(f.portal.inviteHours) || 72)));
+    f.payments.nprRate = Math.min(1000, Math.max(1, Math.round(Number(f.payments.nprRate) * 100) / 100 || 133));
+    if (!f.payments.wetravel && !f.payments.hbl) return { ok: false, message: "Keep at least one payment method switched on." };
+    if (!f.payments[f.payments.preferred]) f.payments.preferred = f.payments.wetravel ? "wetravel" : "hbl";
     f.whatsapp.recipients = String(f.whatsapp.recipients ?? "").replace(/[^0-9,+ ]/g, "").slice(0, 200);
     const value = f as unknown as Prisma.InputJsonValue;
     await db.setting.upsert({ where: { key: "features" }, create: { key: "features", value, public: true }, update: { value } });

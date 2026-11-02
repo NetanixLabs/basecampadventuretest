@@ -31,7 +31,7 @@ export default async function EditPage({ params }: { params: Promise<{ collectio
       dirty={entry?.dirty ?? false}
       options={options}
       siteUrl={site.url}
-      canPublish={can(user.role, "publish")}
+      canPublish={can(user, "publish")}
       revisions={(entry?.revisions ?? []).map((r) => ({ id: r.id, note: r.note, at: r.createdAt.toISOString(), by: r.user?.name ?? null }))}
     />
   );

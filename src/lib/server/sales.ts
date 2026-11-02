@@ -25,6 +25,8 @@ export async function saveEnquiry(e: EnquiryInput) {
       data: { reference: e.reference, kind: e.kind, name: e.name, email: e.email.toLowerCase(), phone: e.phone || null, country: e.country || null, trip: e.trip || null, data: e.data as object, ip: e.ip },
     });
     id = row.id;
+    const { upsertCustomer } = await import("@/lib/server/customers");
+    await upsertCustomer({ email: e.email, name: e.name, phone: e.phone, country: e.country, source: "enquiry" }).catch(() => undefined);
   } catch (error) {
     if (adminConfigured()) console.error("[enquiry] database write failed, kept in log", error);
     await record("enquiries", { ...e });
@@ -53,6 +55,7 @@ export type BookingInput = {
   discountCode: string | null; discount: number; total: number; plan: string; due: number;
   lead: { name: string; email: string; phone: string; country: string }; notes?: string;
   paymentUrl: string | null; wetravelId: string | null; paymentError: string | null; ip: string;
+  gateway?: string | null;
 };
 
 export async function saveBooking(b: BookingInput) {
@@ -66,11 +69,13 @@ export async function saveBooking(b: BookingInput) {
           reference: b.reference, status: b.paymentUrl ? "awaiting_payment" : "requested", tripSlug: b.tripSlug, tripTitle: b.tripTitle,
           startDate: new Date(`${b.startDate}T00:00:00Z`), pax: b.pax, each: b.each, subtotal: b.subtotal, discountCode: b.discountCode, discount: b.discount,
           total: b.total, plan: b.plan, due: b.due, leadName: b.lead.name, leadEmail: b.lead.email.toLowerCase(), leadPhone: b.lead.phone, leadCountry: b.lead.country,
-          notes: b.notes || null, paymentUrl: b.paymentUrl, wetravelId: b.wetravelId, paymentError: b.paymentError, ip: b.ip,
+          notes: b.notes || null, paymentUrl: b.paymentUrl, wetravelId: b.wetravelId, paymentError: b.paymentError, ip: b.ip, gateway: b.gateway ?? null,
         },
       });
     });
     id = row.id;
+    const { upsertCustomer } = await import("@/lib/server/customers");
+    await upsertCustomer({ email: b.lead.email, name: b.lead.name, phone: b.lead.phone, country: b.lead.country, source: "booking" }).catch(() => undefined);
   } catch (error) {
     if (adminConfigured()) console.error("[booking] database write failed, kept in log", error);
     await record("bookings", { ...b });

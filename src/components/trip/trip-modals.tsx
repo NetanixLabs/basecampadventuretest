@@ -1,5 +1,6 @@
 "use client";
 
+import { PayMethodChoice, usePayMethods, type PayMethod } from "@/components/pay-method";
 import { tellTawk } from "@/lib/tawk";
 import Image from "@/components/image";
 import Link from "next/link";
@@ -158,13 +159,16 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
   const total = each * pax;
   const due = plan === "deposit" ? Math.round(total * DEPOSIT * 100) / 100 : total;
   const end = date ? new Date(new Date(`${date}T00:00:00`).getTime() + (trip.days - 1) * 86400000) : null;
+  const { methods: payMethods, preferred } = usePayMethods();
+  const [methodChoice, setMethod] = useState<PayMethod | null>(null);
+  const method: PayMethod = methodChoice ?? preferred;
   const okDetails = f.name.trim().length > 1 && /\S+@\S+\.\S+/.test(f.email) && f.phone.trim().length > 5 && f.country;
 
   const pay = async () => {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/booking/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trip: trip.slug, date, pax, plan, ...f }) });
+      const res = await fetch("/api/booking/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trip: trip.slug, date, pax, plan, ...f, method }) });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Something went wrong");
       setDone({ reference: json.reference, paymentUrl: json.paymentUrl, due: json.due });
@@ -295,6 +299,7 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
                   <div className="flex justify-between"><dt className="text-muted">Lead traveller</dt><dd className="font-semibold">{f.name}</dd></div>
                   <div className="flex items-baseline justify-between border-t border-line pt-2"><dt className="font-semibold">Due now</dt><dd className="font-display text-3xl font-black">{usd(due)}</dd></div>
                 </dl>
+                <PayMethodChoice value={method} onChange={setMethod} methods={payMethods} />
                 <label className="flex cursor-pointer gap-3 text-sm text-ink-soft">
                   <input type="checkbox" checked={f.terms} onChange={(e) => setF({ ...f, terms: e.target.checked })} className="mt-0.5 size-4 accent-[var(--pine)]" />
                   <span>

@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ collectio
 
 export default async function ListPage({ params, searchParams }: { params: Promise<{ collection: string }>; searchParams: Promise<{ q?: string; status?: string; page?: string; order?: string }> }) {
   const { user } = await requireUser("content");
-  const canPublish = can(user.role, "publish");
+  const canPublish = can(user, "publish");
   const def = collection((await params).collection);
   if (!def) notFound();
   const { q = "", status = "", page = "1", order } = await searchParams;

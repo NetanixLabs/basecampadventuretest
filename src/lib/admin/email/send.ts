@@ -24,12 +24,14 @@ async function mailer() {
   return transport.t;
 }
 
-export async function sendRaw(to: string, subject: string, content: EmailContent, template = "custom", replyTo?: string) {
-  return sendHtml(to, subject, renderHtml(content), renderText(content), template, { replyTo, unsubscribeUrl: content.unsubscribeUrl });
+export type Attachment = { filename: string; content: Buffer; contentType: string };
+
+export async function sendRaw(to: string, subject: string, content: EmailContent, template = "custom", replyTo?: string, attachments?: Attachment[]) {
+  return sendHtml(to, subject, renderHtml(content), renderText(content), template, { replyTo, unsubscribeUrl: content.unsubscribeUrl, attachments });
 }
 
 /** Sends finished HTML (used by the newsletter design) and logs it. */
-export async function sendHtml(to: string, subject: string, html: string, text: string, template: string, opts: { replyTo?: string; unsubscribeUrl?: string } = {}) {
+export async function sendHtml(to: string, subject: string, html: string, text: string, template: string, opts: { replyTo?: string; unsubscribeUrl?: string; attachments?: Attachment[] } = {}) {
   let status = "sent";
   let error: string | null = null;
   let providerId: string | null = null;
@@ -37,7 +39,7 @@ export async function sendHtml(to: string, subject: string, html: string, text: 
   try {
     if (!m) {
       status = "logged";
-      console.info(`\n[email] to ${to}\nSubject: ${subject}\n${text}\n`);
+      console.info(`\n[email] to ${to}\nSubject: ${subject}\n${text}\n${opts.attachments?.length ? `Attachments: ${opts.attachments.map((a) => `${a.filename} (${a.content.length} bytes)`).join(", ")}\n` : ""}`);
     } else {
       const info = await m.sendMail({
         from: (await cfg("EMAIL_FROM")) || env().EMAIL_FROM,
@@ -46,6 +48,7 @@ export async function sendHtml(to: string, subject: string, html: string, text: 
         html,
         text,
         replyTo: opts.replyTo,
+        attachments: opts.attachments,
         headers: opts.unsubscribeUrl ? { "List-Unsubscribe": `<${opts.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : undefined,
       });
       providerId = info.messageId ?? null;
@@ -67,7 +70,7 @@ export async function sendTemplate(
   key: string,
   to: string,
   vars: Record<string, string | number | null | undefined>,
-  extra: { details?: [string, string][]; buttonHref?: string; note?: string; replyTo?: string; unsubscribeUrl?: string } = {},
+  extra: { details?: [string, string][]; buttonHref?: string; note?: string; replyTo?: string; unsubscribeUrl?: string; attachments?: Attachment[] } = {},
 ) {
   const def = templateDef(key);
   if (!def) throw new Error(`Unknown email template ${key}`);
@@ -79,7 +82,7 @@ export async function sendTemplate(
   if (t.button && extra.buttonHref) blocks.push({ kind: "button", label: fill(t.button, vars), href: extra.buttonHref });
   if (extra.note) blocks.push({ kind: "note", text: extra.note });
   const subject = fill(t.subject, vars);
-  return sendRaw(to, subject, { preview: subject, heading: fill(t.heading, vars), blocks, unsubscribeUrl: extra.unsubscribeUrl }, key, extra.replyTo);
+  return sendRaw(to, subject, { preview: subject, heading: fill(t.heading, vars), blocks, unsubscribeUrl: extra.unsubscribeUrl }, key, extra.replyTo, extra.attachments);
 }
 
 export const officeEmail = async () => (await cfg("OFFICE_EMAIL")) || env().OFFICE_EMAIL;

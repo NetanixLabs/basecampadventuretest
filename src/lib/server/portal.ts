@@ -191,16 +191,26 @@ function key() {
   return Buffer.from(env().ENCRYPTION_KEY, "base64");
 }
 
-export async function storeFile(bookingId: string, kind: string, name: string, buf: Buffer, uploadedBy: string) {
-  const type = sniff(buf);
-  if (!type) throw new Error("Only PDF, JPG, PNG, WEBP or HEIC files.");
-  if (buf.length > MAX_FILE) throw new Error("Files can be up to 10 MB.");
+/** Encrypts any bytes into the private folder and returns their random key. */
+export async function writePrivate(buf: Buffer): Promise<string> {
   const storageKey = randomBytes(24).toString("hex");
   const iv = randomBytes(12);
   const c = createCipheriv("aes-256-gcm", key(), iv);
   const enc = Buffer.concat([c.update(buf), c.final()]);
   await mkdir(path.join(/*turbopackIgnore: true*/ privateDir()), { recursive: true, mode: 0o700 });
   await writeFile(privateFile(storageKey), Buffer.concat([iv, c.getAuthTag(), enc]), { mode: 0o600 });
+  return storageKey;
+}
+
+export async function removePrivate(storageKey: string) {
+  if (/^[0-9a-f]{48}$/.test(storageKey)) await rm(privateFile(storageKey), { force: true });
+}
+
+export async function storeFile(bookingId: string, kind: string, name: string, buf: Buffer, uploadedBy: string) {
+  const type = sniff(buf);
+  if (!type) throw new Error("Only PDF, JPG, PNG, WEBP or HEIC files.");
+  if (buf.length > MAX_FILE) throw new Error("Files can be up to 10 MB.");
+  const storageKey = await writePrivate(buf);
   const safeName = (name.replace(/[^\w .()-]/g, "_").replace(/\.[^.]*$/, "").slice(0, 80) || FILE_KINDS[kind as keyof typeof FILE_KINDS] || "document") + `.${type.ext}`;
   return db.travellerFile.create({ data: { bookingId, kind: kind in FILE_KINDS ? kind : "other", name: safeName, mime: type.mime, bytes: buf.length, storageKey, uploadedBy } });
 }
@@ -215,7 +225,7 @@ export async function readFileData(storageKey: string): Promise<Buffer> {
 
 export async function deleteFile(id: string) {
   const f = await db.travellerFile.delete({ where: { id } });
-  if (/^[0-9a-f]{48}$/.test(f.storageKey)) await rm(privateFile(f.storageKey), { force: true });
+  await removePrivate(f.storageKey);
 }
 
 /** Removes everything personal for one traveller: files, details, sessions. */

@@ -69,33 +69,55 @@ export async function handleWetravelEvent(eventId: string, payload: Json) {
     const providerId = String(deepFind(payload, ["payment_id", "transaction_id", "uuid", "id"]) ?? eventId);
     const refund = REFUND.test(type) || REFUND.test(status);
     const success = !refund && SUCCESS.test(status);
-
-    await db.payment.upsert({
-      where: { providerId },
-      create: { bookingId: booking.id, providerId, amount, status: refund ? "refunded" : success ? "succeeded" : status.slice(0, 40), payerEmail: String(deepFind(payload, ["email", "buyer_email", "payer_email"]) ?? "") || null, raw: payload as object },
-      update: { status: refund ? "refunded" : success ? "succeeded" : status.slice(0, 40), raw: payload as object },
-    });
-
-    const paid = Number((await db.payment.aggregate({ where: { bookingId: booking.id, status: "succeeded" }, _sum: { amount: true } }))._sum.amount ?? 0);
-    const total = Number(booking.total);
-    const next = refund ? "refunded" : paid >= total - 0.5 ? "paid" : paid > 0 ? "deposit_paid" : booking.status;
-    const updated = await db.booking.update({ where: { id: booking.id }, data: { paid, status: ["confirmed", "cancelled"].includes(booking.status) && !refund ? booking.status : next } });
-
-    if (success && amount > 0) {
-      const vars = { name: booking.leadName.split(" ")[0], reference: booking.reference, trip: booking.tripTitle, date: booking.startDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }), amount: usd(amount), balance: usd(Math.max(0, total - paid)) };
-      const admin = `${(process.env.ADMIN_URL ?? "https://admin.basecampadventure.com").replace(/\/$/, "")}/bookings/${booking.id}`;
-      await Promise.allSettled([
-        sendTemplate("payment-received", booking.leadEmail, vars, { details: [["Reference", booking.reference], ["Paid now", usd(amount)], ["Paid in total", usd(paid)], ["Trip total", usd(total)], ["Balance", usd(Math.max(0, total - paid))]], replyTo: (await officeEmail()) }),
-        sendTemplate("payment-office", (await officeEmail()), { ...vars, name: booking.leadName }, { buttonHref: admin }),
-        notifyOffice("payment", `Payment received ${usd(amount)} · ${booking.reference}\n${booking.leadName} · ${booking.tripTitle}\nPaid ${usd(paid)} of ${usd(total)}\n${admin}`),
-      ]);
-      const { autoInvite } = await import("@/lib/server/portal");
-      await autoInvite(booking.id).catch((e) => console.error("[portal] auto invite failed", e));
-    }
+    const updated = await applyPayment(booking, { provider: "wetravel", providerId, amount, success, refund, status, payerEmail: String(deepFind(payload, ["email", "buyer_email", "payer_email"]) ?? "") || null, raw: payload });
     await db.webhookEvent.update({ where: { id: event.id }, data: { processedAt: new Date(), error: null } });
-    return { matched: true, status: updated.status };
+    return { matched: true, status: updated?.status };
   } catch (e) {
     await db.webhookEvent.update({ where: { id: event.id }, data: { error: e instanceof Error ? e.message.slice(0, 500) : "failed" } });
     throw e;
   }
+}
+
+
+/**
+ * One payment arriving from any gateway (WeTravel, Himalayan Bank…): saved
+ * once per gateway transaction, the booking's paid amount and status updated,
+ * and on success: emails, WhatsApp alert, numbered receipt, traveller account.
+ * Amounts are summed in cents.
+ */
+export async function applyPayment(
+  booking: Booking,
+  p: { provider: string; providerId: string; amount: number; success: boolean; refund?: boolean; status: string; payerEmail?: string | null; raw: unknown; currency?: string },
+) {
+  const before = await db.payment.findUnique({ where: { providerId: p.providerId } });
+  const statusText = p.refund ? "refunded" : p.success ? "succeeded" : p.status.slice(0, 40);
+  const pay = await db.payment.upsert({
+    where: { providerId: p.providerId },
+    create: { bookingId: booking.id, provider: p.provider, providerId: p.providerId, amount: p.amount, currency: p.currency ?? "USD", status: statusText, payerEmail: p.payerEmail ?? null, raw: p.raw as object },
+    update: { status: statusText, raw: p.raw as object, ...(p.amount > 0 ? { amount: p.amount } : {}) },
+  });
+  const rows = await db.payment.findMany({ where: { bookingId: booking.id, status: "succeeded" }, select: { amount: true } });
+  const paidCents = rows.reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0);
+  const paid = paidCents / 100;
+  const total = Number(booking.total);
+  const next = p.refund ? "refunded" : paidCents >= Math.round(total * 100) - 50 ? "paid" : paidCents > 0 ? "deposit_paid" : booking.status;
+  const updated = await db.booking.update({ where: { id: booking.id }, data: { paid, status: ["confirmed", "cancelled"].includes(booking.status) && !p.refund ? booking.status : next } });
+
+  // Only the first time this transaction is seen as successful.
+  if (p.success && p.amount > 0 && before?.status !== "succeeded") {
+    const amount = Number(pay.amount);
+    const vars = { name: booking.leadName.split(" ")[0], reference: booking.reference, trip: booking.tripTitle, date: booking.startDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }), amount: usd(amount), balance: usd(Math.max(0, total - paid)) };
+    const admin = `${(process.env.ADMIN_URL ?? "https://admin.basecampadventure.com").replace(/\/$/, "")}/bookings/${booking.id}`;
+    const via = p.provider === "hbl" ? "Himalayan Bank" : "WeTravel";
+    await Promise.allSettled([
+      sendTemplate("payment-received", booking.leadEmail, vars, { details: [["Reference", booking.reference], ["Paid now", usd(amount)], ["Paid in total", usd(paid)], ["Trip total", usd(total)], ["Balance", usd(Math.max(0, total - paid))]], replyTo: await officeEmail() }),
+      sendTemplate("payment-office", await officeEmail(), { ...vars, name: booking.leadName }, { buttonHref: admin }),
+      notifyOffice("payment", `Payment received ${usd(amount)} via ${via} · ${booking.reference}\n${booking.leadName} · ${booking.tripTitle}\nPaid ${usd(paid)} of ${usd(total)}\n${admin}`),
+    ]);
+    const { receiptForPayment } = await import("@/lib/server/receipts");
+    await receiptForPayment(pay.id).catch((e) => console.error("[receipt] auto receipt failed", e));
+    const { autoInvite } = await import("@/lib/server/portal");
+    await autoInvite(booking.id).catch((e) => console.error("[portal] auto invite failed", e));
+  }
+  return updated;
 }

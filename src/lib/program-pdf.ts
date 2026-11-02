@@ -219,7 +219,7 @@ export async function programPdf(trip: Trip, origin: string, info: InfoItem[]): 
   line("WhatsApp / 24/7", site.mobile, `https://wa.me/${site.whatsapp}`);
   line("Email", site.email, `mailto:${site.email}`);
   doc.y = by + 128 + 14;
-  doc.font("Body").fontSize(7.8).fillColor(C.muted).text(`${site.legalName} · ${site.registration.map((r) => `${r.label} ${r.value}`).join(" · ")}`, M, doc.y, { width: CW, align: "center" });
+  doc.font("Body").fontSize(7.8).fillColor(C.muted).text(`${site.legalName} · ${site.registration.filter((r) => r.value).map((r) => `${r.label} ${r.value}`).join(" · ")}`, M, doc.y, { width: CW, align: "center" });
 
   /* Header and footer on every page */
   const range = doc.bufferedPageRange();

@@ -42,13 +42,16 @@ export async function recordPayment(id: string, amount: number, note: string): P
     if (!(amount > 0)) throw new Error("!Enter the amount received.");
     const b = await db.booking.findUnique({ where: { id } });
     if (!b) throw new Error("!Booking not found.");
-    await db.payment.create({ data: { bookingId: id, provider: "manual", providerId: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, amount, status: "succeeded", raw: { note, by: user.email } } });
+    const pay = await db.payment.create({ data: { bookingId: id, provider: "manual", providerId: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, amount, status: "succeeded", raw: { note, by: user.email } } });
     const paid = Number((await db.payment.aggregate({ where: { bookingId: id, status: "succeeded" }, _sum: { amount: true } }))._sum.amount ?? 0);
     const status = paid >= Number(b.total) - 0.5 ? "paid" : "deposit_paid";
     await db.booking.update({ where: { id }, data: { paid, status: b.status === "confirmed" ? "confirmed" : status } });
     await audit(user.id, "booking.payment", "booking", id, `${usd(amount)} ${note}`);
     const { autoInvite } = await import("@/lib/server/portal");
     await autoInvite(id).catch(() => undefined);
+    const { receiptForPayment } = await import("@/lib/server/receipts");
+    const receipt = await receiptForPayment(pay.id, { id: user.id, name: user.name }).catch(() => null);
+    if (receipt) return { ok: true, message: `Recorded ${usd(amount)}. Receipt ${receipt.number} created.` };
     return { ok: true, message: `Recorded ${usd(amount)}.` };
   } catch (e) {
     return fail(e);

@@ -16,7 +16,7 @@ const greeting = () => {
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const { user } = await requireUser();
   const { denied } = await searchParams;
-  const sales = can(user.role, "sales");
+  const sales = can(user, "sales");
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const [trips, posts, drafts, changed, enquiriesNew, bookingsOpen, paidMonth, recentEnquiries, recentBookings, recentEdits] = await Promise.all([

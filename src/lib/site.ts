@@ -44,7 +44,10 @@ export const site = {
     { label: "VAT", value: "303970392" },
     { label: "NMA", value: "776" },
     { label: "TAAN", value: "2010-868" },
+    { label: "NTB Licence", value: "" },
   ],
+  /** Google "write a review" link (Admin → Settings → Company). */
+  googleReview: "",
   affiliations: [
     { name: "Nepal Tourism Board", short: "NTB · Licensed", logo: "/brand/partners/ntb.png", w: 507, h: 220, href: "https://ntb.gov.np/" },
     { name: "Trekking Agencies' Association of Nepal", short: "TAAN · 2010-868", logo: "/brand/partners/taan.png", w: 162, h: 220, href: "https://www.taan.org.np/" },
@@ -109,6 +112,13 @@ export type CompanySettings = Partial<{
   instagram: string;
   x: string;
   tripadvisor: string;
+  legalName: string;
+  govReg: string;
+  vat: string;
+  ntbLicence: string;
+  nma: string;
+  taan: string;
+  googleReview: string;
 }>;
 
 /**
@@ -118,7 +128,11 @@ export type CompanySettings = Partial<{
  */
 export function applyCompany(c: CompanySettings | null | undefined) {
   if (!c) return;
-  const s = site as unknown as { contactPerson: string; phone: string; mobile: string; mobileHref: string; whatsapp: string; email: string; address: Record<string, string>; social: Record<string, string> };
+  const s = site as unknown as { contactPerson: string; phone: string; mobile: string; mobileHref: string; whatsapp: string; email: string; legalName: string; googleReview: string; address: Record<string, string>; social: Record<string, string>; registration: { label: string; value: string }[] };
+  const reg = (label: string, v: string) => {
+    const r = s.registration.find((x) => x.label === label);
+    if (r) r.value = v;
+  };
   const set = <K extends keyof CompanySettings>(k: K, fn: (v: string) => void) => {
     const v = c[k]?.trim();
     if (v) fn(v);
@@ -138,7 +152,17 @@ export function applyCompany(c: CompanySettings | null | undefined) {
   set("instagram", (v) => (s.social.instagram = v));
   set("x", (v) => (s.social.x = v));
   set("tripadvisor", (v) => (s.social.tripadvisor = v));
+  set("legalName", (v) => (s.legalName = v));
+  set("govReg", (v) => reg("Govt. Reg.", v));
+  set("vat", (v) => reg("VAT", v));
+  set("nma", (v) => reg("NMA", v));
+  set("taan", (v) => reg("TAAN", v));
+  set("ntbLicence", (v) => reg("NTB Licence", v));
+  set("googleReview", (v) => (s.googleReview = v));
 }
+
+/** A registration number by label ("VAT", "TAAN", "NMA", "Govt. Reg.", "NTB Licence"). */
+export const regNo = (label: string) => site.registration.find((r) => r.label === label)?.value ?? "";
 
 declare global {
   interface Window {

@@ -9,6 +9,7 @@ export type Features = {
   reviews: { enabled: boolean; afterDays: number };
   portal: { enabled: boolean; autoInvite: boolean; expiryDays: number; inviteHours: number };
   languages: { de: boolean; fr: boolean; es: boolean };
+  payments: { wetravel: boolean; hbl: boolean; preferred: "wetravel" | "hbl"; hblCurrency: "USD" | "NPR"; nprRate: number };
 };
 
 export const FEATURE_DEFAULTS: Features = {
@@ -18,6 +19,7 @@ export const FEATURE_DEFAULTS: Features = {
   reviews: { enabled: true, afterDays: 2 },
   portal: { enabled: true, autoInvite: false, expiryDays: 30, inviteHours: 72 },
   languages: { de: false, fr: false, es: false },
+  payments: { wetravel: true, hbl: false, preferred: "wetravel", hblCurrency: "USD", nprRate: 133 },
 };
 
 export function withFeatureDefaults(saved: unknown): Features {

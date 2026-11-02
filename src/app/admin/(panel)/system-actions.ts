@@ -7,6 +7,7 @@ import { audit } from "@/lib/admin/audit";
 import { db } from "@/lib/admin/db";
 import { sendTemplate } from "@/lib/admin/email/send";
 import { addRedirect } from "@/lib/admin/entries";
+import { PERMISSIONS } from "@/lib/admin/permissions";
 import { Denied, assertUser } from "@/lib/admin/guards";
 import { hashPassword, passwordProblem, verifyPassword } from "@/lib/admin/password";
 import { refreshSite, writeRedirects, writeSettings } from "@/lib/admin/publish";
@@ -55,6 +56,13 @@ const companySchema = z.object({
   instagram: url,
   x: url,
   tripadvisor: url,
+  legalName: z.string().trim().max(120).optional().default(""),
+  govReg: z.string().trim().max(60).optional().default(""),
+  vat: z.string().trim().max(60).optional().default(""),
+  ntbLicence: z.string().trim().max(60).optional().default(""),
+  nma: z.string().trim().max(60).optional().default(""),
+  taan: z.string().trim().max(60).optional().default(""),
+  googleReview: url.optional().default(""),
 });
 
 /** Company details shown across the website and in every email. */
@@ -76,7 +84,7 @@ export async function saveCompany(input: unknown): Promise<R> {
 /* ------------------------------------------------------------------ users */
 
 /** The two roles the office uses: main admin and editor (owner is the first main admin). */
-const ROLES: Role[] = ["admin", "editor"];
+const ROLES: Role[] = ["admin", "editor", "sales"];
 
 export async function inviteUser(input: { email: string; name: string; role: Role }): Promise<R> {
   try {
@@ -84,7 +92,7 @@ export async function inviteUser(input: { email: string; name: string; role: Rol
     const email = input.email.trim().toLowerCase();
     if (!z.email().safeParse(email).success) throw new Error("!Enter a valid email.");
     if (!input.name.trim()) throw new Error("!Enter their name.");
-    if (!ROLES.includes(input.role)) throw new Error("!Choose Main admin or Editor.");
+    if (!ROLES.includes(input.role)) throw new Error("!Choose a role.");
     if (await db.user.findUnique({ where: { email } })) throw new Error("!That email already has an account.");
     const u = await db.user.create({ data: { email, name: input.name.trim(), role: input.role, passwordHash: await hashPassword(randomBytes(32).toString("base64url")) } });
     const link = await issueResetLink(u.id, 3 * 24 * 3600_000);
@@ -97,12 +105,13 @@ export async function inviteUser(input: { email: string; name: string; role: Rol
   }
 }
 
-export async function updateUser(id: string, change: { role?: Role; status?: "active" | "suspended"; resetTwoFactor?: boolean }): Promise<R> {
+export async function updateUser(id: string, change: { role?: Role; status?: "active" | "suspended"; resetTwoFactor?: boolean; permissions?: string[]; phone?: string }): Promise<R> {
   try {
     const { user } = await assertUser("users");
     const target = await db.user.findUnique({ where: { id } });
     if (!target) throw new Error("!User not found.");
-    if (target.id === user.id && (change.role || change.status)) throw new Error("!You can't change your own role or suspend yourself.");
+    if (target.id === user.id && (change.role || change.status || change.permissions)) throw new Error("!You can't change your own role, permissions or suspend yourself.");
+    if (change.permissions && target.role === "owner") throw new Error("!The owner always has every permission.");
     if (target.role === "owner" && user.role !== "owner") throw new Error("!Only the owner can change the owner's account.");
     if (change.role === "owner" && user.role !== "owner") throw new Error("!Only the owner can make someone an owner.");
     if ((change.role && change.role !== "owner" && target.role === "owner") || (change.status === "suspended" && target.role === "owner")) {
@@ -114,10 +123,13 @@ export async function updateUser(id: string, change: { role?: Role; status?: "ac
         ...(change.role && ROLES.includes(change.role) && target.role !== "owner" ? { role: change.role } : {}),
         ...(change.status ? { status: change.status } : {}),
         ...(change.resetTwoFactor ? { totpEnabled: false, totpSecret: null } : {}),
+        ...(change.permissions ? { permissions: [...new Set(change.permissions.filter((p) => PERMISSIONS.some((q) => q.key === p)))] } : {}),
+        ...(change.phone !== undefined ? { phone: change.phone.replace(/[^0-9+ ()-]/g, "").slice(0, 30) || null } : {}),
       },
     });
     if (change.resetTwoFactor) await db.backupCode.deleteMany({ where: { userId: id } });
-    if (change.status === "suspended" || change.resetTwoFactor) await revokeAll(id);
+    // A change of rights takes effect at once: signed out, signs in again with the new rights.
+    if (change.status === "suspended" || change.resetTwoFactor || change.permissions || change.role) await revokeAll(id);
     await audit(user.id, "user.update", "user", id, JSON.stringify(change));
     revalidatePath("/admin/users");
     return { ok: true, message: change.resetTwoFactor ? "Two-step sign-in reset. They'll set it up again at next sign-in." : "Saved." };

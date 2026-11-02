@@ -15,7 +15,7 @@ import { hashToken, randomToken } from "@/lib/admin/crypto";
  */
 export const COOKIE = process.env.NODE_ENV === "production" ? "__Host-bca_admin" : "bca_admin";
 
-export type CurrentUser = { id: string; email: string; name: string; role: Role; totpEnabled: boolean };
+export type CurrentUser = { id: string; email: string; name: string; role: Role; totpEnabled: boolean; permissions: string[] };
 export type Auth = { user: CurrentUser; sessionId: string; mfaDone: boolean };
 
 export const mfaRequired = () => env().REQUIRE_TOTP;
@@ -55,7 +55,7 @@ export const getAuth = cache(async (): Promise<Auth | null> => {
   }
   if (now - s.lastSeenAt.getTime() > 60_000) await db.session.update({ where: { id: s.id }, data: { lastSeenAt: new Date() } });
   return {
-    user: { id: s.user.id, email: s.user.email, name: s.user.name, role: s.user.role, totpEnabled: s.user.totpEnabled },
+    user: { id: s.user.id, email: s.user.email, name: s.user.name, role: s.user.role, totpEnabled: s.user.totpEnabled, permissions: s.user.permissions },
     sessionId: s.id,
     mfaDone: !mfaRequired() || s.mfaVerifiedAt !== null,
   };

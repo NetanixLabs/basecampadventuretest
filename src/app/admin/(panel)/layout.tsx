@@ -5,21 +5,29 @@ import { signOut } from "../(auth)/actions";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const { user } = await requireUser();
-  const r = user.role;
+  const r = user;
   const [newEnquiries, newBookings] = can(r, "sales")
     ? await Promise.all([db.enquiry.count({ where: { status: "new" } }), db.booking.count({ where: { status: { in: ["requested", "awaiting_payment"] } } })])
     : [0, 0];
 
   const groups: NavGroup[] = [
-    { label: "Overview", items: [{ href: "/", label: "Dashboard", icon: "LayoutDashboard" as const }] },
-    ...(can(r, "sales")
+    { label: "Overview", items: [{ href: "/", label: "Dashboard", icon: "LayoutDashboard" as const }, ...(can(r, "reports") ? [{ href: "/reports", label: "Sales dashboard", icon: "LineChart" as const }] : [])] },
+    {
+      label: "Customers",
+      items: [
+        ...(can(r, "sales") ? [{ href: "/bookings", label: "Bookings", icon: "CalendarCheck" as const, badge: newBookings }, { href: "/enquiries", label: "Enquiries", icon: "Inbox" as const, badge: newEnquiries }] : []),
+        ...(can(r, "customers") ? [{ href: "/customers", label: "Customers", icon: "Contact" as const }] : []),
+        ...(can(r, "receipts") ? [{ href: "/receipts", label: "Receipts & bills", icon: "Receipt" as const }] : []),
+        ...(can(r, "sales") ? [{ href: "/discounts", label: "Discount codes", icon: "Percent" as const }, { href: "/subscribers", label: "Newsletter", icon: "Mail" as const }] : []),
+      ],
+    },
+    ...(can(r, "operations")
       ? [{
-          label: "Customers",
+          label: "Operations",
           items: [
-            { href: "/bookings", label: "Bookings", icon: "CalendarCheck" as const, badge: newBookings },
-            { href: "/enquiries", label: "Enquiries", icon: "Inbox" as const, badge: newEnquiries },
-            { href: "/discounts", label: "Discount codes", icon: "Percent" as const },
-            { href: "/subscribers", label: "Newsletter", icon: "Mail" as const },
+            { href: "/departures", label: "Departures", icon: "Compass" as const },
+            { href: "/team-field", label: "Guides & porters", icon: "HardHat" as const },
+            { href: "/agents", label: "Agents", icon: "Handshake" as const },
           ],
         }]
       : []),

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/admin/ui";
 import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
-import { site } from "@/lib/site";
+import { regNo, site } from "@/lib/site";
 import { configStatus } from "@/lib/admin/config";
 import { CompanyForm } from "./company";
 import { KeysForm } from "./keys";
@@ -28,11 +28,18 @@ export default async function Settings() {
     instagram: saved.instagram ?? site.social.instagram,
     x: saved.x ?? site.social.x,
     tripadvisor: saved.tripadvisor ?? site.social.tripadvisor,
+    legalName: saved.legalName ?? site.legalName,
+    govReg: saved.govReg ?? regNo("Govt. Reg."),
+    vat: saved.vat ?? regNo("VAT"),
+    ntbLicence: saved.ntbLicence ?? regNo("NTB Licence"),
+    nma: saved.nma ?? regNo("NMA"),
+    taan: saved.taan ?? regNo("TAAN"),
+    googleReview: saved.googleReview ?? site.googleReview,
   };
   const v = (k: string, fallback: string) => String(rows.find((r) => r.key === k)?.value ?? fallback);
   return (
     <>
-      <PageHeader title="Settings" description="Company details, features, keys and integrations." actions={<Link href="/settings/features" className="rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep">Features & switches →</Link>} />
+      <PageHeader title="Settings" description="Company details, features, keys and integrations." actions={<div className="flex flex-wrap gap-2"><Link href="/settings/receipts" className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold hover:border-pine">Receipts & signature →</Link><Link href="/settings/features" className="rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep">Features & switches →</Link></div>} />
       <CompanyForm initial={company} />
       <div className="mt-6"><KeysForm status={await configStatus()} /></div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">

@@ -6,6 +6,9 @@ import { checkDiscount } from "@/lib/server/discounts";
 import { saveBooking } from "@/lib/server/sales";
 import { rateLimited, reference } from "@/lib/server/store";
 import { createPaymentLink, wetravelEnabled } from "@/lib/server/wetravel";
+import { features } from "@/lib/admin/features";
+import { hblEnabled } from "@/lib/server/hbl";
+import { payLink } from "@/lib/server/gateway";
 
 const schema = z.object({
   trip: z.string().trim().min(1).max(200),
@@ -19,6 +22,7 @@ const schema = z.object({
   notes: z.string().trim().max(3000).optional().or(z.literal("")),
   terms: z.literal(true, "Please accept the booking terms"),
   discountCode: z.string().trim().max(40).optional().or(z.literal("")),
+  method: z.enum(["wetravel", "hbl"]).optional(),
   website: z.string().max(0).optional().or(z.literal("")),
 });
 
@@ -51,7 +55,9 @@ export async function POST(req: Request) {
   // The price is always worked out here, never taken from the browser.
   const tier = trip.price.groupTiers.find((t) => input.pax >= t.from && (!t.to || input.pax <= t.to));
   const each = tier?.price ?? trip.price.amount;
-  const subtotal = Math.round(each * input.pax * 100) / 100;
+  // In whole cents, so totals, discounts and deposits never drift.
+  const c = (n: number) => Math.round(n * 100);
+  const subtotal = (c(each) * input.pax) / 100;
   let discountCode: string | null = null;
   let discount = 0;
   if (input.discountCode) {
@@ -60,15 +66,21 @@ export async function POST(req: Request) {
     discountCode = d.discount.code;
     discount = d.discount.amount;
   }
-  const total = Math.round((subtotal - discount) * 100) / 100;
-  const deposit = Math.round(total * DEPOSIT_RATE * 100) / 100;
+  const totalC = c(subtotal) - c(discount);
+  const total = totalC / 100;
+  const deposit = Math.round(totalC * DEPOSIT_RATE) / 100;
   const due = input.plan === "deposit" ? deposit : total;
   const ref = reference("BCA");
 
   let paymentUrl: string | null = null;
   let wetravelId: string | null = null;
   let paymentError: string | null = null;
-  if (await wetravelEnabled()) {
+  // Which checkout: the traveller's choice if offered, else the office's preferred one.
+  const pay = (await features()).payments;
+  const wantHbl = input.method ? input.method === "hbl" : pay.preferred === "hbl";
+  const gateway = wantHbl && (await hblEnabled()) ? "hbl" : pay.wetravel ? "wetravel" : null;
+  if (gateway === "hbl") paymentUrl = payLink(ref);
+  if (gateway === "wetravel" && (await wetravelEnabled())) {
     const link = await createPaymentLink({
       reference: ref,
       title: trip.title,
@@ -83,7 +95,7 @@ export async function POST(req: Request) {
     } else paymentError = link.error;
   }
   // No API key (or WeTravel unreachable): use the trip's own WeTravel checkout, if the office added one.
-  if (!paymentUrl && trip.wetravelUrl && /^https:\/\/([a-z0-9-]+\.)*wetravel\.com\//.test(trip.wetravelUrl)) paymentUrl = trip.wetravelUrl;
+  if (gateway === "wetravel" && !paymentUrl && trip.wetravelUrl && /^https:\/\/([a-z0-9-]+\.)*wetravel\.com\//.test(trip.wetravelUrl)) paymentUrl = trip.wetravelUrl;
 
   await saveBooking({
     reference: ref,
@@ -104,6 +116,7 @@ export async function POST(req: Request) {
     wetravelId,
     paymentError,
     ip,
+    gateway,
   });
 
   return NextResponse.json({ ok: true, reference: ref, paymentUrl, total, discount, due });

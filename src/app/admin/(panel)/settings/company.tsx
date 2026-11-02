@@ -4,9 +4,15 @@ import { useState, useTransition } from "react";
 import { Card, inputClass, Label } from "@/components/admin/ui";
 import { saveCompany } from "../system-actions";
 
-type V = Record<"contactPerson" | "phone" | "mobile" | "whatsapp" | "email" | "street" | "city" | "poBox" | "facebook" | "instagram" | "x" | "tripadvisor", string>;
+type V = Record<"contactPerson" | "phone" | "mobile" | "whatsapp" | "email" | "street" | "city" | "poBox" | "facebook" | "instagram" | "x" | "tripadvisor" | "legalName" | "govReg" | "vat" | "ntbLicence" | "nma" | "taan" | "googleReview", string>;
 
-const FIELDS: { k: keyof V; l: string; info?: string; type?: string; group: "contact" | "address" | "social" }[] = [
+const FIELDS: { k: keyof V; l: string; info?: string; type?: string; group: "contact" | "address" | "social" | "legal" }[] = [
+  { k: "legalName", l: "Registered company name", info: "As on the company registration. Printed on receipts and bills.", group: "legal", type: "text" },
+  { k: "vat", l: "VAT / PAN number", info: "Printed on every receipt and bill, and in the website footer.", group: "legal", type: "text" },
+  { k: "govReg", l: "Government registration no.", group: "legal", type: "text" },
+  { k: "ntbLicence", l: "Tourism licence no. (NTB)", info: "Your trekking agency licence from the Department of Tourism / Nepal Tourism Board.", group: "legal", type: "text" },
+  { k: "nma", l: "NMA membership no.", group: "legal", type: "text" },
+  { k: "taan", l: "TAAN membership no.", group: "legal", type: "text" },
   { k: "contactPerson", l: "Contact person", info: "Shown in the website header (\"Available now\"), on the booking page and as the signature in newsletters.", group: "contact" },
   { k: "mobile", l: "Mobile (24/7)", info: "Shown in the header and booking page, with a call link.", group: "contact" },
   { k: "whatsapp", l: "WhatsApp number", info: "Numbers only with country code, e.g. 9779851029616. Used by every WhatsApp button.", group: "contact" },
@@ -19,6 +25,7 @@ const FIELDS: { k: keyof V; l: string; info?: string; type?: string; group: "con
   { k: "instagram", l: "Instagram", group: "social" },
   { k: "x", l: "X (Twitter)", group: "social" },
   { k: "tripadvisor", l: "Tripadvisor", group: "social" },
+  { k: "googleReview", l: "Google: \"write a review\" link", info: "From your Google Business Profile: Ask for reviews → copy link. Used by the \"Review us on Google\" buttons.", group: "social" },
 ];
 
 export function CompanyForm({ initial }: { initial: V }) {
@@ -41,6 +48,10 @@ export function CompanyForm({ initial }: { initial: V }) {
         <div>
           <p className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Office address</p>
           <div className="grid gap-4 sm:grid-cols-3">{group("address")}</div>
+        </div>
+        <div>
+          <p className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Registration (receipts, bills and footer)</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group("legal")}</div>
         </div>
         <div>
           <p className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Social media</p>

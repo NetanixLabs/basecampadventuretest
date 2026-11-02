@@ -8,7 +8,7 @@ import type { ConfigKey } from "@/lib/admin/config";
 
 type Status = Record<ConfigKey, { fromAdmin: boolean; set: boolean; value: string | null }>;
 
-const GROUPS: { title: string; info: string; keys: { k: ConfigKey; l: string; secret?: boolean; placeholder?: string; info?: string }[] }[] = [
+const GROUPS: { title: string; info: string; keys: { k: ConfigKey; l: string; secret?: boolean; placeholder?: string; info?: string; multiline?: boolean }[] }[] = [
   {
     title: "WeTravel payments",
     info: "From WeTravel → Profile → API. With the API key, every booking gets its own WeTravel checkout with the exact price. The webhook secret lets WeTravel tell the website when a payment is made (address: https://basecampadventure.com/api/webhooks/wetravel).",
@@ -16,6 +16,21 @@ const GROUPS: { title: string; info: string; keys: { k: ConfigKey; l: string; se
       { k: "WETRAVEL_API_KEY", l: "API key", secret: true },
       { k: "WETRAVEL_ENV", l: "Mode", placeholder: "production or sandbox", info: "Use sandbox for testing with WeTravel's demo site, production for real payments." },
       { k: "WETRAVEL_WEBHOOK_SECRET", l: "Webhook signing secret", secret: true, placeholder: "whsec_…" },
+    ],
+  },
+  {
+    title: "Himalayan Bank (HBL) card payments",
+    info: "The second payment option (cards through Himalayan Bank / 2C2P PACO). The bank gives you the office ID, API key and four keys. Use mode \"sandbox\" with the bank's test keys first, make a test payment, then switch to production. Switch HBL on in Settings → Features → Payments.",
+    keys: [
+      { k: "HBL_ENV", l: "Mode", placeholder: "sandbox or production" },
+      { k: "HBL_OFFICE_ID", l: "Office (merchant) ID" },
+      { k: "HBL_API_KEY", l: "API key / access token", secret: true },
+      { k: "HBL_ENCRYPTION_KEY_ID", l: "Encryption key ID (if given)" },
+      { k: "HBL_SIGNING_KEY_ID", l: "Signing key ID (if given)" },
+      { k: "HBL_MERCHANT_SIGNING_KEY", l: "Merchant signing private key", secret: true, multiline: true, placeholder: "-----BEGIN PRIVATE KEY-----" },
+      { k: "HBL_MERCHANT_DECRYPTION_KEY", l: "Merchant decryption private key", secret: true, multiline: true, placeholder: "-----BEGIN PRIVATE KEY-----" },
+      { k: "HBL_PACO_ENCRYPTION_KEY", l: "PACO encryption public key", multiline: true, placeholder: "-----BEGIN PUBLIC KEY-----" },
+      { k: "HBL_PACO_SIGNING_KEY", l: "PACO signing public key", multiline: true, placeholder: "-----BEGIN PUBLIC KEY-----" },
     ],
   },
   {
@@ -51,15 +66,28 @@ export function KeysForm({ status }: { status: Status }) {
                   <div key={f.k}>
                     <Label htmlFor={`k-${f.k}`} info={f.info} hint={s.set ? <Badge tone="green">{s.fromAdmin ? "Set here" : "Set on server"}</Badge> : <Badge tone="amber">Not set</Badge>}>{f.l}</Label>
                     <div className="flex gap-2">
-                      <input
-                        id={`k-${f.k}`}
-                        type={f.secret ? "password" : "text"}
-                        autoComplete="off"
-                        value={v[f.k] ?? ""}
-                        onChange={(e) => setV({ ...v, [f.k]: e.target.value })}
-                        placeholder={f.secret && s.set ? "•••••••• saved (type to replace)" : f.placeholder}
-                        className={`${inputClass} font-mono text-[13px]`}
-                      />
+                      {f.multiline ? (
+                        <textarea
+                          id={`k-${f.k}`}
+                          rows={3}
+                          spellCheck={false}
+                          autoComplete="off"
+                          value={v[f.k] ?? ""}
+                          onChange={(e) => setV({ ...v, [f.k]: e.target.value })}
+                          placeholder={f.secret && s.set ? "•••••••• saved (paste to replace)" : f.placeholder}
+                          className={`${inputClass} font-mono text-[11px] ${f.secret ? "[-webkit-text-security:disc]" : ""}`}
+                        />
+                      ) : (
+                        <input
+                          id={`k-${f.k}`}
+                          type={f.secret ? "password" : "text"}
+                          autoComplete="off"
+                          value={v[f.k] ?? ""}
+                          onChange={(e) => setV({ ...v, [f.k]: e.target.value })}
+                          placeholder={f.secret && s.set ? "•••••••• saved (type to replace)" : f.placeholder}
+                          className={`${inputClass} font-mono text-[13px]`}
+                        />
+                      )}
                       {s.fromAdmin ? (
                         <button type="button" title="Remove and use the server's setting" disabled={pending} onClick={() => start(async () => { if (!confirm(`Remove ${f.l}?`)) return; const r = await saveKeys({ [f.k]: null }); setMsg(r.message); router.refresh(); })} className="shrink-0 rounded-full border border-line px-3 text-xs font-semibold hover:border-red-300 hover:text-red-700">Remove</button>
                       ) : null}

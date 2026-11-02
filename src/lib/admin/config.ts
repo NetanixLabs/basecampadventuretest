@@ -22,6 +22,15 @@ export const CONFIG_KEYS = {
   WHATSAPP_TOKEN: { label: "WhatsApp Business access token", secret: true },
   WHATSAPP_PHONE_ID: { label: "WhatsApp Business phone number ID", secret: false },
   CALLMEBOT_KEYS: { label: "CallMeBot key(s)", secret: true },
+  HBL_ENV: { label: "Himalayan Bank mode", secret: false },
+  HBL_OFFICE_ID: { label: "Himalayan Bank office (merchant) ID", secret: false },
+  HBL_API_KEY: { label: "Himalayan Bank API key / access token", secret: true },
+  HBL_MERCHANT_SIGNING_KEY: { label: "Merchant signing private key (PEM)", secret: true },
+  HBL_MERCHANT_DECRYPTION_KEY: { label: "Merchant decryption private key (PEM)", secret: true },
+  HBL_PACO_ENCRYPTION_KEY: { label: "PACO encryption public key (PEM)", secret: false },
+  HBL_PACO_SIGNING_KEY: { label: "PACO signing public key (PEM)", secret: false },
+  HBL_ENCRYPTION_KEY_ID: { label: "Encryption key ID", secret: false },
+  HBL_SIGNING_KEY_ID: { label: "Signing key ID", secret: false },
 } as const;
 export type ConfigKey = keyof typeof CONFIG_KEYS;
 

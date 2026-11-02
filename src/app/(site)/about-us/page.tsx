@@ -221,7 +221,7 @@ export default function AboutPage() {
           <Awards awards={getAwards()} />
         </div>
         <div className="mx-auto flex max-w-site flex-col gap-4 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-          <p className="font-mono text-xs text-ink-soft sm:text-sm">{site.registration.map((r) => `${r.label} ${r.value}`).join("  ·  ")}</p>
+          <p className="font-mono text-xs text-ink-soft sm:text-sm">{site.registration.filter((r) => r.value).map((r) => `${r.label} ${r.value}`).join("  ·  ")}</p>
           <Link href="/legal-documents/" className="text-pine inline-flex items-center gap-2 text-sm font-bold">
             Licences &amp; documents <ArrowRight className="size-4" aria-hidden />
           </Link>
