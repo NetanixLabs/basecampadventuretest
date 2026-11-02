@@ -49,6 +49,11 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
           </div>
         </Feature>
 
+        <Feature title="Emails before the trip" info="Automatic emails to travellers with a payment: one month before (visa, insurance, flights, packing) and one week before (airport pickup). If a balance is still open, the amount and the pay-now link are included. Change the wording under Email templates." on={f.pretrip.enabled} onChange={(v) => set("pretrip", { enabled: v })}>
+          <label className="flex items-center justify-between gap-3 text-sm font-semibold">30 days before<Switch on={f.pretrip.d30} onChange={(v) => set("pretrip", { d30: v })} label="30 days before" /></label>
+          <label className="flex items-center justify-between gap-3 text-sm font-semibold">7 days before<Switch on={f.pretrip.d7} onChange={(v) => set("pretrip", { d7: v })} label="7 days before" /></label>
+        </Feature>
+
         <Feature title="Traveller details in tawk.to chat" info="When someone books or sends an enquiry, their name, email and reference are added to their tawk.to chat, so your team knows who they are talking to." on={f.tawk.details} onChange={(v) => set("tawk", { details: v })} />
 
         <Feature title="WhatsApp alerts to the office" info="A WhatsApp message to the office for new bookings, enquiries and payments. CallMeBot is free and quick to set up for a personal number; Meta's WhatsApp Business API is the official option for a business number (needs an approved message template)." on={f.whatsapp.enabled} onChange={(v) => set("whatsapp", { enabled: v })}>

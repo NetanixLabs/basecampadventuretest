@@ -52,6 +52,34 @@ export async function reviewRequests() {
   return sent;
 }
 
+/** Emails 30 and 7 days before departure (once each), with the balance and pay link if anything is still open. */
+export async function preTripEmails() {
+  const f = (await features()).pretrip;
+  if (!f.enabled) return 0;
+  const { payLink } = await import("@/lib/server/gateway");
+  const portal = (process.env.PORTAL_URL ?? "https://my.basecampadventure.com").replace(/\/$/, "");
+  let sent = 0;
+  for (const [days, flag, template, on] of [[30, "pretrip30At", "pretrip-30", f.d30], [7, "pretrip7At", "pretrip-7", f.d7]] as const) {
+    if (!on) continue;
+    const from = new Date(Date.now() + (days - 1) * 86_400_000);
+    const to = new Date(Date.now() + days * 86_400_000);
+    const due = await db.booking.findMany({ where: { status: { in: ["deposit_paid", "paid", "confirmed"] }, startDate: { gte: from, lte: to }, [flag]: null }, take: 100 });
+    for (const b of due) {
+      const claimed = await db.booking.updateMany({ where: { id: b.id, [flag]: null }, data: { [flag]: new Date() } });
+      if (!claimed.count) continue;
+      const balanceCents = Math.max(0, Math.round(Number(b.total) * 100) - Math.round(Number(b.paid) * 100));
+      const balance = usd(balanceCents / 100);
+      const r = await sendTemplate(template, b.leadEmail, { name: b.leadName.split(" ")[0], trip: b.tripTitle, date: dateText(b.startDate), balance }, {
+        buttonHref: b.travellerId ? `${portal}/` : `${site()}/trip/${b.tripSlug}/`,
+        details: [["Reference", b.reference], ["Trip", b.tripTitle], ["Starts", dateText(b.startDate)], ...(balanceCents > 0 ? ([["Balance to pay", balance], ["Pay online", payLink(b.reference)]] as [string, string][]) : [])],
+        replyTo: await officeEmail(),
+      });
+      if (r.ok) sent++;
+    }
+  }
+  return sent;
+}
+
 export async function expirePortal() {
   const old = await db.traveller.findMany({ where: { status: { in: ["invited", "active", "disabled"] }, expiresAt: { lt: new Date() } }, select: { id: true }, take: 50 });
   for (const t of old) await purgeTraveller(t.id);
@@ -61,7 +89,7 @@ export async function expirePortal() {
 
 export async function runJobs() {
   const out: Record<string, number | string> = {};
-  for (const [name, job] of Object.entries({ reminders: paymentReminders, reviews: reviewRequests, portalExpired: expirePortal })) {
+  for (const [name, job] of Object.entries({ reminders: paymentReminders, preTrip: preTripEmails, reviews: reviewRequests, portalExpired: expirePortal })) {
     try {
       out[name] = await job();
     } catch (e) {

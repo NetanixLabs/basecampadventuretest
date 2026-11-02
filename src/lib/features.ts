@@ -10,6 +10,7 @@ export type Features = {
   portal: { enabled: boolean; autoInvite: boolean; expiryDays: number; inviteHours: number };
   languages: { de: boolean; fr: boolean; es: boolean };
   payments: { wetravel: boolean; hbl: boolean; preferred: "wetravel" | "hbl"; hblCurrency: "USD" | "NPR"; nprRate: number };
+  pretrip: { enabled: boolean; d30: boolean; d7: boolean };
 };
 
 export const FEATURE_DEFAULTS: Features = {
@@ -20,6 +21,7 @@ export const FEATURE_DEFAULTS: Features = {
   portal: { enabled: true, autoInvite: false, expiryDays: 30, inviteHours: 72 },
   languages: { de: false, fr: false, es: false },
   payments: { wetravel: true, hbl: false, preferred: "wetravel", hblCurrency: "USD", nprRate: 133 },
+  pretrip: { enabled: true, d30: true, d7: true },
 };
 
 export function withFeatureDefaults(saved: unknown): Features {
