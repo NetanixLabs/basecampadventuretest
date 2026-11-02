@@ -2,7 +2,7 @@ import { ReviewVerified } from "@/components/review-verified";
 import Image from "@/components/image";
 import Link from "next/link";
 import { missing } from "@/lib/not-found";
-import { ArrowRight, Backpack, Check, Clock, Compass, FileDown, Flag, Gauge, Info, MapPin, Mountain, Route, Star, Sun, Users, X, type LucideIcon } from "lucide-react";
+import { ArrowRight, Backpack, Check, Clock, Compass, FileDown, Flag, Gauge, Info, MapPin, Mountain, Play, Route, Star, Sun, Users, X, type LucideIcon } from "lucide-react";
 import { TripSidebar } from "@/components/trip/trip-sidebar";
 import { TripAwards } from "@/components/trip/trip-awards";
 import { ReviewUs } from "@/components/trip/review-us";
@@ -401,8 +401,12 @@ export default async function TripPage({ params }: Props) {
                 <div id="video-reviews" className="mt-12 scroll-mt-40">
                   <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
                     <h3 className="font-display text-2xl font-bold tracking-tight">Video reviews</h3>
-                    <p className="max-w-xs text-sm text-ink-soft">Travellers in their own words. Tap a video to watch.</p>
+                    <Link href="/testimonials/#video-stories" className="group inline-flex items-center gap-2 rounded-full border border-line bg-card py-1.5 pr-4 pl-1.5 text-sm font-bold text-pine transition-colors hover:border-pine focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine">
+                      <span className="grid size-7 place-items-center rounded-full bg-pine text-white transition-transform group-hover:scale-110"><Play className="size-3.5 translate-x-px fill-current" aria-hidden /></span>
+                      All video reviews <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                    </Link>
                   </div>
+                  <p className="-mt-3 mb-5 text-sm text-ink-soft">Travellers in their own words. Tap a video to watch.</p>
                   <VideoReviewGallery items={videoReviews} />
                 </div>
               ) : null}

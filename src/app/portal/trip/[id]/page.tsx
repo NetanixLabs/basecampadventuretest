@@ -99,7 +99,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       <section id="messages" className="mt-6 scroll-mt-20 rounded-2xl border border-line bg-card p-6 shadow-sm">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold">Messages{unread ? <span className="rounded-full bg-crimson px-2 py-0.5 text-xs text-white">{unread} new</span> : null}</h2>
         <p className="mt-1 text-sm text-muted">Questions about your trip or documents? Write to our office here.</p>
-        <Chat bookingId={b.id} side="traveller" initial={messages} empty="Ask us anything about your trip: flights, permits, gear, documents." />
+        <Chat sheet bookingId={b.id} side="traveller" initial={messages} empty="Ask us anything about your trip: flights, permits, gear, documents." />
       </section>
 
       {photos.length ? (
