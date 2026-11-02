@@ -83,3 +83,35 @@ export async function saveTravellerDetails(bookingId: string, values: Record<str
   await db.booking.update({ where: { id: b.id }, data: { detailsEnc: writeDetails(cleanDetails(values)) } });
   return { ok: true, message: "Saved. Thank you!" };
 }
+
+export async function sendPortalMessage(bookingId: string, body: string): Promise<{ ok: boolean; message: string }> {
+  const t = await getTraveller();
+  if (!t) return { ok: false, message: "Please sign in again." };
+  const b = await ownBooking(t.id, bookingId);
+  if (!b) return { ok: false, message: "Not found." };
+  const text = body.replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, 2000);
+  if (text.length < 2) return { ok: false, message: "Write a message first." };
+  const r = await limit(`portal:msg:${t.id}`, { limit: 20, windowMs: 3600_000, blockMs: 3600_000 });
+  if (!r.ok) return { ok: false, message: "That's a lot of messages; please wait a little or WhatsApp us." };
+  await db.portalMessage.create({ data: { bookingId: b.id, fromOffice: false, authorName: t.name, body: text } });
+  const admin = `${env().ADMIN_URL.replace(/\/$/, "")}/bookings/${b.id}`;
+  await sendTemplate("portal-message-office", await officeEmail(), { name: t.name, reference: b.reference, trip: b.tripTitle }, { buttonHref: admin, details: [["Message", text.slice(0, 600)]], replyTo: t.email }).catch(() => undefined);
+  return { ok: true, message: "Sent. We usually reply within a few hours." };
+}
+
+export async function writePortalReview(bookingId: string, input: { rating: number; title: string; body: string; consent: boolean; country: string }): Promise<{ ok: boolean; message: string }> {
+  const t = await getTraveller();
+  if (!t) return { ok: false, message: "Please sign in again." };
+  const b = await ownBooking(t.id, bookingId);
+  if (!b) return { ok: false, message: "Not found." };
+  if (!(await features()).reviews.enabled) return { ok: false, message: "Reviews are not open right now." };
+  const rating = Math.round(Number(input.rating));
+  const body = String(input.body ?? "").replace(/<[^>]*>/g, "").trim().slice(0, 4000);
+  if (rating < 1 || rating > 5) return { ok: false, message: "Choose 1 to 5 stars." };
+  if (body.length < 20) return { ok: false, message: "Please write a little more (at least 20 characters)." };
+  if (!input.consent) return { ok: false, message: "Please tick the box so we may show your review." };
+  if (await db.tripReview.findFirst({ where: { bookingId: b.id } })) return { ok: false, message: "You've already reviewed this trip. Thank you!" };
+  await db.tripReview.create({ data: { bookingId: b.id, tripSlug: b.tripSlug, name: t.name.split(" ")[0], country: String(input.country ?? "").trim().slice(0, 60) || b.leadCountry, rating, title: String(input.title ?? "").replace(/<[^>]*>/g, "").trim().slice(0, 120) || null, body, consent: true } });
+  await db.booking.update({ where: { id: b.id }, data: { reviewTokenHash: null } });
+  return { ok: true, message: "Dhanyabad! Your review is with our team and will appear on the trip page once approved." };
+}

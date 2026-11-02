@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: { default: "My trip · Base Camp Adventure", template: "%s · My trip · Base Camp Adventure" },
   robots: { index: false, follow: false, nocache: true },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "My trip", statusBarStyle: "default" },
 };
 
 export default function PortalRoot({ children }: { children: React.ReactNode }) {

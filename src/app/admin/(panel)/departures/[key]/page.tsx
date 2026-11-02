@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/admin/guards";
 import { ACTIVE, endOf, parseKey } from "@/lib/server/departures";
 import { readDetails } from "@/lib/server/portal";
 import { StaffPlanner } from "./planner";
+import { DeparturePhotos } from "./photos";
 
 export const metadata = { title: "Departure" };
 
@@ -16,7 +17,7 @@ export default async function DeparturePage({ params }: { params: Promise<{ key:
   if (!k) notFound();
   const [bookings, dep, team] = await Promise.all([
     db.booking.findMany({ where: { tripSlug: k.slug, startDate: k.date, status: { in: [...ACTIVE] } }, orderBy: { createdAt: "asc" } }),
-    db.departure.findUnique({ where: { tripSlug_startDate: { tripSlug: k.slug, startDate: k.date } }, include: { staff: { include: { guide: true } } } }),
+    db.departure.findUnique({ where: { tripSlug_startDate: { tripSlug: k.slug, startDate: k.date } }, include: { staff: { include: { guide: true } }, photos: { orderBy: { createdAt: "desc" }, select: { id: true } } } }),
     db.guide.findMany({ where: { active: true }, orderBy: [{ role: "asc" }, { name: "asc" }] }),
   ]);
   if (!bookings.length && !dep) notFound();
@@ -40,7 +41,10 @@ export default async function DeparturePage({ params }: { params: Promise<{ key:
             })}
           </ul>
         </Card>
+        <div className="space-y-6">
         <StaffPlanner depKey={key} staff={(dep?.staff ?? []).map((s) => ({ id: s.guide.id, name: s.guide.name, role: s.role, phone: s.guide.phone }))} team={team.map((g) => ({ id: g.id, name: g.name, role: g.role }))} notes={dep?.notes ?? ""} />
+        <DeparturePhotos depKey={key} photos={(dep?.photos ?? []).map((p) => p.id)} />
+        </div>
       </div>
     </>
   );

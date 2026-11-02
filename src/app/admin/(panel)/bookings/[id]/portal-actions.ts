@@ -5,6 +5,8 @@ import { audit } from "@/lib/admin/audit";
 import { db } from "@/lib/admin/db";
 import { Denied, assertUser } from "@/lib/admin/guards";
 import { cleanDetails, deleteFile, inviteForBooking, purgeTraveller, writeDetails } from "@/lib/server/portal";
+import { officeEmail, sendTemplate } from "@/lib/admin/email/send";
+import { env } from "@/lib/admin/env";
 
 type R = { ok: boolean; message: string };
 const fail = (e: unknown): R => ({ ok: false, message: e instanceof Denied ? e.message : "Something went wrong. Please try again." });
@@ -68,6 +70,24 @@ export async function deleteBookingFile(bookingId: string, fileId: string): Prom
     await deleteFile(f.id);
     await audit(user.id, "booking.file.delete", "booking", bookingId, f.name);
     return done(bookingId, "File deleted.");
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The office answers a traveller; it appears on their trip page and they get an email. */
+export async function replyToTraveller(bookingId: string, body: string): Promise<R> {
+  try {
+    const { user } = await assertUser("sales");
+    const b = await db.booking.findUnique({ where: { id: bookingId } });
+    if (!b) return { ok: false, message: "Booking not found." };
+    const text = body.trim().slice(0, 4000);
+    if (text.length < 2) return { ok: false, message: "Write a message first." };
+    await db.portalMessage.create({ data: { bookingId, fromOffice: true, authorName: user.name.split(" ")[0], body: text } });
+    await db.portalMessage.updateMany({ where: { bookingId, fromOffice: false, readAt: null }, data: { readAt: new Date() } });
+    if (b.travellerId) await sendTemplate("portal-message-traveller", b.leadEmail, { name: b.leadName.split(" ")[0], trip: b.tripTitle }, { buttonHref: `${env().PORTAL_URL.replace(/\/$/, "")}/trip/${b.id}/#messages`, replyTo: await officeEmail() }).catch(() => undefined);
+    await audit(user.id, "booking.message", "booking", bookingId);
+    return done(bookingId, b.travellerId ? "Sent. The traveller gets an email and sees it on their trip page." : "Saved. The traveller will see it once their account is created.");
   } catch (e) {
     return fail(e);
   }
