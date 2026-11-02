@@ -38,7 +38,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       images: [...new Set(trips.flatMap((t) => [t.cover, ...t.gallery]).filter((i) => i && i.w >= 900).map((i) => abs(i!.src)))].slice(0, 1000),
     },
     { url: abs("/blogs/"), lastModified: date(latest(posts.map((p) => p.modified))), changeFrequency: "weekly", priority: 0.7 },
-    ...["/about-us/", "/community/", "/our-team/", "/contact-us/", "/customize-trip/", "/testimonials/", "/trip-types/"].map((p) => ({ url: abs(p), changeFrequency: "monthly" as const, priority: 0.6 })),
+    ...["/about-us/", "/community/", "/our-team/", "/contact-us/", "/customize-trip/", "/testimonials/", "/trip-types/", "/trip-finder/"].map((p) => ({ url: abs(p), changeFrequency: "monthly" as const, priority: 0.6 })),
     ...trips.map((t) => ({
       url: abs(`/trip/${t.slug}/`),
       lastModified: date(t.modified),
