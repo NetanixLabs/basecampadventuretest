@@ -76,20 +76,22 @@ newsletter box and photo slider switch language on /de, /fr and /es pages.
    Trips → the trip → Translations.
 2. **Before launch**: add the `my` DNS record in Cloudflare (orange cloud);
    enter WhatsApp keys in Settings → Features if the office wants alerts.
-3. **Fix these mistakes in the English trips** (found while translating;
-   the translations avoid them, but the English pages still show them):
+3. **Content questions for the office** (the clear typos were fixed on 3 Nov 2026
+   by `npm run admin:fixes`; these need a decision before changing):
    - Annapurna Base Camp: day 9 gives Bamboo 2,920 m (about 2,310 m);
      day 10 gives "Pokhara (2,345 m)"; one FAQ says 13 days, the trip is 12.
-   - Ghorepani Poon Hill: "highest point" field says 2,860 m; Poon Hill is 3,210 m.
-   - Gokyo Valley: day 9 says "44,200 m" (4,200 m).
-   - Everest Base Camp and Gokyo: day 12 Machhermo "15,715 ft" (14,665 ft);
-     day 13 "33,440 m" (3,440 m).
-   - Gokyo with Renjo La: day 4 "33,440 m" (3,440 m).
    - Everest Three Passes: Cho La is 5,368 m on day 11 but 5,420 m in the highlights.
    - Everest Base Camp Tour (Tibet): returns via Zhangmu, a border closed to
      tourists since 2015 (tours now use Kerung/Gyirong). Update the route.
-   - Pikey Peak: day 2 text says "after a 6–7-hour drive" on a walking day.
-4. Optional: the build notice "Encountered unexpected file in NFT list" is
+   - Kala Patthar is given as 5,545 m in the itineraries; most sources say 5,644 m.
+4. **HBL card payments**: paste the bank's keys in Settings → Keys → HBL, mode
+   Sandbox, switch HBL on in Settings → Features → Payments and make one test
+   payment; then switch to Production. The code was tested end to end against a
+   test bank (scripts/hbl-test).
+5. **Google Things to Do** (free tour listings with prices in Google): needs a
+   verified Google Business Profile and a Google-approved booking platform
+   ("connectivity partner"); ask WeTravel whether they are one.
+6. Optional: the build notice "Encountered unexpected file in NFT list" is
    harmless (content files are read at runtime) and existed before.
 
 How to check after changes: `npm run build`, then with `next start -p 3100`:
