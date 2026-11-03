@@ -1,7 +1,7 @@
 import { GalleryGrid, type GalleryPhoto } from "@/components/gallery-grid";
 import { JsonLd } from "@/components/json-ld";
 import { PageHero } from "@/components/page-hero";
-import { getLiveTerms, getPhotoCredits, getTrips, photo } from "@/lib/content";
+import { galleryPhoto, getLiveTerms, getPhotoCredits, getTrips, photo } from "@/lib/content";
 import { abs, imageLd, meta } from "@/lib/seo";
 
 export const metadata = meta({
@@ -20,7 +20,7 @@ export default function GalleryPage() {
       // Only photographs sharp enough to fill a column, and each one once.
       if (!im || im.w < 900 || seen.has(im.src)) continue;
       seen.add(im.src);
-      photos.push({ src: im.src, w: im.w, h: im.h, alt: im.alt, trip: t.slug, tripTitle: t.title, region: t.destinations[0] ?? "nepal" });
+      photos.push({ src: galleryPhoto(im.src), w: im.w, h: im.h, alt: im.alt, trip: t.slug, tripTitle: t.title, region: t.destinations[0] ?? "nepal" });
     }
   }
   const regions = destinations

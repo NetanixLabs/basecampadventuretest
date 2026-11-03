@@ -47,7 +47,9 @@ export async function storeUpload(file: File, folder = "uploads", alt = "", opts
   const buf = Buffer.from(await file.arrayBuffer());
   if (!buf.length) throw new InputError("That file is empty.");
   const wm = (await features()).watermark;
-  const mark = wm.enabled && (opts.watermark ?? wm.scope === "all");
+  // "Every photo": the logo is part of the stored photo. "Gallery photos only":
+  // the photo is kept clean and a watermarked copy is shown in the galleries.
+  const mark = wm.enabled && wm.scope === "all" && opts.watermark !== false;
   // A watermarked copy is a different picture from the plain one.
   const hash = createHash("sha256").update(buf).update(mark && !isVideo(buf) ? `:wm:${wm.opacity}:${wm.size}` : "").digest("hex");
   const existing = await db.media.findUnique({ where: { hash } });
@@ -82,7 +84,7 @@ export async function storeUpload(file: File, folder = "uploads", alt = "", opts
   const out = await pipeline.webp({ quality: QUALITY, smartSubsample: true, effort: 5 }).toBuffer({ resolveWithObject: true });
   const name = `${base}-${hash.slice(0, 10)}.webp`;
   await writeFile(path.join(/*turbopackIgnore: true*/ uploadsDir(), sub, name), out.data);
-  return db.media.create({
+  const created = await db.media.create({
     data: {
       src: `/uploads/${sub.split(path.sep).join("/")}/${name}`,
       hash,
@@ -95,4 +97,9 @@ export async function storeUpload(file: File, folder = "uploads", alt = "", opts
       folder: folder.slice(0, 40),
     },
   });
+  if (wm.enabled && wm.scope === "galleries" && meta.format !== "gif") {
+    const { addGalleryCopy } = await import("@/lib/admin/bulk-watermark");
+    await addGalleryCopy(created.src, opts.watermark !== false).catch(() => undefined);
+  }
+  return created;
 }

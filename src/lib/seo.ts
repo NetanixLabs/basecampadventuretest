@@ -200,7 +200,8 @@ export function imageLd(img: Img) {
   };
 }
 
-export function tripLd(trip: Trip) {
+/** `galleryPhoto` swaps a gallery photo for its watermarked copy (see content.ts). */
+export function tripLd(trip: Trip, galleryPhoto: (src: string) => string = (s) => s) {
   const url = abs(`/trip/${trip.slug}/`);
   const images = [trip.cover, ...trip.gallery].filter(Boolean).slice(0, 6).map((i) => abs((i as Img).src));
   const offer = tripOffer(trip);
@@ -286,7 +287,7 @@ export function tripLd(trip: Trip) {
       associatedMedia: [trip.cover, ...trip.gallery]
         .filter((x, i, a): x is Img => Boolean(x) && a.findIndex((y) => y?.src === x?.src) === i)
         .slice(0, 30)
-        .map((im) => imageLd(im)),
+        .map((im) => imageLd({ ...im, src: galleryPhoto(im.src) })),
     },
   ];
 }

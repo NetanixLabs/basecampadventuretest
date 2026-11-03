@@ -20,7 +20,7 @@ import { Itinerary } from "@/components/trip/itinerary";
 import { SectionNav } from "@/components/trip/section-nav";
 import { TripModals } from "@/components/trip/trip-modals";
 import { TripCard } from "@/components/trip-card";
-import { getActivity, getDestination, getGuidesForRegion, getRelatedTrips, getSiteCopy, getTravellerPhotos, getTrip, getEquipment, getTripInfo, getTrips, getVideosForTrip } from "@/lib/content";
+import { getActivity, getDestination, getGuidesForRegion, getRelatedTrips, getSiteCopy, getTravellerPhotos, getTrip, getEquipment, galleryPhoto, getTripInfo, getTrips, getVideosForTrip } from "@/lib/content";
 import type { InfoKey } from "@/lib/trip-info";
 import { meta, tripLd, tripLead, videoLd } from "@/lib/seo";
 import { YouTube } from "@/components/video";
@@ -323,7 +323,7 @@ export default async function TripPage({ params }: Props) {
               </div>
               <TripPhotos
                 title={trip.title}
-                ours={photos.map((p) => ({ src: p.src, w: p.w, h: p.h, alt: p.alt }))}
+                ours={photos.map((p) => ({ src: galleryPhoto(p.src), w: p.w, h: p.h, alt: p.alt }))}
                 travellers={travellerPhotos}
                 shareHref={whatsappHref(`Namaste Base Camp Adventure, here are my photos from the ${trip.title}.`)}
               />
@@ -449,7 +449,7 @@ export default async function TripPage({ params }: Props) {
       <div className="h-20 lg:hidden" aria-hidden />
       <MobileBookingBar slug={trip.slug} title={trip.title} price={trip.price} />
       <TripModals trip={{ slug: trip.slug, title: trip.title, days: trip.days, price: trip.price, cover: trip.cover }} />
-      <JsonLd data={tripLd(trip)} />
+      <JsonLd data={tripLd(trip, galleryPhoto)} />
     </>
   );
 }

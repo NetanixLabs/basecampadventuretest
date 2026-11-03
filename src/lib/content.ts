@@ -459,3 +459,15 @@ export const getHomeCopy = () => withHomeDefaults(load<Parameters<typeof withHom
 
 /** Feature switches published from the admin (languages, portal link…). */
 export const getFeatures = () => withFeatureDefaults(getPublicSettings().features);
+
+/**
+ * Gallery photos carry the logo watermark: each one is swapped for its
+ * watermarked copy (published by the admin as watermarks.json). Only gallery
+ * views, the image sitemap and the gallery data for Google use this; covers,
+ * banners, sliders and cards keep the clean photo.
+ */
+export const getWatermarks = () => load<Record<string, string>>("watermarks", {});
+export function galleryPhoto(src: string): string {
+  if (!src) return src;
+  return getWatermarks()[src.split("?")[0]] ?? src;
+}

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { categoryPath } from "@/components/journal-list";
-import { getLiveTerms, getPages, getPosts, getTaxonomies, getTeam, getTrips } from "@/lib/content";
+import { galleryPhoto, getLiveTerms, getPages, getPosts, getTaxonomies, getTeam, getTrips } from "@/lib/content";
 import { abs } from "@/lib/seo";
 import { LANG_KEYS, translation, tripAlternates, tripPath } from "@/lib/i18n";
 import { visaGuides } from "@/content/visa-guides";
@@ -35,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: abs("/gallery/"),
       changeFrequency: "monthly",
       priority: 0.6,
-      images: [...new Set(trips.flatMap((t) => [t.cover, ...t.gallery]).filter((i) => i && i.w >= 900).map((i) => abs(i!.src)))].slice(0, 1000),
+      images: [...new Set(trips.flatMap((t) => [t.cover, ...t.gallery]).filter((i) => i && i.w >= 900).map((i) => abs(galleryPhoto(i!.src))))].slice(0, 1000),
     },
     { url: abs("/blogs/"), lastModified: date(latest(posts.map((p) => p.modified))), changeFrequency: "weekly", priority: 0.7 },
     ...["/about-us/", "/community/", "/our-team/", "/contact-us/", "/customize-trip/", "/testimonials/", "/trip-types/", "/trip-finder/"].map((p) => ({ url: abs(p), changeFrequency: "monthly" as const, priority: 0.6 })),
@@ -44,7 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: date(t.modified),
       changeFrequency: "monthly" as const,
       priority: 0.9,
-      images: [...new Set([t.cover, ...t.gallery].filter(Boolean).map((i) => abs(i!.src)))],
+      images: [...new Set([t.cover, ...t.gallery].filter(Boolean).map((i) => abs(galleryPhoto(i!.src))))],
       alternates: tripAlternates(t) ? { languages: tripAlternates(t) } : undefined,
     })),
     // German, French and Spanish versions (only those switched on and published).

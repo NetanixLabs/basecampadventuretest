@@ -1,6 +1,7 @@
 import Image from "@/components/image";
 import { Award, CalendarDays, HeartHandshake, MapPin, Sprout, Users } from "lucide-react";
 import { Stagger, StaggerItem } from "@/components/motion";
+import { galleryPhoto } from "@/lib/content";
 import type { CommunityPost } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -60,7 +61,7 @@ export function CommunityCards({ posts, full = false, className }: { posts: Comm
                   <ul className="mt-4 grid grid-cols-3 gap-2">
                     {p.photos.slice(1, 7).map((im) => (
                       <li key={im.src} className="relative aspect-square overflow-hidden rounded-lg">
-                        <Image src={im.src} alt={im.alt || p.title} fill sizes="160px" className="object-cover object-right-bottom" />
+                        <Image src={galleryPhoto(im.src)} alt={im.alt || p.title} fill sizes="160px" className="object-cover object-right-bottom" />
                       </li>
                     ))}
                   </ul>

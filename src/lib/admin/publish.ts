@@ -82,6 +82,9 @@ export async function writeSettings() {
   await writeJson("settings", Object.fromEntries(rows.map((r) => [r.key, r.value])));
 }
 
+/** The list of gallery photos and their watermarked copies (src → copy), read by the gallery views. */
+export const writeWatermarks = (map: Record<string, string>) => writeJson("watermarks", map);
+
 /** Refreshes every cached page. Pages re-render on their next visit, in milliseconds. */
 export function refreshSite() {
   revalidatePath("/", "layout");
