@@ -30,6 +30,7 @@ export default function TripsPage() {
         crumbs={[{ name: "All trips", path: "/trip/" }]}
       />
       <section className="mx-auto max-w-site px-4 pb-24 sm:px-6">
+        <h2 className="sr-only">All trips</h2>
         <Suspense fallback={<TripGrid trips={trips.slice(0, 12)} regionNames={regionNames} />}>
           <TripExplorer trips={trips} regions={destinations.map(opt)} activities={activities.map(opt)} regionNames={regionNames} />
         </Suspense>

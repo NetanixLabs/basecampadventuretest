@@ -362,7 +362,7 @@ export default async function TripPage({ params }: Props) {
                   const who = reviewer(r.author);
                   return (
                   <StaggerItem key={i} className="rounded-2xl border border-line bg-card p-6">
-                    <div className="flex gap-0.5" aria-label={`${r.rating} out of 5`}>
+                    <div className="flex gap-0.5" role="img" aria-label={`${r.rating} out of 5 stars`}>
                       {Array.from({ length: 5 }).map((_, s) => (
                         <Star key={s} className={s < Math.round(r.rating) ? "fill-marigold text-marigold size-4" : "size-4 text-line"} aria-hidden />
                       ))}

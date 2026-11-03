@@ -43,7 +43,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <PageHeader title={`${b.leadName} · ${b.tripTitle}`} description={`Booked ${when(b.createdAt)}`} back={{ href: "/bookings", label: "Bookings" }} actions={<Badge tone={b.status === "paid" || b.status === "confirmed" ? "green" : "amber"}>{b.status.replace("_", " ")}</Badge>} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         <div className="space-y-6">
           <Card title="Booking">
             <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[9rem_1fr]">{rows.map(([k, v]) => <div key={k} className="contents"><dt className="text-muted">{k}</dt><dd>{v}</dd></div>)}</dl>

@@ -19,7 +19,7 @@ export default async function Subscribers() {
     <>
       <PageHeader title="Newsletter" description={`${n("subscribed")} subscribed · ${n("unsubscribed")} unsubscribed`} info="People join from the newsletter boxes on the website and receive a welcome email. Every newsletter includes a one-click unsubscribe link, and unsubscribed addresses are never emailed again. Download CSV exports the list for a spreadsheet." actions={<a href="/api/subscribers.csv" className="rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-pine">Download CSV</a>} />
       <Composer trips={trips.map((t) => ({ value: t.slug, label: t.title }))} codes={codes} />
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         <Table head={["Email", "Joined from", "Since", "Status"]}>
           {subs.map((s) => (
             <tr key={s.id}><td className="font-medium">{s.email}</td><td className="text-ink-soft">{s.source ?? "—"}</td><td className="text-ink-soft">{when(s.createdAt)}</td><td><Badge tone={s.status === "subscribed" ? "green" : "gray"}>{s.status}</Badge></td></tr>

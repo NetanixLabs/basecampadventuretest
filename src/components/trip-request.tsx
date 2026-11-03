@@ -170,7 +170,7 @@ export function TripRequest({ trips }: { trips: RequestTrip[] }) {
                 disabled={i > step}
                 onClick={() => i < step && setStep(i)}
                 aria-current={i === step ? "step" : undefined}
-                className="group w-full text-left disabled:cursor-default"
+                className="group relative w-full text-left after:absolute after:-inset-y-3 after:inset-x-0 after:content-[''] disabled:cursor-default"
               >
                 <span className={cn("block h-1 rounded-full transition-colors duration-500", i <= step ? "bg-pine" : "bg-line")} />
                 <span className={cn("mt-2 hidden text-xs font-semibold sm:block", i === step ? "text-ink" : i < step ? "text-pine group-hover:underline" : "text-muted")}>

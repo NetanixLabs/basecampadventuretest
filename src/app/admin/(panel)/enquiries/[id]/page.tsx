@@ -21,7 +21,7 @@ export default async function EnquiryPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <PageHeader title={e.name} description={`Received ${when(e.createdAt)}`} back={{ href: "/enquiries", label: "Enquiries" }} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] [&>*]:min-w-0">
         <Card title="Message">
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[9rem_1fr]">
             {rows.map(([k, v]) => <div key={k} className="contents"><dt className="text-muted">{k}</dt><dd className="whitespace-pre-wrap break-words">{v}</dd></div>)}

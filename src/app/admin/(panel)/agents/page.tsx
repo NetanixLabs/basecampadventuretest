@@ -16,7 +16,7 @@ export default async function AgentsPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <PageHeader title="Agents" description="Partner agencies that send you travellers, and what you owe them." info="Each agent gets a code and a link (e.g. basecampadventure.com/?ref=CODE). Bookings made within 30 days of opening that link are credited to the agent automatically; you can also link a booking by hand on the booking page. Commission is worked out on money actually received." />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         {agents.length ? (
           <Table head={["Agent", "Code & link", "Bookings", "Received", "Commission"]}>
             {agents.map((a) => {
