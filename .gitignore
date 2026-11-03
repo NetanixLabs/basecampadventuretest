@@ -13,3 +13,4 @@ next-env.d.ts
 # Admin
 src/generated
 .storage
+scripts/hbl-test/keys.json

@@ -12,7 +12,7 @@ export default async function PayReturn({ searchParams }: { searchParams: Promis
   const { o = "", done, error } = await searchParams;
   let state: "paid" | "pending" | "failed" | "review" | "unknown" = done ? "paid" : "unknown";
   let ref = done ?? error ?? "";
-  if (o && /^(BCA|PAY)-[A-Z0-9-]{6,14}$/.test(o)) {
+  if (o && o.length <= 20 && /^(BCA|PAY)-[A-Z0-9-]{4,16}$/.test(o)) {
     const r = await settleHblOrder(o).catch(() => ({ state: "pending" as const, booking: undefined }));
     state = r.state;
     ref = r.booking?.reference ?? ref;

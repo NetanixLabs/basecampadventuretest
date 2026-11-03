@@ -33,7 +33,8 @@ async function settings() {
   ]);
   const pem = (s: string, kind: "PRIVATE KEY" | "PUBLIC KEY") => (s.includes("-----BEGIN") ? s : `-----BEGIN ${kind}-----\n${s.replace(/\s+/g, "").replace(/(.{64})/g, "$1\n")}\n-----END ${kind}-----`);
   return {
-    host: env === "production" ? HOST.production : HOST.sandbox,
+    // HBL_TEST_HOST (server environment only) points sandbox mode at a local test double of PACO.
+    host: env === "production" ? HOST.production : process.env.HBL_TEST_HOST || HOST.sandbox,
     officeId,
     apiKey,
     signKey: await importPKCS8(pem(signPem, "PRIVATE KEY"), "PS256"),
