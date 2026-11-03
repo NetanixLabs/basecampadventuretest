@@ -30,7 +30,7 @@ export const FEATURE_DEFAULTS: Features = {
   pretrip: { enabled: true, d30: true, d7: true },
   currency: { enabled: true, eur: 0.86, gbp: 0.75, aud: 1.52 },
   saved: { enabled: true, reminderDays: 3 },
-  watermark: { enabled: true, scope: "galleries", opacity: 55, size: 16 },
+  watermark: { enabled: true, scope: "galleries", opacity: 55, size: 10 },
 };
 
 export function withFeatureDefaults(saved: unknown): Features {

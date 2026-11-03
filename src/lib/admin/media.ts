@@ -72,8 +72,8 @@ export async function storeUpload(file: File, folder = "uploads", alt = "", opts
     const sized = await pipeline.toBuffer({ resolveWithObject: true });
     const W = sized.info.width, H = sized.info.height;
     if (W >= 400 && H >= 300) {
-      const logo = await watermarkPng(Math.max(110, Math.round((W * wm.size) / 100)), wm.opacity / 100);
-      const margin = Math.round(Math.min(W, H) * 0.04);
+      const logo = await watermarkPng(Math.max(70, Math.round((W * wm.size) / 100)), wm.opacity / 100);
+      const margin = Math.round(Math.min(W, H) * 0.03);
       pipeline = sharp(sized.data).composite([{ input: logo.data, left: Math.max(0, W - logo.info.width - margin), top: Math.max(0, H - logo.info.height - margin) }]);
     } else pipeline = sharp(sized.data);
   }
