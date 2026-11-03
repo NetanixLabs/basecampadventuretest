@@ -16,7 +16,7 @@ export default async function FieldTeam({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title="Guides & porters" description="Your field team, their contacts and who is out on which trip." info="Add every guide, porter, driver and cook once. Assign them to departures under Departures; the planner warns you if someone is already booked on those dates. Their phone numbers go on the departure list PDF for the office and the group." />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         {team.length ? (
           <Table head={["Name", "Role", "Contact", "Next trip", ""]}>
             {team.map((g) => {

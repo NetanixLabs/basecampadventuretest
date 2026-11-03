@@ -29,7 +29,7 @@ export function Itinerary({ days }: { days: ItineraryDay[] }) {
   return (
     <div>
       <div className="mb-6 flex justify-end">
-        <button type="button" onClick={() => setOpen(all ? new Set() : new Set(days.map((d) => d.day)))} className="text-pine text-sm font-bold hover:underline">
+        <button type="button" onClick={() => setOpen(all ? new Set() : new Set(days.map((d) => d.day)))} className="text-pine text-sm font-bold hover:underline relative after:absolute after:-inset-y-3 after:-inset-x-1.5 after:content-['']">
           {all ? "Collapse all days" : "Expand all days"}
         </button>
       </div>

@@ -94,7 +94,7 @@ const tones = {
 export type Tone = keyof typeof tones;
 
 export function Badge({ children, tone = "gray" }: { children: React.ReactNode; tone?: Tone }) {
-  return <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset whitespace-nowrap", tones[tone])}>{children}</span>;
+  return <span className={cn("inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset whitespace-normal sm:whitespace-nowrap", tones[tone])}>{children}</span>;
 }
 
 export function Alert({ children, tone = "blue" }: { children: React.ReactNode; tone?: "green" | "red" | "amber" | "blue" }) {

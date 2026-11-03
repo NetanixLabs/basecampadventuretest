@@ -181,6 +181,8 @@
 }
 
 @layer base {
+  /* Browsers size fieldsets to their content by default; let them shrink like any box. */
+  fieldset { min-width: 0; }
   html {
     color-scheme: light;
     transition: background-color 400ms ease;

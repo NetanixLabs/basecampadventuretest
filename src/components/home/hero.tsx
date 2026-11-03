@@ -47,8 +47,9 @@ export function HomeHero({ copy }: { copy: HomeCopy["hero"] }) {
   }, []);
 
   const entrance = (delay: number) => ({
-    initial: reduce ? false as const : { opacity: 0, y: 22, filter: "blur(6px)" },
-    animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+    // Opacity and movement only: an animated blur is costly to paint on phones.
+    initial: reduce ? false as const : { opacity: 0, y: 22 },
+    animate: { opacity: 1, y: 0 },
     transition: { duration: 0.85, delay: reduce ? 0 : delay, ease: EASE },
   });
 
@@ -71,6 +72,9 @@ export function HomeHero({ copy }: { copy: HomeCopy["hero"] }) {
   return (
     <section aria-label="Discover Nepal with Base Camp Adventure" className="px-4 pt-20 sm:px-6 lg:pt-[5.75rem]">
       <div ref={heroRef} className="relative isolate mx-auto grid max-w-site overflow-hidden rounded-[1.5rem] bg-[#142e34] lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)]">
+        {/* The poster as a plain image paints with the HTML, before any script runs. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/videos/home-hero-poster.jpg" alt="" aria-hidden fetchPriority="high" decoding="async" className="pointer-events-none absolute inset-0 -z-30 h-full w-full object-cover object-center" />
         {clips.map((src, index) => (
           <video key={src} ref={(video) => { videoRefs.current[index] = video; }} src={ready ? src : undefined} poster={index === 0 ? "/videos/home-hero-poster.jpg" : warmNext || activeClip === index ? "/videos/home-hero-second-poster.jpg" : undefined} muted playsInline preload={ready && (index === activeClip || warmNext) ? "auto" : "none"} onTimeUpdate={(event) => { const video = event.currentTarget; if (index === activeClip && video.duration - video.currentTime < 6) setWarmNext(true); }} onEnded={nextClip} className={`pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-center transition-opacity duration-1000 motion-reduce:transition-none ${index === activeClip ? "opacity-100" : "opacity-0"}`} aria-hidden />
         ))}

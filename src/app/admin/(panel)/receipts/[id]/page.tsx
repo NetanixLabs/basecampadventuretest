@@ -18,7 +18,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <PageHeader title={`${r.kind === "bill" ? "Bill" : "Receipt"} ${r.number}`} description={`Issued ${when(r.issuedAt)} by ${r.issuedByName ?? "the system"}`} back={{ href: "/receipts", label: "Receipts & bills" }} actions={r.voidedAt ? <Badge tone="red">Cancelled</Badge> : genuine ? <Badge tone="green">Signed</Badge> : <Badge tone="red">Signature mismatch</Badge>} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         <Card title="Details">
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[9rem_1fr]">
             <dt className="text-muted">{r.kind === "bill" ? "Billed to" : "Received from"}</dt><dd>{r.customerName}{r.customerEmail ? ` · ${r.customerEmail}` : ""}</dd>

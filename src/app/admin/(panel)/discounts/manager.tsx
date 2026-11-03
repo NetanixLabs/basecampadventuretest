@@ -19,7 +19,7 @@ export function DiscountManager({ codes, trips, destinations, activities }: { co
   const state = (c: Code) => (!c.active ? ["Off", "gray"] : c.endsAt && c.endsAt < today ? ["Expired", "gray"] : c.startsAt && c.startsAt > today ? ["Scheduled", "blue"] : c.maxUses !== null && c.used >= c.maxUses ? ["Used up", "gray"] : ["Active", "green"]) as [string, "gray" | "blue" | "green"];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem] [&>*]:min-w-0">
       <div className="space-y-3">
         {codes.length ? codes.map((c) => {
           const [l, t] = state(c);

@@ -12,7 +12,7 @@ export function ReviewText({ text, lines = 7 }: { text: string; lines?: number }
         {text}
       </p>
       {long ? (
-        <button type="button" onClick={() => setOpen((o) => !o)} className="text-pine mt-2 text-sm font-bold hover:underline">
+        <button type="button" onClick={() => setOpen((o) => !o)} className="text-pine mt-2 text-sm font-bold hover:underline relative after:absolute after:-inset-y-3 after:-inset-x-1.5 after:content-['']">
           {open ? "Show less" : "Read more"}
         </button>
       ) : null}

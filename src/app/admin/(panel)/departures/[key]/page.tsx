@@ -26,7 +26,7 @@ export default async function DeparturePage({ params }: { params: Promise<{ key:
   return (
     <>
       <PageHeader title={title} description={`${day(k.date)} to ${day(endOf(k.slug, k.date))} · ${pax} travellers`} back={{ href: "/departures", label: "Departures" }} actions={<a href={`/api/departure-pdf/?key=${encodeURIComponent(key)}`} target="_blank" rel="noopener" className="rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white">Departure list (PDF)</a>} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         <Card title="Travellers">
           <ul className="divide-y divide-line text-sm">
             {bookings.map((b) => {

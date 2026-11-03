@@ -38,6 +38,7 @@ export default function TripsPage() {
           <span className="hidden items-center gap-1.5 text-sm font-bold text-pine sm:inline-flex">Try the trip finder <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden /></span>
           <ArrowRight className="size-5 shrink-0 text-pine sm:hidden" aria-hidden />
         </Link>
+        <h2 className="sr-only">All trips</h2>
         <Suspense fallback={<TripGrid trips={trips.slice(0, 12)} regionNames={regionNames} />}>
           <TripExplorer trips={trips} regions={destinations.map(opt)} activities={activities.map(opt)} regionNames={regionNames} />
         </Suspense>

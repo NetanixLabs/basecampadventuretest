@@ -25,7 +25,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <PageHeader title={c?.name ?? "New customer"} description={c ? `${c.email} · customer since ${day(c.createdAt)}` : undefined} back={{ href: "/customers", label: "Customers" }} actions={c && can(user, "receipts") ? <Link href={`/receipts/new?customer=${c.id}&kind=bill`} className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold hover:border-pine">New bill</Link> : null} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         <CustomerForm id={c?.id ?? null} fields={CUSTOMER_FIELDS} initial={{ name: c?.name ?? "", email: c?.email ?? "", phone: c?.phone ?? "", country: c?.country ?? "", notes: c?.notes ?? "", tags: c?.tags ?? [], details: readCustomerDetails(c?.detailsEnc ?? null) as Record<string, string> }} />
         {c ? (
           <div className="space-y-6">
