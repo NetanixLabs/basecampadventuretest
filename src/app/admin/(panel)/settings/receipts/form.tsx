@@ -54,10 +54,10 @@ export function ReceiptSettingsForm({ initial, has }: { initial: V; has: { signa
   const [pending, start] = useTransition();
   return (
     <div className="space-y-6">
-      <Card title="Signature and stamp" info="Scan or photograph them on white paper; a PNG with a transparent background looks best. Empty borders are trimmed automatically.">
+      <Card title="Signature and stamp" info="Photograph them on plain white paper in good light, straight from above. The paper, shadows and empty borders are removed automatically so only the ink is kept. A PNG with a transparent background is used as it is.">
         <div className="grid gap-4 sm:grid-cols-2">
           <ImageSlot kind="signature" label="Authorised signature" has={has.signature} hint="Signature of the person who signs receipts." />
-          <ImageSlot kind="stamp" label="Company stamp / seal" has={has.stamp} hint="Round company stamp, placed next to the signature." />
+          <ImageSlot kind="stamp" label="Company stamp / seal" has={has.stamp} hint="Company stamp, placed next to the signature." />
         </div>
       </Card>
       <form onSubmit={(e) => { e.preventDefault(); start(async () => setMsg((await saveReceiptSettings(v)).message)); }} className="space-y-6">

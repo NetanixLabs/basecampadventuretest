@@ -205,10 +205,10 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   doc.font("Semi").fontSize(9).fillColor(C.ink).text(r.code, M + 112, doc.y + 1.5, { characterSpacing: 1.2 });
   doc.font("Bold").fontSize(6.6).fillColor(C.muted).text("SECURITY FINGERPRINT", M + 112, doc.y + 5, { characterSpacing: 0.8 });
   doc.font("Medium").fontSize(8.4).fillColor(genuine ? C.ink : C.red).text(genuine ? fingerprint : "MISMATCH: DO NOT ACCEPT", M + 112, doc.y + 1.5, { characterSpacing: 0.6 });
-  // Signature over the line, the round stamp overlapping its right end (as stamped by hand).
+  // Signature over the line, the company stamp overlapping its right end (as stamped by hand).
   const sx = W - M - 200;
   if (signature) doc.image(signature, sx + 4, by + 22, { fit: [128, 56], align: "center", valign: "bottom" });
-  if (stamp) doc.image(stamp, W - M - 86, by - 6, { fit: [84, 84] });
+  if (stamp) doc.image(stamp, W - M - 112, by - 2, { fit: [112, 80], align: "right", valign: "center" });
   doc.moveTo(sx, by + 84).lineTo(W - M, by + 84).lineWidth(0.8).strokeColor(C.ink).stroke();
   doc.font("Semi").fontSize(9.5).fillColor(C.ink).text(brand.signatory || "Authorised signatory", sx, by + 89, { width: 200, align: "right" });
   doc.font("Body").fontSize(8.2).fillColor(C.muted).text(`${brand.signatoryTitle ? `${brand.signatoryTitle}, ` : ""}${site.legalName}`, sx - 40, doc.y + 1, { width: 240, align: "right" });

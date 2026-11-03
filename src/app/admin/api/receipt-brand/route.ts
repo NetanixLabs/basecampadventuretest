@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import { audit } from "@/lib/admin/audit";
 import { Denied, assertUser, can } from "@/lib/admin/guards";
 import { getBrand, saveBrand } from "@/lib/server/receipt-brand";
+import { inkOnly } from "@/lib/server/ink";
 import { readFileData, removePrivate, writePrivate } from "@/lib/server/portal";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +18,9 @@ export async function POST(req: Request) {
     if ((kind !== "signature" && kind !== "stamp") || !(file instanceof File)) return NextResponse.json({ error: "Choose an image." }, { status: 400 });
     let png: Buffer;
     try {
-      // Re-encode (drops anything hidden in the file), keep transparency, sensible size.
-      png = await sharp(Buffer.from(await file.arrayBuffer()), { failOn: "error" }).rotate().trim({ threshold: 12 }).resize(900, 900, { fit: "inside", withoutEnlargement: true }).png().toBuffer();
+      // Re-encoded (drops anything hidden in the file). A phone photo on paper has the
+      // paper removed so only the ink is kept; a transparent PNG is used as it is.
+      png = await inkOnly(Buffer.from(await file.arrayBuffer()), { darken: kind === "stamp" ? 0.1 : 0.4 });
     } catch {
       return NextResponse.json({ error: "That file isn't a usable image. Use PNG (best, with a transparent background) or JPG." }, { status: 400 });
     }
