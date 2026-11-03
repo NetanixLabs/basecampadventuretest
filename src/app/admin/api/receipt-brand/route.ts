@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     try {
       // Re-encoded (drops anything hidden in the file). A phone photo on paper has the
       // paper removed so only the ink is kept; a transparent PNG is used as it is.
-      png = await inkOnly(Buffer.from(await file.arrayBuffer()), { darken: kind === "stamp" ? 0.1 : 0.4 });
+      png = await inkOnly(Buffer.from(await file.arrayBuffer()), kind === "stamp" ? { darken: 0.1, inkDeepen: 0.92 } : { darken: 0.4, inkDeepen: 0.6 });
     } catch {
       return NextResponse.json({ error: "That file isn't a usable image. Use PNG (best, with a transparent background) or JPG." }, { status: 400 });
     }

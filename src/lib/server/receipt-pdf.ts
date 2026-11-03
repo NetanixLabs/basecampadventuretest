@@ -207,8 +207,8 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   doc.font("Medium").fontSize(8.4).fillColor(genuine ? C.ink : C.red).text(genuine ? fingerprint : "MISMATCH: DO NOT ACCEPT", M + 112, doc.y + 1.5, { characterSpacing: 0.6 });
   // Signature over the line, the company stamp overlapping its right end (as stamped by hand).
   const sx = W - M - 200;
-  if (signature) doc.image(signature, sx + 4, by + 22, { fit: [128, 56], align: "center", valign: "bottom" });
-  if (stamp) doc.image(stamp, W - M - 112, by - 2, { fit: [112, 80], align: "right", valign: "center" });
+  if (signature) doc.image(signature, sx - 6, by + 16, { fit: [134, 66], valign: "bottom" });
+  if (stamp) doc.image(stamp, W - M - 96, by + 4, { fit: [96, 72], align: "right", valign: "center" });
   doc.moveTo(sx, by + 84).lineTo(W - M, by + 84).lineWidth(0.8).strokeColor(C.ink).stroke();
   doc.font("Semi").fontSize(9.5).fillColor(C.ink).text(brand.signatory || "Authorised signatory", sx, by + 89, { width: 200, align: "right" });
   doc.font("Body").fontSize(8.2).fillColor(C.muted).text(`${brand.signatoryTitle ? `${brand.signatoryTitle}, ` : ""}${site.legalName}`, sx - 40, doc.y + 1, { width: 240, align: "right" });

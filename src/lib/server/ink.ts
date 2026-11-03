@@ -7,7 +7,7 @@ import sharp from "sharp";
  * measured with a heavy blur and divided out, so only the ink is kept, in its
  * own colour. Images that already have transparency are left as they are.
  */
-export async function inkOnly(input: Buffer, opts: { maxSize?: number; darken?: number } = {}): Promise<Buffer> {
+export async function inkOnly(input: Buffer, opts: { maxSize?: number; darken?: number; inkDeepen?: number } = {}): Promise<Buffer> {
   const base = sharp(input, { failOn: "error" }).rotate();
   const meta = await base.metadata();
   const max = opts.maxSize ?? 1400;
@@ -59,5 +59,26 @@ export async function inkOnly(input: Buffer, opts: { maxSize?: number; darken?: 
   const width = Math.min(W - left, x1 - x0 + 2 * pad), height = Math.min(H - top, y1 - y0 + 2 * pad);
   // Anything outside the crop is dropped; faint haze inside it is cleared.
   for (let p = 0; p < W * H; p++) if (out[p * 4 + 3] < 25) out[p * 4 + 3] = 0;
-  return sharp(out, { raw: { width: W, height: H, channels: 4 } }).extract({ left, top, width, height }).resize(900, 900, { fit: "inside", withoutEnlargement: true }).png().toBuffer();
+  // A crisp result: one even ink colour (the average of the solid strokes, slightly
+  // deepened), edges sharpened, specks removed, drawn at double resolution.
+  const crop = await sharp(out, { raw: { width: W, height: H, channels: 4 } }).extract({ left, top, width, height }).raw().toBuffer();
+  let r = 0, g = 0, b2 = 0, n = 0;
+  for (let i = 0; i < crop.length; i += 4) if (crop[i + 3] > 200) { r += crop[i]; g += crop[i + 1]; b2 += crop[i + 2]; n++; }
+  const deepen = opts.inkDeepen ?? 0.75;
+  const ink = n ? { r: Math.round((r / n) * deepen), g: Math.round((g / n) * deepen), b: Math.round((b2 / n) * deepen) } : { r: 20, g: 24, b: 40 };
+  const scale = Math.min(3, Math.max(1, Math.round(1200 / Math.max(width, height))));
+  const alpha = Buffer.alloc(width * height);
+  for (let p = 0; p < width * height; p++) alpha[p] = crop[p * 4 + 3];
+  const mask = await sharp(alpha, { raw: { width, height, channels: 1 } })
+    .median(3)
+    .resize(width * scale, height * scale, { kernel: "lanczos3" })
+    .blur(0.6)
+    .linear(1.9, -95)
+    .extractChannel(0)
+    .raw()
+    .toBuffer();
+  return sharp({ create: { width: width * scale, height: height * scale, channels: 3, background: ink } })
+    .joinChannel(mask, { raw: { width: width * scale, height: height * scale, channels: 1 } })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
 }
