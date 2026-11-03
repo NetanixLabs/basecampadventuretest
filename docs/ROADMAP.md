@@ -76,14 +76,9 @@ newsletter box and photo slider switch language on /de, /fr and /es pages.
    Trips → the trip → Translations.
 2. **Before launch**: add the `my` DNS record in Cloudflare (orange cloud);
    enter WhatsApp keys in Settings → Features if the office wants alerts.
-3. **Content questions for the office** (the clear typos were fixed on 3 Nov 2026
-   by `npm run admin:fixes`; these need a decision before changing):
-   - Annapurna Base Camp: day 9 gives Bamboo 2,920 m (about 2,310 m);
-     day 10 gives "Pokhara (2,345 m)"; one FAQ says 13 days, the trip is 12.
-   - Everest Three Passes: Cho La is 5,368 m on day 11 but 5,420 m in the highlights.
-   - Everest Base Camp Tour (Tibet): returns via Zhangmu, a border closed to
-     tourists since 2015 (tours now use Kerung/Gyirong). Update the route.
-   - Kala Patthar is given as 5,545 m in the itineraries; most sources say 5,644 m.
+3. **Content corrections**: done on 3 Nov 2026 (Kala Patthar 5,644 m, Cho La 5,420 m,
+   Bamboo 2,310 m, Tibet overland via Kerung/Rasuwagadhi, typos). They are applied on
+   each server by `npm run admin:fixes` (run by deploy.sh); see src/lib/admin/content-fixes.ts.
 4. **HBL card payments**: paste the bank's keys in Settings → Keys → HBL, mode
    Sandbox, switch HBL on in Settings → Features → Payments and make one test
    payment; then switch to Production. The code was tested end to end against a
