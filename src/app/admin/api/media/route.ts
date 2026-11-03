@@ -4,6 +4,7 @@ import { db } from "@/lib/admin/db";
 import { InputError } from "@/lib/admin/entries";
 import { Denied, assertUser } from "@/lib/admin/guards";
 import { storeUpload } from "@/lib/admin/media";
+import { features } from "@/lib/admin/features";
 import type { Prisma } from "@/generated/prisma/client";
 
 /** Media library: list (GET) and upload (POST). Admin host only. */
@@ -27,7 +28,8 @@ export async function GET(req: Request) {
     db.media.findMany({ where, orderBy: { createdAt: "desc" }, skip: (page - 1) * 48, take: 48, select: { id: true, src: true, width: true, height: true, alt: true, bytes: true, mime: true, folder: true } }),
     db.media.count({ where }),
   ]);
-  return NextResponse.json({ items, total, pages: Math.ceil(total / 48) });
+  const wm = (await features()).watermark;
+  return NextResponse.json({ items, total, pages: Math.ceil(total / 48), watermark: { enabled: wm.enabled, scope: wm.scope } });
 }
 
 export async function POST(req: Request) {
@@ -41,7 +43,8 @@ export async function POST(req: Request) {
   const file = form?.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file received." }, { status: 400 });
   try {
-    const m = await storeUpload(file, String(form?.get("folder") ?? "uploads"), String(form?.get("alt") ?? ""));
+    const w = form?.get("watermark");
+    const m = await storeUpload(file, String(form?.get("folder") ?? "uploads"), String(form?.get("alt") ?? ""), { watermark: w === "1" ? true : w === "0" ? false : undefined });
     await audit(userId, "media.upload", "media", m.id, m.src);
     return NextResponse.json({ item: { id: m.id, src: m.src, width: m.width, height: m.height, alt: m.alt, bytes: m.bytes, mime: m.mime, folder: m.folder } });
   } catch (e) {

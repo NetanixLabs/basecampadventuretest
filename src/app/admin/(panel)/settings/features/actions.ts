@@ -17,6 +17,9 @@ export async function saveFeatures(input: Features, secrets: { WHATSAPP_TOKEN?: 
     f.portal.expiryDays = Math.min(365, Math.max(1, Math.round(Number(f.portal.expiryDays) || 30)));
     f.portal.inviteHours = Math.min(336, Math.max(1, Math.round(Number(f.portal.inviteHours) || 72)));
     for (const k of ["eur", "gbp", "aud"] as const) f.currency[k] = Math.min(100, Math.max(0.01, Math.round(Number(f.currency[k]) * 10000) / 10000 || FEATURE_DEFAULTS.currency[k]));
+    f.watermark.scope = f.watermark.scope === "all" ? "all" : "galleries";
+    f.watermark.opacity = Math.min(90, Math.max(15, Math.round(Number(f.watermark.opacity)) || 55));
+    f.watermark.size = Math.min(30, Math.max(8, Math.round(Number(f.watermark.size)) || 16));
     f.saved.reminderDays = Math.min(30, Math.max(1, Math.round(Number(f.saved.reminderDays)) || 3));
     f.payments.nprRate = Math.min(1000, Math.max(1, Math.round(Number(f.payments.nprRate) * 100) / 100 || 133));
     if (!f.payments.wetravel && !f.payments.hbl) return { ok: false, message: "Keep at least one payment method switched on." };

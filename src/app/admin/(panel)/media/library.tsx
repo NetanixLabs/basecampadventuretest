@@ -16,6 +16,9 @@ export function MediaLibrary({ siteUrl }: { siteUrl: string }) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{ items: Item[]; pages: number; total: number } | null>(null);
+  const [wmRule, setWmRule] = useState<{ enabled: boolean; scope: string } | null>(null);
+  const [wmChoice, setWmChoice] = useState<boolean | null>(null);
+  const watermark = wmChoice ?? Boolean(wmRule?.enabled && wmRule.scope === "all");
   const [sel, setSel] = useState<Item | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +27,7 @@ export function MediaLibrary({ siteUrl }: { siteUrl: string }) {
 
   const load = useCallback(async () => {
     const r = await fetch(`/api/media/?${new URLSearchParams({ q, page: String(page), kind })}`);
-    if (r.ok) setData(await r.json());
+    if (r.ok) { const j = await r.json(); setData(j); if (j.watermark) setWmRule(j.watermark); }
   }, [q, page, kind]);
   useEffect(() => { const t = setTimeout(load, q ? 250 : 0); return () => clearTimeout(t); }, [load, q]);
 
@@ -33,7 +36,7 @@ export function MediaLibrary({ siteUrl }: { siteUrl: string }) {
     const list = [...files];
     for (const [i, f] of list.entries()) {
       setBusy(`Uploading ${i + 1} of ${list.length}: ${f.name}`);
-      try { await uploadFile(f); } catch (e) { setError(`${f.name}: ${(e as Error).message}`); }
+      try { await uploadFile(f, undefined, wmRule?.enabled && /^image\//.test(f.type) ? watermark : undefined); } catch (e) { setError(`${f.name}: ${(e as Error).message}`); }
     }
     setBusy(null);
     setPage(1);
@@ -53,6 +56,11 @@ export function MediaLibrary({ siteUrl }: { siteUrl: string }) {
           <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search…" className={cn(inputClass, "rounded-full pl-9")} />
         </div>
         <input ref={input} type="file" multiple hidden accept="image/*,video/mp4,video/webm" onChange={(e) => e.target.files && void upload(e.target.files)} />
+        {wmRule?.enabled ? (
+          <label className="flex items-center gap-2 text-sm font-semibold" title="Adds our logo, bottom right, to photos you upload now">
+            <input type="checkbox" checked={watermark} onChange={(e) => setWmChoice(e.target.checked)} className="size-4 accent-[var(--pine)]" /> Logo watermark on new photos
+          </label>
+        ) : null}
         <button type="button" onClick={() => input.current?.click()} className="inline-flex items-center gap-2 rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white hover:bg-pine-deep"><Upload className="size-4" /> Upload</button>
       </div>
       {busy || error ? <p className={cn("mb-4 rounded-xl px-4 py-2 text-sm", error ? "bg-red-50 text-red-700" : "bg-pine/8 text-pine")}>{busy ?? error}</p> : null}

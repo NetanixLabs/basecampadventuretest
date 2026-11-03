@@ -20,7 +20,7 @@ import { Itinerary } from "@/components/trip/itinerary";
 import { SectionNav } from "@/components/trip/section-nav";
 import { TripModals } from "@/components/trip/trip-modals";
 import { TripCard } from "@/components/trip-card";
-import { getActivity, getDestination, getGuidesForRegion, getRelatedTrips, getTravellerPhotos, getTrip, getEquipment, getTripInfo, getTrips, getVideosForTrip } from "@/lib/content";
+import { getActivity, getDestination, getGuidesForRegion, getRelatedTrips, getSiteCopy, getTravellerPhotos, getTrip, getEquipment, getTripInfo, getTrips, getVideosForTrip } from "@/lib/content";
 import type { InfoKey } from "@/lib/trip-info";
 import { meta, tripLd, tripLead, videoLd } from "@/lib/seo";
 import { YouTube } from "@/components/video";
@@ -402,7 +402,7 @@ export default async function TripPage({ params }: Props) {
 
         <aside className="hidden lg:block">
           <TripSidebar>
-            <BookingCard slug={trip.slug} title={trip.title} price={trip.price} days={trip.days} />
+            <BookingCard slug={trip.slug} title={trip.title} price={trip.price} days={trip.days} copy={getSiteCopy().booking} />
             <TripAwards />
             <ReviewUs />
           </TripSidebar>

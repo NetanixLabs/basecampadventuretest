@@ -62,6 +62,14 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
           </div>
         </Feature>
 
+        <Feature title="Logo watermark on photos" info="New photos get our logo in the bottom-right corner at low opacity, like the videos, so copied photos still credit us. It is added when the photo is uploaded; the upload window has a tick box to leave it off for one upload (for example logos, maps or team portraits). Photos already on the site are not changed." on={f.watermark.enabled} onChange={(v) => set("watermark", { enabled: v })}>
+          <div><Label htmlFor="wm-s">Add it to</Label><select id="wm-s" value={f.watermark.scope} onChange={(e) => set("watermark", { scope: e.target.value as "galleries" | "all" })} className={inputClass}><option value="galleries">Gallery photos only (trip galleries, day photos, community)</option><option value="all">Every photo uploaded</option></select></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label htmlFor="wm-o" info="15 is very faint, 90 is strong. The videos use about 55.">Strength (%)</Label><input id="wm-o" inputMode="numeric" value={f.watermark.opacity} onChange={(e) => set("watermark", { opacity: num(e.target.value) })} className={inputClass} /></div>
+            <div><Label htmlFor="wm-z" info="Logo width as a share of the photo's width.">Size (% of width)</Label><input id="wm-z" inputMode="numeric" value={f.watermark.size} onChange={(e) => set("watermark", { size: num(e.target.value) })} className={inputClass} /></div>
+          </div>
+        </Feature>
+
         <Feature title="Save a trip" info="Visitors tap the heart on trips to keep a shortlist, and can email it to themselves. We send one friendly reminder after the number of days below (only if they ticked the box to hear from us)." on={f.saved.enabled} onChange={(v) => set("saved", { enabled: v })}>
           <div><Label htmlFor="sv-d">Reminder after (days)</Label><input id="sv-d" inputMode="numeric" value={f.saved.reminderDays} onChange={(e) => set("saved", { reminderDays: num(e.target.value) })} className={inputClass} /></div>
         </Feature>

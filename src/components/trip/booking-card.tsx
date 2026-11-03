@@ -7,6 +7,7 @@ import { openTripModal } from "@/components/trip/trip-modals";
 import { site, whatsappHref } from "@/lib/site";
 import type { Price } from "@/lib/types";
 import { usd } from "@/lib/utils";
+import { SITE_COPY_DEFAULTS, type SiteCopy } from "@/lib/site-copy";
 import { ApproxPrice, CurrencyPicker } from "@/components/currency";
 import { TripPageActions } from "@/components/shortlist";
 
@@ -14,7 +15,7 @@ import { TripPageActions } from "@/components/shortlist";
  * The booking box: discount and "From" price per adult, Book Now, Customize
  * Trip, the program PDF, help, and the reasons it is safe to book.
  */
-export function BookingCard({ slug, title, price }: { slug: string; title: string; price: Price | null; days: number }) {
+export function BookingCard({ slug, title, price, copy = SITE_COPY_DEFAULTS.booking }: { slug: string; title: string; price: Price | null; days: number; copy?: SiteCopy["booking"] }) {
   const off = price?.regular ? Math.round((1 - price.amount / price.regular) * 100) : 0;
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-[0_30px_60px_-40px_oklch(0.2_0.04_170/0.55)]">
@@ -52,9 +53,9 @@ export function BookingCard({ slug, title, price }: { slug: string; title: strin
         </a>
         <TripPageActions slug={slug} title={title} />
         <div className="rounded-xl bg-snow-2 p-3.5 text-center">
-          <p className="text-sm font-semibold">Need help with booking?</p>
+          <p className="text-sm font-semibold">{copy.helpTitle}</p>
           <button type="button" onClick={() => openTripModal("enquire")} className="text-pine mt-0.5 inline-flex items-center gap-1.5 text-sm font-bold hover:underline">
-            <MessageSquare className="size-4" aria-hidden /> Send Us A Message
+            <MessageSquare className="size-4" aria-hidden /> {copy.helpButton}
           </button>
         </div>
       </div>
@@ -65,19 +66,17 @@ export function BookingCard({ slug, title, price }: { slug: string; title: strin
           <ShieldCheck className="text-pine mt-0.5 size-4 shrink-0" aria-hidden />
           <span>Licensed by the Government of Nepal · Reg. {site.registration[0].value} · TAAN {site.registration[3].value}</span>
         </li>
-        <li className="flex items-start gap-2.5">
-          <Lock className="text-pine mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>Secure online payment</span>
-        </li>
-        <li className="flex items-start gap-2.5">
-          <BadgeCheck className="text-pine mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>No hidden fees · Experienced local guides</span>
-        </li>
+        {copy.trust.map((t, i) => (
+          <li key={t} className="flex items-start gap-2.5">
+            {i === 0 ? <Lock className="text-pine mt-0.5 size-4 shrink-0" aria-hidden /> : <BadgeCheck className="text-pine mt-0.5 size-4 shrink-0" aria-hidden />}
+            <span>{t}</span>
+          </li>
+        ))}
       </ul>
 
       <div className="flex items-center gap-3 border-t border-line bg-snow p-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold">Available 24/7 - Call Us Anytime</p>
+          <p className="text-sm font-bold">{copy.callTitle}</p>
           <a href={`tel:${site.mobileHref}`} className="text-pine inline-flex items-center gap-1.5 text-sm">
             <Phone className="size-3.5" aria-hidden /> {site.mobile} [{site.contactPerson.split(" ")[0]}]
           </a>

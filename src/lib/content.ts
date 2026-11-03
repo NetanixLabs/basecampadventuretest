@@ -2,6 +2,7 @@ import "server-only";
 import { ensureCompany } from "@/lib/company";
 import { withFeatureDefaults } from "@/lib/features";
 import { withHomeDefaults } from "@/lib/home-copy";
+import { withSiteCopyDefaults } from "@/lib/site-copy";
 import { resolveOldPath } from "@/lib/redirects";
 import { tripInfo, type InfoOverrides } from "@/lib/trip-info";
 import { readFileSync, statSync } from "node:fs";
@@ -453,6 +454,7 @@ export const getPublicSettings = () => (ensureCompany(), load<Record<string, unk
 /* ------------------------------------------------------------- homepage */
 
 /** The homepage's words and which sections are shown (admin). */
+export const getSiteCopy = () => withSiteCopyDefaults(load<Parameters<typeof withSiteCopyDefaults>[0]>("site-copy", null));
 export const getHomeCopy = () => withHomeDefaults(load<Parameters<typeof withHomeDefaults>[0]>("home-copy", null));
 
 /** Feature switches published from the admin (languages, portal link…). */

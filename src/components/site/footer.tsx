@@ -7,7 +7,7 @@ import { Logo } from "@/components/brand/logo";
 import { FacebookIcon, InstagramIcon, WhatsappIcon, XIcon } from "@/components/icons";
 import { Newsletter } from "@/components/newsletter";
 import { FooterPlan } from "@/components/site/footer-plan";
-import { getTrip } from "@/lib/content";
+import { getSiteCopy, getTrip } from "@/lib/content";
 import { regNo, site, whatsappHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -20,23 +20,12 @@ const PAYMENTS = [
   { src: "/brand/payments/jcb.svg", w: 300, h: 232, alt: "JCB", className: "h-7" },
 ];
 
-const POPULAR = ["everest-base-camp-trek", "annapurna-base-camp-trek", "annapurna-circuit-trek", "langtang-valley-trek", "manaslu-circuit-trek", "ghorepani-poon-hill-trek"];
-
-const COMPANY = [
-  { href: "/about-us/", label: "Our story" },
-  { href: "/our-team/", label: "Our Team" },
-  { href: "/why-book-with-us/", label: "Why Travel With Us?" },
-  { href: "/community/", label: "Community & social work" },
-  { href: "/gallery/", label: "Photo Gallery" },
-  { href: "/legal-documents/", label: "Legal Documents" },
-  { href: "/terms-and-conditions/", label: "Terms and Conditions" },
-  { href: "/online-payment/", label: "Online Payment" },
-];
-
 /** The closing call, a range of mountains, and the footer. */
 export function SiteFooter() {
   const year = new Date().getFullYear();
-  const popular = POPULAR.map((slug) => getTrip(slug))
+  const copy = getSiteCopy();
+  const COMPANY = copy.footer.company;
+  const popular = copy.footer.popular.map((slug) => getTrip(slug))
     .filter((t): t is NonNullable<typeof t> => Boolean(t))
     .map((t) => ({ href: `/trip/${t.slug}/`, label: t.title }));
 
@@ -49,22 +38,22 @@ export function SiteFooter() {
   return (
     <footer>
       {/* Let's make a plan. */}
-      <FooterPlan>
+      {copy.plan.show ? <FooterPlan>
       <section className="relative border-t border-line bg-snow">
         <div className="mx-auto flex max-w-site flex-col gap-8 px-4 py-14 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-6 lg:py-16">
           <div>
-            <p className="eyebrow text-pine"><Tr>Your time. Your interests. Your trip.</Tr></p>
+            <p className="eyebrow text-pine"><Tr>{copy.plan.eyebrow}</Tr></p>
             <h2 className="font-display mt-3 text-[clamp(2.4rem,5vw,4rem)] leading-[1.02] text-ink">
-              <Tr>Let&apos;s make</Tr>
+              <Tr>{copy.plan.heading}</Tr>
               <br />
-              <span className="accent-word"><Tr>a plan.</Tr></span>
+              <span className="accent-word"><Tr>{copy.plan.accent}</Tr></span>
             </h2>
           </div>
           <div className="max-w-sm">
-            <p className="text-ink-soft"><Tr>Choose an itinerary or talk to our local team about a journey built around you.</Tr></p>
+            <p className="text-ink-soft"><Tr>{copy.plan.text}</Tr></p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/customize-trip/#request" className="bg-pine hover:bg-pine-deep inline-flex items-center gap-2 rounded-lg px-6 py-3.5 text-sm font-bold text-white transition-colors">
-                <Tr>Plan your trip</Tr> <ArrowRight className="size-4" aria-hidden />
+                <Tr>{copy.plan.button}</Tr> <ArrowRight className="size-4" aria-hidden />
               </Link>
               <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-line bg-card px-5 py-3.5 text-sm font-semibold">
                 <WhatsappIcon className="size-4 text-[#25D366]" /> WhatsApp
@@ -73,7 +62,7 @@ export function SiteFooter() {
           </div>
         </div>
       </section>
-      </FooterPlan>
+      </FooterPlan> : null}
 
       <div className="relative overflow-hidden bg-[#1c2224] text-white/75">
         <div aria-hidden className="blueprint absolute inset-0 text-white opacity-[0.04]" />
@@ -117,13 +106,13 @@ export function SiteFooter() {
               </a>
             </div>
             <div className="divide-y divide-white/10 border-y border-white/10 lg:hidden">
-              <Fold title="Popular treks" links={popular} />
-              <Fold title="Company" links={COMPANY} />
+              <Fold title={copy.footer.popularTitle} links={popular} />
+              <Fold title={copy.footer.companyTitle} links={COMPANY} />
             </div>
 
             {/* Desktop columns */}
-            <LinkColumn title="Popular treks" links={popular} />
-            <LinkColumn title="Company" links={COMPANY} />
+            <LinkColumn title={copy.footer.popularTitle} links={popular} />
+            <LinkColumn title={copy.footer.companyTitle} links={COMPANY} />
 
             <div>
               <p className="eyebrow hidden text-[#3ccbdc] lg:block"><Tr>Get in touch</Tr></p>

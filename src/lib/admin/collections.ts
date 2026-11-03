@@ -1,4 +1,5 @@
 import { HOME_COPY_DEFAULTS } from "@/lib/home-copy";
+import { SITE_COPY_DEFAULTS } from "@/lib/site-copy";
 
 /**
  * What the office can edit, described once.
@@ -583,6 +584,44 @@ const section = (key: string, title: string, withIntro = true): Section => ({
 const toggle = (key: string, label: string): Field => ({ name: `${key}.show`, label, type: "toggle" });
 
 export const SINGLETONS: SingletonDef[] = [
+  {
+    key: "site-copy",
+    label: "Website wording",
+    description: "The footer links, the \"Let's make a plan\" banner on every page and the words in the trip booking box.",
+    file: "site-copy",
+    defaults: SITE_COPY_DEFAULTS as unknown as Record<string, unknown>,
+    sections: [
+      {
+        title: "\"Let's make a plan\" banner (above the footer)",
+        fields: [
+          { name: "plan.show", label: "Show the banner", type: "toggle" },
+          { name: "plan.eyebrow", label: "Small line above", type: "text" },
+          { name: "plan.heading", label: "Heading", type: "text" },
+          { name: "plan.accent", label: "Heading, second line (accent style)", type: "text" },
+          { name: "plan.text", label: "Text", type: "textarea", rows: 2 },
+          { name: "plan.button", label: "Button", type: "text" },
+        ],
+      },
+      {
+        title: "Footer links",
+        fields: [
+          { name: "footer.popularTitle", label: "Trips column heading", type: "text" },
+          { name: "footer.popular", label: "Trips in the footer", type: "multiselect", source: "trips", ordered: true, wide: true },
+          { name: "footer.companyTitle", label: "Company column heading", type: "text" },
+          { name: "footer.company", label: "Company links", type: "repeater", itemLabel: "link", titleField: "label", collapsed: true, wide: true, fields: [{ name: "label", label: "Text", type: "text" }, { name: "href", label: "Address", type: "text", placeholder: "/about-us/" }] },
+        ],
+      },
+      {
+        title: "Trip booking box",
+        fields: [
+          { name: "booking.helpTitle", label: "Help line", type: "text" },
+          { name: "booking.helpButton", label: "Message button", type: "text" },
+          { name: "booking.trust", label: "Reasons to book (under the licence line)", type: "strings", itemLabel: "reason", wide: true },
+          { name: "booking.callTitle", label: "Call line", type: "text" },
+        ],
+      },
+    ],
+  },
   {
     key: "home-copy",
     label: "Homepage text & sections",

@@ -15,6 +15,8 @@ export type Features = {
   currency: { enabled: boolean; eur: number; gbp: number; aud: number };
   /** Saved trips: a list emailed to the visitor, and one reminder a few days later. */
   saved: { enabled: boolean; reminderDays: number };
+  /** Logo burned into uploaded photos, bottom right, like the video mark. */
+  watermark: { enabled: boolean; scope: "galleries" | "all"; opacity: number; size: number };
 };
 
 export const FEATURE_DEFAULTS: Features = {
@@ -28,6 +30,7 @@ export const FEATURE_DEFAULTS: Features = {
   pretrip: { enabled: true, d30: true, d7: true },
   currency: { enabled: true, eur: 0.86, gbp: 0.75, aud: 1.52 },
   saved: { enabled: true, reminderDays: 3 },
+  watermark: { enabled: true, scope: "galleries", opacity: 55, size: 16 },
 };
 
 export function withFeatureDefaults(saved: unknown): Features {

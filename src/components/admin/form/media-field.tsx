@@ -14,10 +14,11 @@ const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB
 /** Admin pages are on another host; photos come from the same app, so a relative path works. */
 const thumb = (src: string, w = 384) => (src.endsWith(".svg") ? src : `/_next/image/?url=${encodeURIComponent(src)}&w=${w}&q=70`);
 
-export async function uploadFile(file: File, folder?: string): Promise<Item> {
+export async function uploadFile(file: File, folder?: string, watermark?: boolean): Promise<Item> {
   const body = new FormData();
   body.set("file", file);
   if (folder) body.set("folder", folder);
+  if (watermark !== undefined) body.set("watermark", watermark ? "1" : "0");
   const res = await fetch("/api/media/", { method: "POST", body });
   const json = (await res.json().catch(() => ({}))) as { item?: Item; error?: string };
   if (!res.ok || !json.item) throw new Error(json.error ?? "Upload failed");
@@ -99,14 +100,17 @@ export function GalleryField({ value, onChange, folder }: { value: Img[]; onChan
           </button>
         </li>
       </ul>
-      {open ? <MediaPicker multiple folder={folder} onClose={() => setOpen(false)} onPick={(items) => { onChange([...value, ...items.map(toImg)]); setOpen(false); }} /> : null}
+      {open ? <MediaPicker multiple gallery folder={folder} onClose={() => setOpen(false)} onPick={(items) => { onChange([...value, ...items.map(toImg)]); setOpen(false); }} /> : null}
     </div>
   );
 }
 
 /** The media library as a dialog: search, pick, or drop new photos in. */
-export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image" }: { onPick: (items: Item[]) => void; onClose: () => void; multiple?: boolean; folder?: string; kind?: "image" | "video" }) {
+export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image", gallery = false }: { onPick: (items: Item[]) => void; onClose: () => void; multiple?: boolean; folder?: string; kind?: "image" | "video"; gallery?: boolean }) {
   const [q, setQ] = useState("");
+  const [wmRule, setWmRule] = useState<{ enabled: boolean; scope: string } | null>(null);
+  const [wmChoice, setWmChoice] = useState<boolean | null>(null);
+  const watermark = wmChoice ?? Boolean(wmRule?.enabled && (gallery || wmRule.scope === "all"));
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{ items: Item[]; pages: number; total: number } | null>(null);
   const [picked, setPicked] = useState<Item[]>([]);
@@ -117,7 +121,7 @@ export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image" 
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/media/?${new URLSearchParams({ q, page: String(page), kind })}`);
-    if (res.ok) setData(await res.json());
+    if (res.ok) { const j = await res.json(); setData(j); if (j.watermark) setWmRule(j.watermark); }
     else setError("Couldn't load the library. Are you still signed in?");
   }, [q, page, kind]);
   useEffect(() => {
@@ -137,7 +141,7 @@ export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image" 
     for (const [i, f] of list.entries()) {
       setBusy(`Uploading ${i + 1} of ${list.length}: ${f.name}`);
       try {
-        done.push(await uploadFile(f, folder));
+        done.push(await uploadFile(f, folder, kind === "image" && wmRule?.enabled ? watermark : undefined));
       } catch (e) {
         setError(`${f.name}: ${(e as Error).message}`);
       }
@@ -168,6 +172,11 @@ export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image" 
             <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search by description or file name…" className={cn(inputClass, "pl-9")} autoFocus />
           </div>
           <input ref={input} type="file" accept={kind === "video" ? "video/mp4,video/webm" : "image/*"} multiple={multiple} hidden onChange={(e) => e.target.files && void upload(e.target.files)} />
+          {kind === "image" && wmRule?.enabled ? (
+            <label className="flex items-center gap-2 text-sm font-semibold" title="Adds our logo, bottom right, to photos you upload now">
+              <input type="checkbox" checked={watermark} onChange={(e) => setWmChoice(e.target.checked)} className="size-4 accent-[var(--pine)]" /> Logo watermark
+            </label>
+          ) : null}
           <button type="button" onClick={() => input.current?.click()} className="inline-flex items-center gap-2 rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white hover:bg-pine-deep">
             <Upload className="size-4" /> Upload
           </button>
