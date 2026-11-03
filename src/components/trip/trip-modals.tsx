@@ -153,6 +153,15 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ reference: string; paymentUrl: string | null; due: number } | null>(null);
+  // Fixed group departures the office has put on the website, with seats left.
+  const [deps, setDeps] = useState<{ date: string; seats: number | null; seatsLeft: number | null; guaranteed: boolean; full: boolean }[]>([]);
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/departures/?trip=${encodeURIComponent(trip.slug)}`).then((r) => (r.ok ? r.json() : { departures: [] })).then((j) => live && setDeps(j.departures ?? [])).catch(() => undefined);
+    return () => { live = false; };
+  }, [trip.slug]);
+  const fixed = deps.find((d) => d.date === date);
+  const tooMany = Boolean(fixed && fixed.seatsLeft !== null && pax > fixed.seatsLeft);
 
   const price = trip.price!;
   const each = (price.groupTiers.find((t) => pax >= t.from && (!t.to || pax <= t.to))?.price ?? price.amount);
@@ -237,8 +246,33 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
             {step === 0 ? (
               <div className="grid gap-5 md:grid-cols-[1.2fr_1fr]">
                 <div>
+                  {deps.length ? (
+                    <div className="mb-5">
+                      <p className="mb-2 text-sm font-semibold">Join a group departure</p>
+                      <ul className="grid gap-2">
+                        {deps.slice(0, 6).map((d) => {
+                          const start = new Date(`${d.date}T00:00:00`);
+                          const endD = new Date(start.getTime() + (trip.days - 1) * 86400000);
+                          const on = date === d.date;
+                          return (
+                            <li key={d.date}>
+                              <button type="button" disabled={d.full} onClick={() => setDate(d.date)} aria-pressed={on} className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${on ? "border-pine bg-pine/5" : "border-line bg-snow hover:border-pine/50"}`}>
+                                <span className="font-semibold">{start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – {endD.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                                <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 text-xs font-semibold">
+                                  {d.guaranteed ? <span className="rounded-full bg-emerald-600/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">Guaranteed</span> : null}
+                                  {d.full ? <span className="rounded-full bg-crimson/10 px-2 py-0.5 text-crimson">Full</span> : d.seatsLeft !== null ? <span className={`rounded-full px-2 py-0.5 ${d.seatsLeft <= 3 ? "bg-crimson/10 text-crimson" : "bg-pine/10 text-pine"}`}>{d.seatsLeft} {d.seatsLeft === 1 ? "seat" : "seats"} left</span> : null}
+                                </span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <p className="mt-3 text-xs text-muted">Or choose any date below for a private trip.</p>
+                    </div>
+                  ) : null}
                   <p className="mb-2 text-sm font-semibold">Choose your start date</p>
                   <Calendar value={date} onChange={setDate} min={min} />
+                  {tooMany ? <p role="alert" className="mt-3 rounded-xl bg-crimson/10 px-3 py-2 text-sm text-crimson">Only {fixed!.seatsLeft} {fixed!.seatsLeft === 1 ? "seat is" : "seats are"} left on this departure. Choose fewer travellers or another date.</p> : null}
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -332,7 +366,7 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
           {step < 2 ? (
             <button
               type="button"
-              disabled={step === 0 ? !date : !okDetails}
+              disabled={step === 0 ? !date || tooMany : !okDetails}
               onClick={() => setStep(step + 1)}
               className="bg-pine inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity disabled:opacity-35"
             >

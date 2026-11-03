@@ -5,8 +5,10 @@ import { db } from "@/lib/admin/db";
 import { requireUser } from "@/lib/admin/guards";
 import { ACTIVE, endOf, parseKey } from "@/lib/server/departures";
 import { readDetails } from "@/lib/server/portal";
+import { getTrip } from "@/lib/content";
 import { StaffPlanner } from "./planner";
 import { DeparturePhotos } from "./photos";
+import { DepartureSettings } from "../fixed";
 
 export const metadata = { title: "Departure" };
 
@@ -21,7 +23,7 @@ export default async function DeparturePage({ params }: { params: Promise<{ key:
     db.guide.findMany({ where: { active: true }, orderBy: [{ role: "asc" }, { name: "asc" }] }),
   ]);
   if (!bookings.length && !dep) notFound();
-  const title = bookings[0]?.tripTitle ?? k.slug.replace(/-/g, " ");
+  const title = bookings[0]?.tripTitle ?? getTrip(k.slug)?.title ?? k.slug.replace(/-/g, " ");
   const pax = bookings.reduce((s, b) => s + b.pax, 0);
   return (
     <>
@@ -42,7 +44,8 @@ export default async function DeparturePage({ params }: { params: Promise<{ key:
           </ul>
         </Card>
         <div className="space-y-6">
-        <StaffPlanner depKey={key} staff={(dep?.staff ?? []).map((s) => ({ id: s.guide.id, name: s.guide.name, role: s.role, phone: s.guide.phone }))} team={team.map((g) => ({ id: g.id, name: g.name, role: g.role }))} notes={dep?.notes ?? ""} />
+        <DepartureSettings depKey={key} booked={pax} value={{ published: dep?.published ?? false, seats: dep?.seats ?? null, guaranteed: dep?.guaranteed ?? false, pickupTime: dep?.pickupTime ?? "", pickupPlace: dep?.pickupPlace ?? "" }} />
+        <StaffPlanner depKey={key} staff={(dep?.staff ?? []).map((s) => ({ id: s.guide.id, name: s.guide.name, role: s.role, phone: s.guide.phone, notifiedAt: s.notifiedAt?.toISOString() ?? null, hasEmail: Boolean(s.guide.email) }))} team={team.map((g) => ({ id: g.id, name: g.name, role: g.role }))} notes={dep?.notes ?? ""} />
         <DeparturePhotos depKey={key} photos={(dep?.photos ?? []).map((p) => p.id)} />
         </div>
       </div>

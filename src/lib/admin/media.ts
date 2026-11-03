@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 import { db } from "@/lib/admin/db";
 import { slugify } from "@/lib/admin/html";
 import { InputError } from "@/lib/admin/entries";
@@ -31,6 +31,16 @@ const isVideo = (buf: Buffer) => buf.subarray(4, 8).toString("latin1") === "ftyp
 async function watermarkPng(width: number, opacity: number) {
   const svg = await readFile(path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "brand", "watermark.svg"));
   return sharp(svg, { density: 300 }).resize({ width }).ensureAlpha().linear([1, 1, 1, opacity], [0, 0, 0, 0]).png().toBuffer({ resolveWithObject: true });
+}
+
+/** Lays our logo over a photo, bottom right (small photos are left as they are). */
+export async function withWatermark(pipeline: Sharp, wm: { opacity: number; size: number }) {
+  const sized = await pipeline.toBuffer({ resolveWithObject: true });
+  const W = sized.info.width, H = sized.info.height;
+  if (W < 400 || H < 300) return sharp(sized.data);
+  const logo = await watermarkPng(Math.max(70, Math.round((W * wm.size) / 100)), wm.opacity / 100);
+  const margin = Math.round(Math.min(W, H) * 0.03);
+  return sharp(sized.data).composite([{ input: logo.data, left: Math.max(0, W - logo.info.width - margin), top: Math.max(0, H - logo.info.height - margin) }]);
 }
 
 export async function storeUpload(file: File, folder = "uploads", alt = "", opts: { watermark?: boolean } = {}) {
@@ -68,15 +78,7 @@ export async function storeUpload(file: File, folder = "uploads", alt = "", opts
   if (!meta.format || !["jpeg", "png", "webp", "avif", "heif", "tiff", "gif"].includes(meta.format)) throw new InputError("Use JPG, PNG, WebP, AVIF or HEIC photos.");
 
   let pipeline = sharp(buf, { failOn: "none" }).rotate().resize({ width: LONG_EDGE, height: LONG_EDGE, fit: "inside", withoutEnlargement: true });
-  if (mark && meta.format !== "gif") {
-    const sized = await pipeline.toBuffer({ resolveWithObject: true });
-    const W = sized.info.width, H = sized.info.height;
-    if (W >= 400 && H >= 300) {
-      const logo = await watermarkPng(Math.max(70, Math.round((W * wm.size) / 100)), wm.opacity / 100);
-      const margin = Math.round(Math.min(W, H) * 0.03);
-      pipeline = sharp(sized.data).composite([{ input: logo.data, left: Math.max(0, W - logo.info.width - margin), top: Math.max(0, H - logo.info.height - margin) }]);
-    } else pipeline = sharp(sized.data);
-  }
+  if (mark && meta.format !== "gif") pipeline = await withWatermark(pipeline, wm);
   const out = await pipeline.webp({ quality: QUALITY, smartSubsample: true, effort: 5 }).toBuffer({ resolveWithObject: true });
   const name = `${base}-${hash.slice(0, 10)}.webp`;
   await writeFile(path.join(/*turbopackIgnore: true*/ uploadsDir(), sub, name), out.data);

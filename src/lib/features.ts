@@ -10,9 +10,13 @@ export type Features = {
   portal: { enabled: boolean; autoInvite: boolean; expiryDays: number; inviteHours: number };
   languages: { de: boolean; fr: boolean; es: boolean };
   payments: { wetravel: boolean; hbl: boolean; preferred: "wetravel" | "hbl"; hblCurrency: "USD" | "NPR"; nprRate: number };
-  pretrip: { enabled: boolean; d30: boolean; d7: boolean };
+  pretrip: { enabled: boolean; d30: boolean; d7: boolean; d1: boolean };
+  /** Reminders for the balance, this many days before the trip ("60,30,14"). */
+  balance: { enabled: boolean; days: string };
+  /** Email a guide or porter when they are assigned to a departure. */
+  guideNotify: { enabled: boolean };
   /** Approximate prices in the visitor's currency; rates are "1 US$ = x". */
-  currency: { enabled: boolean; eur: number; gbp: number; aud: number };
+  currency: { enabled: boolean; eur: number; gbp: number; aud: number; auto: boolean; updatedAt: string };
   /** Saved trips: a list emailed to the visitor, and one reminder a few days later. */
   saved: { enabled: boolean; reminderDays: number };
   /** Logo burned into uploaded photos, bottom right, like the video mark. */
@@ -27,8 +31,10 @@ export const FEATURE_DEFAULTS: Features = {
   portal: { enabled: true, autoInvite: false, expiryDays: 30, inviteHours: 72 },
   languages: { de: false, fr: false, es: false },
   payments: { wetravel: true, hbl: false, preferred: "wetravel", hblCurrency: "USD", nprRate: 133 },
-  pretrip: { enabled: true, d30: true, d7: true },
-  currency: { enabled: true, eur: 0.86, gbp: 0.75, aud: 1.52 },
+  pretrip: { enabled: true, d30: true, d7: true, d1: true },
+  balance: { enabled: true, days: "60,30,14" },
+  guideNotify: { enabled: true },
+  currency: { enabled: true, eur: 0.86, gbp: 0.75, aud: 1.52, auto: true, updatedAt: "" },
   saved: { enabled: true, reminderDays: 3 },
   watermark: { enabled: true, scope: "galleries", opacity: 55, size: 10 },
 };

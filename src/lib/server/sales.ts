@@ -59,11 +59,28 @@ export type BookingInput = {
   agentId?: string | null;
 };
 
+/** Thrown when a fixed departure has fewer seats left than the booking needs. */
+export class SeatsFull extends Error {
+  constructor(public left: number) {
+    super(left ? `Only ${left} ${left === 1 ? "seat is" : "seats are"} left on this date.` : "This date is fully booked.");
+  }
+}
+
 export async function saveBooking(b: BookingInput) {
   let id: string | null = null;
   try {
     if (!adminConfigured()) throw new Error("no database");
     const row = await db.$transaction(async (tx) => {
+      // Fixed departure with a seat limit: lock it, then count, so two people
+      // booking at the same moment can never both take the last seats.
+      const start = new Date(`${b.startDate}T00:00:00Z`);
+      const dep = await tx.departure.findUnique({ where: { tripSlug_startDate: { tripSlug: b.tripSlug, startDate: start } } });
+      if (dep?.published && dep.seats != null) {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`departure:${b.tripSlug}:${b.startDate}`}))::text AS locked`;
+        const taken = await tx.booking.aggregate({ where: { tripSlug: b.tripSlug, startDate: start, status: { in: ["requested", "awaiting_payment", "deposit_paid", "paid", "confirmed"] } }, _sum: { pax: true } });
+        const left = dep.seats - (taken._sum.pax ?? 0);
+        if (b.pax > left) throw new SeatsFull(Math.max(0, left));
+      }
       if (b.discountCode) await tx.discountCode.update({ where: { code: b.discountCode }, data: { used: { increment: 1 } } });
       return tx.booking.create({
         data: {
@@ -78,6 +95,7 @@ export async function saveBooking(b: BookingInput) {
     const { upsertCustomer } = await import("@/lib/server/customers");
     await upsertCustomer({ email: b.lead.email, name: b.lead.name, phone: b.lead.phone, country: b.lead.country, source: "booking" }).catch(() => undefined);
   } catch (error) {
+    if (error instanceof SeatsFull) throw error;
     if (adminConfigured()) console.error("[booking] database write failed, kept in log", error);
     await record("bookings", { ...b });
   }

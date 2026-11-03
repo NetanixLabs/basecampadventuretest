@@ -20,6 +20,8 @@ export async function saveFeatures(input: Features, secrets: { WHATSAPP_TOKEN?: 
     f.watermark.scope = f.watermark.scope === "all" ? "all" : "galleries";
     f.watermark.opacity = Math.min(90, Math.max(15, Math.round(Number(f.watermark.opacity)) || 55));
     f.watermark.size = Math.min(30, Math.max(5, Math.round(Number(f.watermark.size)) || 10));
+    f.balance.days = [...new Set(String(f.balance.days ?? "").split(",").map((x) => Math.round(Number(x.trim()))).filter((n) => n >= 1 && n <= 180))].sort((a, b) => b - a).join(",") || "60,30,14";
+    f.currency.auto = Boolean(f.currency.auto);
     f.saved.reminderDays = Math.min(30, Math.max(1, Math.round(Number(f.saved.reminderDays)) || 3));
     f.payments.nprRate = Math.min(1000, Math.max(1, Math.round(Number(f.payments.nprRate) * 100) / 100 || 133));
     if (!f.payments.wetravel && !f.payments.hbl) return { ok: false, message: "Keep at least one payment method switched on." };

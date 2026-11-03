@@ -52,9 +52,18 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
         <Feature title="Emails before the trip" info="Automatic emails to travellers with a payment: one month before (visa, insurance, flights, packing) and one week before (airport pickup). If a balance is still open, the amount and the pay-now link are included. Change the wording under Email templates." on={f.pretrip.enabled} onChange={(v) => set("pretrip", { enabled: v })}>
           <label className="flex items-center justify-between gap-3 text-sm font-semibold">30 days before<Switch on={f.pretrip.d30} onChange={(v) => set("pretrip", { d30: v })} label="30 days before" /></label>
           <label className="flex items-center justify-between gap-3 text-sm font-semibold">7 days before<Switch on={f.pretrip.d7} onChange={(v) => set("pretrip", { d7: v })} label="7 days before" /></label>
+          <label className="flex items-center justify-between gap-3 text-sm font-semibold">Day before (pickup time and place, guide's name)<Switch on={f.pretrip.d1} onChange={(v) => set("pretrip", { d1: v })} label="Day before" /></label>
         </Feature>
 
+        <Feature title="Balance reminders" info="Travellers who paid a deposit get a reminder with the pay-now link this many days before the trip, once per stage. Nothing is sent once the balance is paid. The 30-day reminder is skipped while the one-month email is on, because it already shows the balance." on={f.balance.enabled} onChange={(v) => set("balance", { enabled: v })}>
+          <div><Label htmlFor="bal-d" info="Days before the start date, separated by commas.">Send at (days before)</Label><input id="bal-d" value={f.balance.days} onChange={(e) => set("balance", { days: e.target.value })} className={`${inputClass} font-mono`} placeholder="60,30,14" /></div>
+        </Feature>
+
+        <Feature title="Email guides and porters their assignments" info="When you assign someone to a departure (Operations, Departures), they get an email with the departure list PDF attached: travellers, flights, food needs and medical notes. Only for staff with an email address in Guides & porters." on={f.guideNotify.enabled} onChange={(v) => set("guideNotify", { enabled: v })} />
+
         <Feature title="Prices in the visitor's currency" info="Trip pages show an approximate price in euros, pounds or Australian dollars next to the US$ price, picked from the visitor's browser language (they can change it). Bookings are always charged in US$. Update the rates now and then." on={f.currency.enabled} onChange={(v) => set("currency", { enabled: v })}>
+          <label className="flex items-center justify-between gap-3 text-sm font-semibold">Update the rates automatically every day<Switch on={f.currency.auto} onChange={(v) => set("currency", { auto: v })} label="Automatic rates" /></label>
+          <p className="text-xs text-muted">{f.currency.auto ? (f.currency.updatedAt ? `Last updated ${new Date(f.currency.updatedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}. ` : "Updates within the next hour. ") + "Rates you type below are replaced at the next update." : "Rates are only changed when you change them below."}</p>
           <div className="grid grid-cols-3 gap-3">
             {([["eur", "EUR (€)"], ["gbp", "GBP (£)"], ["aud", "AUD (A$)"]] as const).map(([k, l]) => (
               <div key={k}><Label htmlFor={`fx-${k}`}>{`1 US$ = ${l}`}</Label><input id={`fx-${k}`} inputMode="decimal" value={f.currency[k]} onChange={(e) => set("currency", { [k]: e.target.value as unknown as number })} className={`${inputClass} font-mono`} /></div>

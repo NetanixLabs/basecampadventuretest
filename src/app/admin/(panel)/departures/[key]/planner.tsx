@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Card, inputClass } from "@/components/admin/ui";
-import { assignStaff, removeStaff, saveDepartureNotes } from "../actions";
+import { assignStaff, removeStaff, resendAssignment, saveDepartureNotes } from "../actions";
 
 const ROLE: Record<string, string> = { guide: "Guide", leader: "Trip leader", porter: "Porter", driver: "Driver", cook: "Cook", other: "Other" };
 
-export function StaffPlanner({ depKey, staff, team, notes: n0 }: { depKey: string; staff: { id: string; name: string; role: string; phone: string | null }[]; team: { id: string; name: string; role: string }[]; notes: string }) {
+export function StaffPlanner({ depKey, staff, team, notes: n0 }: { depKey: string; staff: { id: string; name: string; role: string; phone: string | null; notifiedAt?: string | null; hasEmail?: boolean }[]; team: { id: string; name: string; role: string }[]; notes: string }) {
   const router = useRouter();
   const [pick, setPick] = useState("");
   const [role, setRole] = useState("guide");
@@ -24,8 +24,13 @@ export function StaffPlanner({ depKey, staff, team, notes: n0 }: { depKey: strin
           <ul className="mb-4 divide-y divide-line text-sm">
             {staff.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-2 py-2">
-                <span><strong>{s.name}</strong> <span className="text-muted">· {ROLE[s.role]}{s.phone ? ` · ${s.phone}` : ""}</span></span>
-                <button disabled={pending} onClick={() => start(async () => { await removeStaff(depKey, s.id); router.refresh(); })} className="text-xs font-semibold text-muted hover:text-red-600">Remove</button>
+                <span><strong>{s.name}</strong> <span className="text-muted">· {ROLE[s.role]}{s.phone ? ` · ${s.phone}` : ""}</span>
+                  <span className="block text-xs text-muted">{s.notifiedAt ? `Emailed the departure list ${new Date(s.notifiedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : s.hasEmail ? "Not emailed yet" : "No email address"}</span>
+                </span>
+                <span className="flex shrink-0 gap-3">
+                  {s.hasEmail ? <button disabled={pending} onClick={() => start(async () => { const r = await resendAssignment(depKey, s.id); setMsg(r.message); router.refresh(); })} className="text-xs font-semibold text-pine hover:underline">{s.notifiedAt ? "Email again" : "Email list"}</button> : null}
+                  <button disabled={pending} onClick={() => start(async () => { await removeStaff(depKey, s.id); router.refresh(); })} className="text-xs font-semibold text-muted hover:text-red-600">Remove</button>
+                </span>
               </li>
             ))}
           </ul>

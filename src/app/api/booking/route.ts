@@ -3,7 +3,8 @@ import { clientIpFrom } from "@/lib/ip";
 import { z } from "zod";
 import { getTrip } from "@/lib/content";
 import { checkDiscount } from "@/lib/server/discounts";
-import { saveBooking } from "@/lib/server/sales";
+import { SeatsFull, saveBooking } from "@/lib/server/sales";
+import { seatsLeftOn } from "@/lib/server/departures";
 import { rateLimited, reference } from "@/lib/server/store";
 import { createPaymentLink, wetravelEnabled } from "@/lib/server/wetravel";
 import { features } from "@/lib/admin/features";
@@ -51,6 +52,12 @@ export async function POST(req: Request) {
   earliest.setDate(earliest.getDate() + 13);
   if (new Date(input.date) < earliest) {
     return NextResponse.json({ ok: false, error: "Please choose a start date at least two weeks away, or call us for a short-notice trip." }, { status: 400 });
+  }
+
+  // Fixed departure with a seat limit: say so before anything else happens.
+  const left = await seatsLeftOn(trip.slug, new Date(`${input.date}T00:00:00Z`)).catch(() => null);
+  if (left !== null && input.pax > left) {
+    return NextResponse.json({ ok: false, error: left ? `Only ${left} ${left === 1 ? "seat is" : "seats are"} left on this date. Choose fewer travellers or another date.` : "This date is fully booked. Please choose another date." }, { status: 409 });
   }
 
   // The price is always worked out here, never taken from the browser.
@@ -102,6 +109,7 @@ export async function POST(req: Request) {
   const refCode = /(?:^|;\s*)bca_ref=([A-Z0-9-]{3,20})/.exec(req.headers.get("cookie") ?? "")?.[1];
   const agent = refCode ? await db.agent.findFirst({ where: { code: refCode, active: true }, select: { id: true } }).catch(() => null) : null;
 
+  try {
   await saveBooking({
     reference: ref,
     tripSlug: trip.slug,
@@ -124,6 +132,10 @@ export async function POST(req: Request) {
     gateway,
     agentId: agent?.id ?? null,
   });
+  } catch (e) {
+    if (e instanceof SeatsFull) return NextResponse.json({ ok: false, error: `${e.message} Choose fewer travellers or another date.` }, { status: 409 });
+    throw e;
+  }
 
   return NextResponse.json({ ok: true, reference: ref, paymentUrl, total, discount, due });
 }

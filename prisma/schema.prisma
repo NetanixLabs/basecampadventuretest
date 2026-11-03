@@ -285,6 +285,10 @@ model Booking {
   /// Pre-trip emails (30 and 7 days before departure).
   pretrip30At       DateTime?
   pretrip7At        DateTime?
+  /// Balance reminder stages already sent, e.g. ["60","30"].
+  balanceReminders  String[]        @default([])
+  /// Day-before email (pickup and guide).
+  pretrip1At        DateTime?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   payments          Payment[]
@@ -616,6 +620,15 @@ model Departure {
   tripSlug  String
   startDate DateTime         @db.Date
   notes     String?
+  /// Fixed departure shown on the website for booking (with seats left).
+  published   Boolean          @default(false)
+  /// Total seats; empty = no limit shown.
+  seats       Int?
+  /// Departure runs whatever the number of bookings.
+  guaranteed  Boolean          @default(false)
+  /// Pickup details for the day-before email.
+  pickupTime  String?
+  pickupPlace String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
   staff     DepartureStaff[]
@@ -629,6 +642,8 @@ model DepartureStaff {
   departureId String
   guideId     String
   role        StaffRole @default(guide)
+  /// When this person was emailed their assignment.
+  notifiedAt  DateTime?
   departure   Departure @relation(fields: [departureId], references: [id], onDelete: Cascade)
   guide       Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
