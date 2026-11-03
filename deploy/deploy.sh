@@ -43,6 +43,8 @@ npm run build
 echo "== 3/5 Database migrations"
 npx prisma migrate deploy
 if [ "${1:-}" = "--first" ]; then npm run admin:import; fi
+# One-time content corrections (each runs once per server; never overwrites later admin edits).
+npm run admin:fixes
 
 echo "== 4/5 Switch"
 ln -sfn "$NEW" "$ROOT/app.next" && mv -Tf "$ROOT/app.next" "$ROOT/app"

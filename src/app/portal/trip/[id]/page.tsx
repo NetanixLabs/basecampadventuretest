@@ -9,6 +9,7 @@ import { PortalShell } from "../../shell";
 import { DetailsForm, Documents } from "./client";
 import { BottomNav, PortalReview } from "./extra";
 import { Chat } from "@/components/chat";
+import { reviewLinks } from "@/components/trip/review-us";
 import { markRead, thread, unreadFor } from "@/lib/server/messages";
 
 export const dynamic = "force-dynamic";
@@ -137,7 +138,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         <section id="review" className="mt-6 scroll-mt-20 rounded-2xl border border-line bg-card p-6 shadow-sm">
           <h2 className="font-display text-lg font-bold">How was your trip?</h2>
           <p className="mt-1 text-sm text-muted">A short review helps other travellers and means a lot to our guides and porters.</p>
-          <PortalReview bookingId={b.id} country={b.leadCountry} />
+          <PortalReview bookingId={b.id} country={b.leadCountry} links={reviewLinks()} />
         </section>
       ) : null}
 

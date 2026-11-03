@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getFeatures, getTrip } from "@/lib/content";
 import { bookingForReview } from "@/lib/server/reviews";
 import { ReviewForm } from "./form";
+import { reviewLinks } from "@/components/trip/review-us";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Review your trip", robots: { index: false, follow: false } };
@@ -20,7 +21,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             <h1 className="font-display mt-3 text-4xl leading-tight font-black sm:text-5xl">How was <span className="accent-word text-marigold">{b.tripTitle}</span>?</h1>
             <p className="mt-4 text-lg text-ink-soft">Thank you for travelling with us, {b.leadName.split(" ")[0]}. Your words help other travellers choose, and our guides and porters read every one.</p>
             {trip?.cover?.src ? (/* eslint-disable-next-line @next/next/no-img-element */ <img src={trip.cover.src} alt="" className="mt-8 aspect-[16/6] w-full rounded-3xl object-cover" />) : null}
-            <ReviewForm token={t} name={b.leadName} country={b.leadCountry} />
+            <ReviewForm token={t} name={b.leadName} country={b.leadCountry} links={reviewLinks()} />
           </>
         ) : (
           <div className="text-center">

@@ -99,7 +99,7 @@
    },
    {
     "day": 3,
-    "title": "Fly from Namche Bazaar (5,545 m / 18,192 ft) to Kala Patthar for a landing then fly over Everest Base Camp (5,364 m / 17,598 ft) before continuing to Kathmandu, 2-3 hours.",
+    "title": "Fly from Namche Bazaar (3,440 m / 11,286 ft) to Kala Patthar (5,545 m / 18,192 ft) for a landing then fly over Everest Base Camp (5,364 m / 17,598 ft) before continuing to Kathmandu, 2-3 hours.",
     "html": "<p>Today is an exciting day as you will fly from Namche Bazaar to Kala Patthar with fly over to Everest Base Camp. Kala Patthar is the highest point of your entire Everest Base Camp trip. As a matter of fact, you will see the entire Everest region much closer than anywhere else. The highest peak in the world, covered with snow, offers you the best experience with Several other stunning mountains can also be seen from this viewpoint. However, it is important to note that the flight landing duration is determined by the weather condition of that particular day and hence, can fluctuate. After taking off from Kala Patthar, you will fly directly toward Kathmandu. The helicopter may make a brief stop in Lukla for refueling before continuing to Kathmandu.</p>",
     "altitude": 5364,
     "meals": [
@@ -10679,7 +10679,7 @@
    },
    {
     "day": 12,
-    "title": "Trek from Gokyo Village to Gokyo Peak (Gokyo Ri), return to Gokyo, and continue to Machhermo (4,470 m / 15,715 ft), 7–8 hours.",
+    "title": "Trek from Gokyo Village to Gokyo Peak (Gokyo Ri), return to Gokyo, and continue to Machhermo (4,470 m / 14,665 ft), 7–8 hours.",
     "html": "Climb up to Gokyo Ri (<span class=\"measurement\" data-meters=\"5360\">5,360 m</span>) for beautiful views of Cho Oyu (<span class=\"measurement\" data-meters=\"8188\">8,188 m</span>), Chamar (<span class=\"measurement\" data-meters=\"7287\">7,287 m</span>), Everest (<span class=\"measurement\" data-meters=\"8848\">8,848 m</span>), Lhotse (<span class=\"measurement\" data-meters=\"8414\">8,414 m</span>), and so on along with the view of the pristine Gokyo lakes. Hike back down to Dudh Pokhari, the third Gokyo Lake, and enjoy the peaceful environs. Leaving Gokyo village behind, we descend on the banks of Ngozumpa Glacier via second and first Gokyo lakes. Then we follow the downstream trail of Dudh Koshi River all the way to Machharmo.",
     "altitude": 4470,
     "meals": [
@@ -10693,7 +10693,7 @@
    },
    {
     "day": 13,
-    "title": "Trek from Machharmo to Namche Bazaar (33,440 m / 11,286 ft), 6-7 hours.",
+    "title": "Trek from Machharmo to Namche Bazaar (3,440 m / 11,286 ft), 6-7 hours.",
     "html": "Continuing to follow the Dudh Koshi River, we descend through lovely rhododendron forests on our way to Namche Bazaar. We arrive in several popular places like Dhile, Phortse Thanga, Mong, and Sanasa, and cross the longest Mani wall of Khumbu to finally reach Namche Bazaar. You can interact with the locals and get to know about their culture and tradition while having a cup of their special tea. Overnight in Namche Bazaar.",
     "altitude": null,
     "meals": [
@@ -13295,7 +13295,7 @@
    "min": 1,
    "max": null
   },
-  "maxAltitude": 2860,
+  "maxAltitude": 3210,
   "facts": [
    {
     "label": "Duration",
@@ -14103,7 +14103,7 @@
    },
    {
     "day": 9,
-    "title": "Trek back from Gokyo to Dole (44,200 m / 13,780 ft), 6-7 hours.",
+    "title": "Trek back from Gokyo to Dole (4,200 m / 13,780 ft), 6-7 hours.",
     "html": "<p><strong>Dole Elevation: </strong><span class=\"measurement\" data-meters=\"4200\">4,200 m</span><br/><strong>Walking Duration:</strong> 5-6 hours</p>\n<p>An early morning rise will provide you with an opportunity to observe the scenic sunrise. We trek through the stunning geographical landscapes of the valley. You will pass through the Gokyo Lakes, passing through Phangan and Machhermo village settlements to arrive in Dole.</p>\n<p>Taboche (<span class=\"measurement\" data-meters=\"6367\">6,367 m</span>) and <strong>Cholatse (<span class=\"measurement\" data-meters=\"6335\">6,335 m</span>)</strong> are the two mountain peaks you can observe in this trek route. Finally, we will arrive at Dole after a trek of a few hours. We will then explore, interact with locals and rest in local accommodation.</p>",
     "altitude": null,
     "meals": [
@@ -14579,7 +14579,7 @@
    },
    {
     "day": 4,
-    "title": "Acclimatization day in Namche Bazaar (33,440 m / 11,286 ft).",
+    "title": "Acclimatization day in Namche Bazaar (3,440 m / 11,286 ft).",
     "html": "In order to avoid altitude sickness, it is very important to get adjusted to the climate of high altitude. You will spend the day in Namche Bazaar and explore its outskirts. Check out the Sherpa Museum for an overview of the Sherpa culture and history of mountaineering. The nearby Thame village is also worth checking out. Hat Bazaar, the local marketplace, is open for trading on Saturdays. It is part of the larger Namche Bazaar, a shopping hub for all manners of trekking and mountaineering clothing and equipment. Overnight in Namche Bazaar.",
     "altitude": null,
     "meals": [
@@ -27414,7 +27414,7 @@
    {
     "day": 2,
     "title": "Trek from Dhap to Japrey (2,830 m / 9,285 ft), 6-7 hours.",
-    "html": "<p>After a scenic 6–7-hour drive, we reach Japrey, situated at an altitude of <span class=\"measurement\" data-meters=\"2830\">2,830 m</span> above sea level. During the spring season, particularly from mid-March to mid-May, the surrounding forests come alive with spectacular blooms of rhododendrons, creating a colorful and beautiful landscape.</p>",
+    "html": "<p>After a scenic 6–7-hour walk, we reach Japrey, situated at an altitude of <span class=\"measurement\" data-meters=\"2830\">2,830 m</span> above sea level. During the spring season, particularly from mid-March to mid-May, the surrounding forests come alive with spectacular blooms of rhododendrons, creating a colorful and beautiful landscape.</p>",
     "altitude": 2830,
     "meals": [
      "breakfast",

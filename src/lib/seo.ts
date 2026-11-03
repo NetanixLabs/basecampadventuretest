@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { site } from "@/lib/site";
+import googleListing from "@/content/google-reviews.json";
 import type { Img, Post, Seo, Trip } from "@/lib/types";
 
 export const abs = (path: string) => (path.startsWith("http") ? path : `${site.url}${path.startsWith("/") ? "" : "/"}${path}`);
@@ -115,7 +116,8 @@ export function organizationLd() {
       opens: "00:00",
       closes: "23:59",
     },
-    sameAs: Object.values(site.social),
+    // Social profiles plus the Google Maps listing, so search engines connect the site to the business profile and its reviews.
+    sameAs: [...Object.values(site.social), googleListing.placeId ? `https://www.google.com/maps/place/?q=place_id:${googleListing.placeId}` : null].filter((u): u is string => Boolean(u)),
     areaServed: ["Nepal", "Bhutan", "Tibet"],
   };
 }
@@ -215,6 +217,21 @@ export function tripLd(trip: Trip) {
     : undefined;
 
   return [
+    // The page itself, with its dates, so search engines and AI answers can see the information is current.
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": `${url}#webpage`,
+      url,
+      name: trip.title,
+      ...(trip.published ? { datePublished: isoDate(trip.published) } : {}),
+      ...(trip.modified || trip.published ? { dateModified: isoDate(trip.modified ?? trip.published) } : {}),
+      inLanguage: "en",
+      isPartOf: { "@id": `${site.url}/#website` },
+      about: { "@id": `${url}#trip` },
+      ...(images[0] ? { primaryImageOfPage: { "@type": "ImageObject", url: images[0] } } : {}),
+      publisher: { "@id": `${site.url}/#organization` },
+    },
     {
       "@context": "https://schema.org",
       "@type": "TouristTrip",

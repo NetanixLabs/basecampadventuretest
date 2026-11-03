@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "admin:import": "tsx --conditions=react-server scripts/admin/seed.ts",
-    "admin:user": "tsx --conditions=react-server scripts/admin/user.ts"
+    "admin:user": "tsx --conditions=react-server scripts/admin/user.ts",
+    "admin:fixes": "tsx --conditions=react-server scripts/admin/fixes.ts"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

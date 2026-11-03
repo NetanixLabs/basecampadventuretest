@@ -5,13 +5,14 @@ import { Star } from "lucide-react";
 import { useState, useTransition } from "react";
 import { inputClass } from "@/components/admin/ui";
 import { writePortalReview } from "../../actions";
+import { ShareElsewhere } from "@/app/(site)/review/form";
 
-export function PortalReview({ bookingId, country }: { bookingId: string; country: string }) {
+export function PortalReview({ bookingId, country, links }: { bookingId: string; country: string; links?: { tripadvisor: string; google: string } }) {
   const [v, setV] = useState({ rating: 0, title: "", body: "", consent: false, country });
   const [msg, setMsg] = useState("");
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
-  if (done) return <p className="mt-4 rounded-xl bg-pine/8 p-4 text-sm text-pine">{msg}</p>;
+  if (done) return <div className="mt-4 rounded-xl bg-pine/8 p-4 text-center text-sm text-pine"><p>{msg}</p><ShareElsewhere links={links} /></div>;
   return (
     <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await writePortalReview(bookingId, v); setMsg(r.message); if (r.ok) setDone(true); }); }}>
       <div className="flex gap-1" role="radiogroup" aria-label="Rating">
