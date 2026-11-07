@@ -1,26 +1,38 @@
 # Going live on the Frankfurt server
 
 One server runs everything: the website (basecampadventure.com), the admin
-(admin.basecampadventure.com), the PostgreSQL database and the uploaded photos.
-The KVM Server M (4 vCores, 20 GB RAM, 200 GB NVMe) is more than enough. The
-site uses about 1 GB of RAM, and the content plus photos are under 1 GB.
+(admin.basecampadventure.com), the traveller pages (my.basecampadventure.com),
+the PostgreSQL database and the uploaded photos.
 
-## 1. DNS and Cloudflare
+**KVM Server S** (2 vCores, 10 GB RAM, 100 GB NVMe, Frankfurt) is enough. In the
+load test (50 visitors, 15 travellers signed in, 10 staff and 6 guides at the
+same moment) the site used about 1.6 GB of memory and answered pages in under
+50 ms. Content, photos and the database are about 2.5 GB. Add CPU cores later
+in the hosting panel if the processor stays above about 70% for long periods;
+nothing else changes.
 
-1. Add basecampadventure.com to Cloudflare (free plan) and switch the
-   nameservers at your domain registrar.
-2. Create these DNS records pointing to the server's IPv4 (and AAAA to its IPv6),
-   with the orange cloud **on**:
-   - `basecampadventure.com`
-   - `www`
-   - `admin`
-   - `my` (travellers' trip pages)
-3. SSL/TLS → **Full (strict)**. Speed → enable Brotli. Caching → Standard.
-4. Optional extra lock for the admin: Zero Trust → Access → add an application
-   for `admin.basecampadventure.com` allowing only your team's emails.
+## 1. Domain (DNS)
 
-Cloudflare serves photos and pages from near each visitor, so Frankfurt's
-distance from the US or Australia stops mattering.
+At the company where basecampadventure.com's DNS is managed, create these
+records pointing to the server (A = its IPv4 address, AAAA = its IPv6 address):
+
+| Name | Type | Value |
+| --- | --- | --- |
+| `@` (basecampadventure.com) | A and AAAA | the server's IP addresses |
+| `www` | A and AAAA | the same |
+| `admin` | A and AAAA | the same |
+| `my` | A and AAAA | the same |
+
+Set a short TTL (300 seconds) a day before the switch, so the move is quick.
+HTTPS certificates are made automatically by Caddy (Let's Encrypt) as soon as
+the records point at the server; nothing to buy or install. The server's
+SmartMitigate DDoS protection works in front of it without any setup.
+
+Keep the email records (MX, SPF, DKIM) exactly as they are, so email keeps working.
+
+*Optional, any time later:* Cloudflare's free plan can sit in front (orange
+cloud on for the four records, SSL/TLS **Full (strict)**). The server is
+already set up for it, but it isn't needed.
 
 ## 2. Set up the server (once)
 
@@ -31,7 +43,8 @@ git clone https://github.com/NetanixLabs/basecampadventuretest.git /tmp/bca && b
 ```
 
 This installs Node.js 22, PostgreSQL 17, Caddy (automatic HTTPS), the firewall
-and fail2ban, automatic security updates, the app service and a nightly backup.
+and fail2ban, automatic security updates, a 2 GB swap file, the app service and
+the nightly backup.
 It creates `/srv/basecamp/.env` with a random database password and encryption key.
 
 ## 3. Fill in the settings
@@ -51,10 +64,14 @@ nano /srv/basecamp/.env
 | `NEXT_PUBLIC_GA4_ID` | `G-XGW9MS2DX0` (the old site's, to keep history) |
 | `NEXT_PUBLIC_TAWK_PROPERTY_ID` | From tawk.to (can also be set later in Admin → Settings) |
 | `PORTAL_URL`, `PORTAL_HOST`, `PRIVATE_DIR`, `CRON_SECRET` | Already filled in by the setup script; leave as they are |
-| `BACKUP_REMOTE` | Optional: an rclone remote for off-site backups |
+| `BACKUP_REMOTE` | Recommended: an encrypted off-site copy of every backup, see docs/BACKUPS.md |
 
 For the email address to look trustworthy and land in inboxes, add the SPF and
-DKIM records your email provider gives you to Cloudflare DNS.
+DKIM records your email provider gives you to the domain's DNS.
+
+**Save the `ENCRYPTION_KEY` line from `/srv/basecamp/.env` in your password
+manager now.** Traveller documents, details, messages and saved keys are
+encrypted with it; without it a backup can't be read.
 
 ## 4. First deploy
 
@@ -141,13 +158,30 @@ then copy the scheduled-jobs line from `deploy/setup-server.sh` into `/etc/cron.
 
 ## Backups
 
-Every night: the database, the published content, all uploads and the travellers' encrypted documents, kept 14 days
-in `/srv/basecamp/backups`. Plus the hosting company's own 4 backups. To
-restore the database:
+Automatic, every night at 02:30 Nepal time and before every update: the
+database (bookings, payments, receipts, customers, messages), the published
+content, all photos and the travellers' encrypted documents.
+
+- Kept on the server: every night for 14 days, and every Sunday for 13 weeks.
+- Each database copy is checked after it is made.
+- Photos that didn't change take no extra space.
+- With `BACKUP_REMOTE` set, every backup is also copied off the server (encrypted).
+- The hosting company's 4 included backups come on top: use them for the whole
+  server, for example once a week.
 
 ```bash
-pg_restore --clean --no-owner -d "$DATABASE_URL" /srv/basecamp/backups/db-YYYY-MM-DD-HHMM.dump
+bash /srv/basecamp/repo/deploy/restore.sh list
 ```
+
+```bash
+sudo bash /srv/basecamp/repo/deploy/restore.sh all latest
+```
+
+The restore asks you to type YES, makes a safety backup of the current state
+first (so a restore can be undone), stops the site for about a minute and starts
+it again. `db` or `files` instead of `all` restores only one part. Full guide,
+including the off-site copy: docs/BACKUPS.md. The log is in
+`/srv/basecamp/backups/backup.log`.
 
 ## Checks before and after launch
 

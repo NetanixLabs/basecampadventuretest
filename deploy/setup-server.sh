@@ -8,11 +8,18 @@ REPO="${REPO:-https://github.com/NetanixLabs/basecampadventuretest.git}"
 
 echo "== Updates, firewall, brute-force protection"
 apt-get update -y && apt-get upgrade -y
-apt-get install -y curl git ufw fail2ban unattended-upgrades debian-keyring debian-archive-keyring apt-transport-https gnupg rsync
+apt-get install -y curl git ufw fail2ban unattended-upgrades debian-keyring debian-archive-keyring apt-transport-https gnupg rsync rclone
 ufw default deny incoming && ufw default allow outgoing
 ufw allow OpenSSH && ufw allow 80/tcp && ufw allow 443/tcp && ufw --force enable
 systemctl enable --now fail2ban
 dpkg-reconfigure -f noninteractive unattended-upgrades
+
+echo "== 2 GB swap (a safety net for memory peaks while a new version is built)"
+if ! swapon --show | grep -q /swapfile; then
+  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  sysctl -w vm.swappiness=10 >/dev/null && echo 'vm.swappiness=10' > /etc/sysctl.d/99-basecamp.conf
+fi
 
 echo "== Node.js 22"
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
@@ -61,8 +68,9 @@ systemctl daemon-reload && systemctl enable basecamp caddy
 # Lets deploy.sh restart the site without full root rights.
 echo "basecamp ALL=(root) NOPASSWD: /usr/bin/systemctl restart basecamp" > /etc/sudoers.d/basecamp && chmod 440 /etc/sudoers.d/basecamp
 
-echo "== Nightly backup at 02:30 Nepal time (20:45 UTC)"
+echo "== Nightly backup at 02:30 Nepal time (20:45 UTC): 14 nightly + 13 weekly copies, see docs/BACKUPS.md"
 echo "45 20 * * * basecamp /srv/basecamp/repo/deploy/backup.sh >> /srv/basecamp/backups/backup.log 2>&1" > /etc/cron.d/basecamp-backup
+chmod 644 /etc/cron.d/basecamp-backup
 
 echo "== Scheduled jobs every 15 minutes (payment reminders, review emails, closing old traveller accounts)"
 cat > /etc/cron.d/basecamp-jobs <<'CRON'

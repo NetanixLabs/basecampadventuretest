@@ -1,8 +1,10 @@
-# Caddy: HTTPS certificates are automatic. Put Cloudflare in front with
-# SSL mode "Full (strict)".
+# Caddy: HTTPS certificates are automatic (Let's Encrypt) as soon as the
+# domains point at this server. Works with or without Cloudflare in front;
+# with Cloudflare, use SSL mode "Full (strict)".
 
 {
 	servers {
+		# Without Cloudflare the visitor's address is simply the connection's.
 		# The visitor's real IP: Cloudflare's CF-Connecting-IP is believed only
 		# when the request really comes from Cloudflare's network (list from
 		# https://www.cloudflare.com/ips/), so nobody can fake their address to
