@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, CheckCheck, ChevronRight, FileText, Loader2, Lock, MessageCircle, Paperclip, SendHorizontal, X } from "lucide-react";
+import { ArrowLeft, BookmarkPlus, Check, CheckCheck, ChevronRight, FileText, Loader2, Lock, MessageCircle, MessageSquareText, Paperclip, SendHorizontal, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/server/messages";
 
@@ -24,7 +24,7 @@ const isImage = (mime: string) => /^image\/(jpeg|png|webp)$/.test(mime);
  * One conversation between a traveller and the office, used on both the trip
  * page and the admin booking page. Refreshes itself while the tab is open.
  */
-export function Chat({ bookingId, side, initial, endpoint = "/api/messages/", fileBase = "/api/message-file/", placeholder = "Write a message…", empty, sheet = false }: { bookingId: string; side: "traveller" | "office"; initial: ChatMessage[]; endpoint?: string; fileBase?: string; placeholder?: string; empty?: string; /** On phones, open as a full-screen chat. */ sheet?: boolean }) {
+export function Chat({ bookingId, side, initial, endpoint = "/api/messages/", fileBase = "/api/message-file/", placeholder = "Write a message…", empty, sheet = false, replies }: { bookingId: string; side: "traveller" | "office"; initial: ChatMessage[]; endpoint?: string; fileBase?: string; placeholder?: string; empty?: string; /** On phones, open as a full-screen chat. */ sheet?: boolean; /** Staff only: saved replies. */ replies?: Replies }) {
   const [open, setOpen] = useState(false);
   const pushed = useRef(false);
   const stick = useRef(true);
@@ -185,6 +185,7 @@ export function Chat({ bookingId, side, initial, endpoint = "/api/messages/", fi
             <button type="button" onClick={() => setFile(null)} className="rounded-full p-1 hover:bg-pine/15" aria-label="Remove attachment"><X className="size-3.5" aria-hidden /></button>
           </p>
         ) : null}
+        {replies ? <ReplyPicker r={replies} text={text} use={(body) => { setText(body); requestAnimationFrame(() => { grow(); input.current?.focus(); }); }} /> : null}
         <div className="flex items-end gap-2">
           <input ref={picker} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,.heic" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { if (f.size > 10 * 1024 * 1024) setError("Files can be up to 10 MB."); else { setError(""); setFile(f); } } e.target.value = ""; }} />
           <button type="button" onClick={() => picker.current?.click()} className="grid size-10 shrink-0 place-items-center rounded-full text-muted hover:bg-snow-2 hover:text-pine" aria-label="Attach a file (PDF or photo, up to 10 MB)" title="Attach a file (PDF or photo, up to 10 MB)"><Paperclip className="size-5" aria-hidden /></button>
@@ -210,5 +211,42 @@ export function Chat({ bookingId, side, initial, endpoint = "/api/messages/", fi
       </form>
     </div>
     </>
+  );
+}
+
+type Reply = { id: string; title: string; body: string };
+type Replies = { list: Reply[]; name: string; save: (title: string, body: string) => Promise<{ ok: boolean; message: string; replies?: Reply[] }>; remove: (id: string) => Promise<{ ok: boolean; message: string; replies?: Reply[] }> };
+
+/** Staff: insert a saved reply ({name} becomes the traveller's first name), or save the current text as one. */
+function ReplyPicker({ r, text, use }: { r: Replies; text: string; use: (body: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState(r.list);
+  const [q, setQ] = useState("");
+  const [msg, setMsg] = useState("");
+  const shown = list.filter((x) => !q || `${x.title} ${x.body}`.toLowerCase().includes(q.toLowerCase()));
+  const first = r.name.split(" ")[0] || "there";
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-2">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-semibold hover:border-pine hover:text-pine"><MessageSquareText className="size-3.5" aria-hidden />Saved replies</button>
+      {text.trim().length > 10 ? <button type="button" onClick={async () => { const title = prompt("Name for this saved reply (e.g. Clearer passport copy)"); if (!title) return; const res = await r.save(title, text.replaceAll(first, "{name}")); setMsg(res.message); if (res.replies) setList(res.replies); }} className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold text-muted hover:text-pine"><BookmarkPlus className="size-3.5" aria-hidden />Save as reply</button> : null}
+      {msg ? <span role="status" className="text-xs text-pine">{msg}</span> : null}
+      {open ? (
+        <div className="order-first basis-full overflow-hidden rounded-2xl border border-line bg-card shadow-sm">
+          <div className="border-b border-line p-2"><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search saved replies" aria-label="Search saved replies" className="w-full rounded-full border border-line bg-snow-2/50 px-3 py-1.5 text-sm outline-none focus:border-pine" /></div>
+          <ul className="max-h-56 divide-y divide-line overflow-y-auto overscroll-contain">
+            {shown.map((x) => (
+              <li key={x.id} className="group flex items-start gap-2 px-3 py-2 hover:bg-snow-2/60">
+                <button type="button" onClick={() => { use(x.body.replaceAll("{name}", first)); setOpen(false); setQ(""); }} className="min-w-0 flex-1 text-left">
+                  <span className="block text-sm font-semibold">{x.title}</span>
+                  <span className="line-clamp-2 text-xs text-muted">{x.body.replaceAll("{name}", first)}</span>
+                </button>
+                <button type="button" aria-label={`Delete ${x.title}`} onClick={async () => { if (!confirm(`Delete the saved reply "${x.title}" for everyone?`)) return; const res = await r.remove(x.id); if (res.replies) setList(res.replies); }} className="rounded-full p-1 text-muted opacity-60 hover:text-red-600 group-hover:opacity-100"><Trash2 className="size-3.5" /></button>
+              </li>
+            ))}
+            {!shown.length ? <li className="px-3 py-4 text-center text-xs text-muted">No saved replies{q ? " match" : " yet"}. Write a message and press “Save as reply”.</li> : null}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }

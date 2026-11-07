@@ -111,10 +111,26 @@ export async function endPortalSession() {
   jar.delete(PORTAL_COOKIE);
 }
 
-/** A booking the signed-in traveller owns, or null. Every portal read goes through this. */
+/**
+ * A booking the signed-in traveller may open: their own (lead traveller), or
+ * one they were added to as part of the group. Every portal read goes through this.
+ */
 export async function ownBooking(travellerId: string, bookingId: string) {
-  const b = await db.booking.findFirst({ where: { id: bookingId, travellerId } });
+  const b = await db.booking.findFirst({ where: { id: bookingId, OR: [{ travellerId }, { access: { some: { travellerId } } }] } });
   return b && eligible(b) ? b : null;
+}
+
+/** Every trip the traveller can open, as lead or group member. */
+export const visibleBookings = (travellerId: string) => ({ OR: [{ travellerId }, { access: { some: { travellerId } } }] });
+
+/** The lead traveller sees payments and receipts and can invite the group. */
+export const isLead = (travellerId: string, b: { travellerId: string | null }) => b.travellerId === travellerId;
+
+/** This traveller's own details: the booking's for the lead, their own for a group member. */
+export async function detailsFor(travellerId: string, b: { id: string; travellerId: string | null; detailsEnc: string | null }) {
+  if (isLead(travellerId, b)) return readDetails(b.detailsEnc);
+  const a = await db.bookingAccess.findUnique({ where: { bookingId_travellerId: { bookingId: b.id, travellerId } }, select: { detailsEnc: true } });
+  return readDetails(a?.detailsEnc ?? null);
 }
 
 // ---- Traveller details (passport, flights, emergency contact) ----
@@ -239,6 +255,10 @@ export async function purgeTraveller(travellerId: string) {
   for (const a of att) if (a.fileKey) await removePrivate(a.fileKey).catch(() => undefined);
   await db.portalMessage.deleteMany({ where: { bookingId: { in: ids } } });
   await db.booking.updateMany({ where: { travellerId }, data: { detailsEnc: null } });
+  await db.bookingAccess.updateMany({ where: { OR: [{ travellerId }, { bookingId: { in: ids } }] }, data: { detailsEnc: null } });
+  await db.packingList.deleteMany({ where: { travellerId } });
+  await db.pushSubscription.deleteMany({ where: { travellerId } });
+  await db.notification.deleteMany({ where: { travellerId } });
   await db.travellerSession.updateMany({ where: { travellerId, revokedAt: null }, data: { revokedAt: new Date() } });
   await db.travellerToken.deleteMany({ where: { travellerId } });
   await db.traveller.update({ where: { id: travellerId }, data: { status: "expired", passwordHash: null } });

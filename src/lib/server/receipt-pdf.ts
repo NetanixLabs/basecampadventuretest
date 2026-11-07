@@ -10,6 +10,7 @@ import { regNo, site } from "@/lib/site";
 import { getBrand } from "@/lib/server/receipt-brand";
 import { readFileData } from "@/lib/server/portal";
 import type { ReceiptItem, ReceiptSummary } from "@/lib/server/receipts";
+import { amountInWords as words_, asDocLang, fmtDate, fmtMoney, t } from "@/lib/receipt-i18n";
 
 /** A professional A4 receipt or bill: letterhead, registration numbers, lines, VAT, signature, stamp, QR check. */
 const C = { teal: "#00788a", tealSoft: "#e3f2f4", ink: "#1f2527", soft: "#4a5357", muted: "#6b7478", line: "#d8e3e6", green: "#0f7a4a", red: "#b42318" };
@@ -19,8 +20,6 @@ const H = 841.89;
 const M = 46;
 const CW = W - M * 2;
 
-const fmt = (n: number, cur: string) => `${cur === "USD" ? "US$" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur === "NPR" ? "Rs " : `${cur} `}${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const day = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kathmandu" });
 
 let logoCache: Buffer | null = null;
 async function logo() {
@@ -30,7 +29,10 @@ async function logo() {
   return logoCache;
 }
 
-export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean): Promise<Buffer> {
+export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean, against?: string | null): Promise<Buffer> {
+  const L = asDocLang(r.lang);
+  const fmt = (n: number, cur: string) => fmtMoney(n, cur, L);
+  const day = (d: Date) => fmtDate(d, L);
   ensureCompany();
   const brand = await getBrand();
   const [logoPng, qr, signature, stamp] = await Promise.all([
@@ -40,7 +42,10 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
     brand.stampKey ? readFileData(brand.stampKey).catch(() => null) : null,
   ]);
   const isBill = r.kind === "bill";
-  const doc = new PDFDocument({ size: "A4", margins: { top: M, bottom: 40, left: M, right: M }, info: { Title: `${isBill ? "Bill" : "Receipt"} ${r.number} | ${site.legalName}`, Author: site.legalName, Subject: `${isBill ? "Bill" : "Payment receipt"} for ${r.customerName}` } });
+  const isCredit = r.kind === "credit";
+  const kindKey = isBill ? "bill" : isCredit ? "credit" : "receipt";
+  const title = t(L, `${kindKey}Title`);
+  const doc = new PDFDocument({ size: "A4", margins: { top: M, bottom: 40, left: M, right: M }, info: { Title: `${title} ${r.number} | ${site.legalName}`, Author: site.legalName, Subject: `${title} · ${r.customerName}` } });
   doc.registerFont("Display", font("manrope", "manrope-latin-700-normal.woff"));
   doc.registerFont("Semi", font("manrope", "manrope-latin-600-normal.woff"));
   doc.registerFont("Body", font("dm-sans", "dm-sans-latin-400-normal.woff"));
@@ -72,24 +77,24 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   // Title band
   const ty = Math.max(122, ly + 12);
   doc.rect(M, ty, CW, 54).fill(C.tealSoft);
-  doc.font("Display").fontSize(19).fillColor(C.teal).text(isBill ? "BILL" : "PAYMENT RECEIPT", M + 16, ty + 10, { characterSpacing: 1.2 });
-  doc.font("Medium").fontSize(8.6).fillColor(C.soft).text(isBill ? "Bill for services" : "Official payment receipt", M + 16, ty + 36);
+  doc.font("Display").fontSize(title.length > 16 ? 16 : 19).fillColor(isCredit ? C.red : C.teal).text(title, M + 16, ty + 10, { characterSpacing: 1.2, width: 260, lineBreak: false });
+  doc.font("Medium").fontSize(8.6).fillColor(C.soft).text(isCredit && against ? `${t(L, "creditSub")} · ${t(L, "against", { n: against })}` : t(L, `${kindKey}Sub`), M + 16, ty + 36, { width: 280, lineBreak: false, ellipsis: true });
   const meta = (k: string, v: string, y: number) => {
     doc.font("Bold").fontSize(7).fillColor(C.muted).text(k.toUpperCase(), W - M - 230, y, { width: 100, characterSpacing: 0.8 });
     doc.font("Semi").fontSize(9.5).fillColor(C.ink).text(v, W - M - 130, y - 1.5, { width: 114, align: "right" });
   };
-  meta(isBill ? "Bill no." : "Receipt no.", r.number, ty + 10);
-  meta("Date", day(r.issuedAt), ty + 24);
-  meta(isBill ? "Status" : "Paid on", isBill ? "Awaiting payment" : day(r.paidAt ?? r.issuedAt), ty + 38);
+  meta(t(L, `${kindKey}No`), r.number, ty + 10);
+  meta(t(L, "date"), day(r.issuedAt), ty + 24);
+  meta(isBill ? t(L, "status") : isCredit ? t(L, "refundedOn") : t(L, "paidOn"), isBill ? t(L, "awaiting") : day(r.paidAt ?? r.issuedAt), ty + 38);
 
   // Billed to
   let y = ty + 74;
-  doc.font("Bold").fontSize(7).fillColor(C.muted).text(isBill ? "BILLED TO" : "RECEIVED FROM", M, y, { characterSpacing: 0.8 });
+  doc.font("Bold").fontSize(7).fillColor(C.muted).text(isBill ? t(L, "billedTo") : isCredit ? t(L, "refundedTo") : t(L, "receivedFrom"), M, y, { characterSpacing: 0.8 });
   doc.font("Semi").fontSize(11.5).fillColor(C.ink).text(r.customerName, M, y + 12, { width: 300 });
   const contact = [r.customerEmail, r.customerAddress].filter(Boolean).join("\n");
   if (contact) doc.font("Body").fontSize(8.8).fillColor(C.soft).text(contact, M, doc.y + 2, { width: 300 });
   if (!isBill && r.paidVia) {
-    doc.font("Bold").fontSize(7).fillColor(C.muted).text("PAYMENT METHOD", W - M - 200, y, { width: 200, align: "right", characterSpacing: 0.8 });
+    doc.font("Bold").fontSize(7).fillColor(C.muted).text(isCredit ? t(L, "refundMethod") : t(L, "method"), W - M - 200, y, { width: 200, align: "right", characterSpacing: 0.8 });
     doc.font("Medium").fontSize(9.5).fillColor(C.ink).text(r.paidVia, W - M - 200, y + 12, { width: 200, align: "right" });
   }
 
@@ -98,10 +103,10 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   const col = { d: M + 10, q: M + CW - 200, u: M + CW - 150, t: M + CW - 80 };
   doc.rect(M, y, CW, 22).fill(C.ink);
   doc.font("Bold").fontSize(7.5).fillColor("#ffffff");
-  doc.text("DESCRIPTION", col.d, y + 7.5, { characterSpacing: 0.8 });
-  doc.text("QTY", col.q, y + 7.5, { width: 40, align: "right" });
-  doc.text("UNIT", col.u, y + 7.5, { width: 60, align: "right" });
-  doc.text("AMOUNT", col.t, y + 7.5, { width: 70, align: "right" });
+  doc.text(t(L, "description"), col.d, y + 7.5, { characterSpacing: 0.8 });
+  doc.text(t(L, "qty"), col.q - 10, y + 7.5, { width: 50, align: "right" });
+  doc.text(t(L, "unit"), col.u - 20, y + 7.5, { width: 80, align: "right" });
+  doc.text(t(L, "amount"), col.t, y + 7.5, { width: 70, align: "right" });
   y += 22;
   const items = (r.items as ReceiptItem[]) ?? [];
   items.forEach((i, idx) => {
@@ -124,16 +129,16 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
     y += strong ? 22 : 16;
   };
   const vatRate = Number(r.vatRate);
-  if (r.vatMode !== "none") tot("Subtotal", fmt(Number(r.subtotal), r.currency));
-  if (r.vatMode === "added") tot(`VAT ${vatRate}%`, fmt(Number(r.vat), r.currency));
-  if (r.vatMode === "included") tot(`Includes VAT ${vatRate}%`, fmt(Number(r.vat), r.currency));
-  doc.rect(M + CW - 280, y - 3, 280, 28).fill(C.tealSoft);
+  if (r.vatMode !== "none") tot(t(L, "subtotal"), fmt(Number(r.subtotal), r.currency));
+  if (r.vatMode === "added") tot(`${t(L, "vat")} ${vatRate}%`, fmt(Number(r.vat), r.currency));
+  if (r.vatMode === "included") tot(`${t(L, "includesVat")} ${vatRate}%`, fmt(Number(r.vat), r.currency));
+  doc.rect(M + CW - 280, y - 3, 280, 28).fill(isCredit ? "#fdf1f0" : C.tealSoft);
   y += 3;
-  tot(isBill ? "Amount due" : "Amount received", fmt(Number(r.total), r.currency), true);
+  tot(isBill ? t(L, "amountDue") : isCredit ? t(L, "amountRefunded") : t(L, "amountReceived"), `${isCredit ? "− " : ""}${fmt(Number(r.total), r.currency)}`, true);
 
   // Amount in words, as on a formal receipt.
-  doc.font("Bold").fontSize(7).fillColor(C.muted).text("AMOUNT IN WORDS", M + CW - 280, y + 2, { width: 270, align: "right", characterSpacing: 0.8 });
-  doc.font("Medium").fontSize(8.6).fillColor(C.ink).text(amountInWords(Number(r.total), r.currency), M + CW - 280, y + 13, { width: 270, align: "right" });
+  doc.font("Bold").fontSize(7).fillColor(C.muted).text(t(L, "inWords"), M + CW - 280, y + 2, { width: 270, align: "right", characterSpacing: 0.8 });
+  doc.font("Medium").fontSize(8.6).fillColor(C.ink).text(words_(Number(r.total), r.currency, L), M + CW - 280, y + 13, { width: 270, align: "right" });
   y = doc.y + 4;
 
   // Where the booking stands: trip total, advance paid before, this payment, balance due.
@@ -145,17 +150,17 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
     const rows: [string, string, boolean][] = [
       ...(discounted
         ? ([
-            ["Trip price", c(sum.tripPrice ?? sum.tripTotal), false],
-            [`Discount${sum.discountCode ? ` (code ${sum.discountCode})` : ""}`, `− ${c(sum.discount ?? 0)}`, false],
+            [t(L, "tripPrice"), c(sum.tripPrice ?? sum.tripTotal), false],
+            [`${t(L, "discount")}${sum.discountCode ? ` (${t(L, "code")} ${sum.discountCode})` : ""}`, `− ${c(sum.discount ?? 0)}`, false],
           ] as [string, string, boolean][])
         : []),
-      [discounted ? "Trip total after discount" : "Trip total", c(sum.tripTotal), false],
-      ["Paid before (advance)", c(sum.paidBefore), false],
-      ...(isBill ? [] : ([["This payment", c(sum.thisPayment), false]] as [string, string, boolean][])),
-      ["Total paid so far", c(sum.paidBefore + (isBill ? 0 : sum.thisPayment)), false],
-      ["Balance due", c(sum.balance), true],
+      [discounted ? t(L, "totalAfterDiscount") : t(L, "tripTotal"), c(sum.tripTotal), false],
+      [t(L, "paidBefore"), c(sum.paidBefore), false],
+      ...(isBill ? [] : ([[t(L, "thisPayment"), c(sum.thisPayment), false]] as [string, string, boolean][])),
+      [t(L, "paidSoFar"), c(sum.paidBefore + (isBill ? 0 : sum.thisPayment)), false],
+      [t(L, "balanceDue"), c(sum.balance), true],
     ];
-    doc.font("Bold").fontSize(7).fillColor(C.muted).text("BOOKING BALANCE", M + CW - 280, y, { width: 270, align: "right", characterSpacing: 0.8 });
+    doc.font("Bold").fontSize(7).fillColor(C.muted).text(t(L, "bookingBalance"), M + CW - 280, y, { width: 270, align: "right", characterSpacing: 0.8 });
     y += 12;
     for (const [k, v, strong] of rows) {
       doc.font(strong ? "Bold" : "Body").fontSize(8.8).fillColor(strong ? (sum.balance > 0 ? C.red : C.ink) : C.soft).text(k, M + CW - 270, y, { width: 170, align: "right" });
@@ -168,10 +173,12 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   {
     const sum = r.summary as ReceiptSummary | null;
     const box = r.voidedAt
-      ? { t: "CANCELLED", sub: r.voidReason ? `Reason: ${r.voidReason}`.slice(0, 60) : "Not valid for payment", c: C.red, bg: "#fdf1f0" }
+      ? { t: t(L, "cancelled"), sub: r.voidReason ? `${t(L, "reason")}: ${r.voidReason}`.slice(0, 60) : t(L, "notValid"), c: C.red, bg: "#fdf1f0" }
       : isBill
-        ? { t: "PAYMENT DUE", sub: `Amount due ${fmt(Number(r.total), r.currency)}`, c: "#9a5b00", bg: "#fff8ec" }
-        : { t: "PAID", sub: `${sum && sum.balance > 0 ? "Advance received" : "Received"} ${day(r.paidAt ?? r.issuedAt)}`.slice(0, 60), c: C.green, bg: "#f1f8f4" };
+        ? { t: t(L, "paymentDue"), sub: `${t(L, "amountDue")} ${fmt(Number(r.total), r.currency)}`, c: "#9a5b00", bg: "#fff8ec" }
+        : isCredit
+          ? { t: t(L, "refunded"), sub: `${t(L, "refundedOn")} ${day(r.paidAt ?? r.issuedAt)}`.slice(0, 60), c: C.red, bg: "#fdf1f0" }
+          : { t: t(L, "paid"), sub: `${sum && sum.balance > 0 ? t(L, "advanceReceived") : t(L, "received")} ${day(r.paidAt ?? r.issuedAt)}`.slice(0, 60), c: C.green, bg: "#f1f8f4" };
     const bx = M;
     const byy = totalsTop + 2;
     doc.rect(bx, byy, 200, 52).fillAndStroke(box.bg, box.c);
@@ -183,12 +190,12 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   // Notes and bank details
   y += 14;
   if (r.notes) {
-    doc.font("Bold").fontSize(7).fillColor(C.muted).text("NOTES", M, y, { characterSpacing: 0.8 });
+    doc.font("Bold").fontSize(7).fillColor(C.muted).text(t(L, "notes"), M, y, { characterSpacing: 0.8 });
     doc.font("Body").fontSize(9).fillColor(C.soft).text(r.notes, M, y + 11, { width: CW * 0.6 });
     y = doc.y + 10;
   }
   if (isBill && brand.bankDetails) {
-    doc.font("Bold").fontSize(7).fillColor(C.muted).text("BANK DETAILS", M, y, { characterSpacing: 0.8 });
+    doc.font("Bold").fontSize(7).fillColor(C.muted).text(t(L, "bank"), M, y, { characterSpacing: 0.8 });
     doc.font("Body").fontSize(9).fillColor(C.soft).text(brand.bankDetails, M, y + 11, { width: CW * 0.6 });
     y = doc.y + 10;
   }
@@ -199,24 +206,24 @@ export async function receiptPdf(r: Receipt, verifyUrl: string, genuine: boolean
   const fingerprint = r.signature.slice(0, 20).toUpperCase().replace(/(.{4})(?=.)/g, "$1 ");
   doc.roundedRect(M, by, 290, 112, 8).lineWidth(0.8).strokeColor(C.line).stroke();
   doc.image(qr, M + 10, by + 10, { width: 92 });
-  doc.font("Bold").fontSize(7).fillColor(C.teal).text("VERIFY THIS DOCUMENT", M + 112, by + 12, { characterSpacing: 0.9 });
-  doc.font("Body").fontSize(8).fillColor(C.soft).text(`Scan the QR code, or go to ${site.url.replace(/^https?:\/\//, "")}/verify and enter the ${isBill ? "bill" : "receipt"} number and this code.`, M + 112, by + 24, { width: 170, lineGap: 1.2 });
-  doc.font("Bold").fontSize(6.6).fillColor(C.muted).text("VERIFICATION CODE", M + 112, doc.y + 6, { characterSpacing: 0.8 });
+  doc.font("Bold").fontSize(7).fillColor(C.teal).text(t(L, "verify"), M + 112, by + 12, { characterSpacing: 0.9 });
+  doc.font("Body").fontSize(8).fillColor(C.soft).text(t(L, "verifyText", { site: site.url.replace(/^https?:\/\//, "") }), M + 112, by + 24, { width: 170, lineGap: 1.2 });
+  doc.font("Bold").fontSize(6.6).fillColor(C.muted).text(t(L, "verifyCode"), M + 112, doc.y + 6, { characterSpacing: 0.8 });
   doc.font("Semi").fontSize(9).fillColor(C.ink).text(r.code, M + 112, doc.y + 1.5, { characterSpacing: 1.2 });
-  doc.font("Bold").fontSize(6.6).fillColor(C.muted).text("SECURITY FINGERPRINT", M + 112, doc.y + 5, { characterSpacing: 0.8 });
-  doc.font("Medium").fontSize(8.4).fillColor(genuine ? C.ink : C.red).text(genuine ? fingerprint : "MISMATCH: DO NOT ACCEPT", M + 112, doc.y + 1.5, { characterSpacing: 0.6 });
+  doc.font("Bold").fontSize(6.6).fillColor(C.muted).text(t(L, "fingerprint"), M + 112, doc.y + 5, { characterSpacing: 0.8 });
+  doc.font("Medium").fontSize(8.4).fillColor(genuine ? C.ink : C.red).text(genuine ? fingerprint : t(L, "mismatch"), M + 112, doc.y + 1.5, { characterSpacing: 0.6 });
   // Signature over the line, the company stamp overlapping its right end (as stamped by hand).
   const sx = W - M - 200;
   if (signature) doc.image(signature, sx - 6, by + 16, { fit: [134, 66], valign: "bottom" });
   if (stamp) doc.image(stamp, W - M - 96, by + 4, { fit: [96, 72], align: "right", valign: "center" });
   doc.moveTo(sx, by + 84).lineTo(W - M, by + 84).lineWidth(0.8).strokeColor(C.ink).stroke();
-  doc.font("Semi").fontSize(9.5).fillColor(C.ink).text(brand.signatory || "Authorised signatory", sx, by + 89, { width: 200, align: "right" });
+  doc.font("Semi").fontSize(9.5).fillColor(C.ink).text(brand.signatory || t(L, "signatory"), sx, by + 89, { width: 200, align: "right" });
   doc.font("Body").fontSize(8.2).fillColor(C.muted).text(`${brand.signatoryTitle ? `${brand.signatoryTitle}, ` : ""}${site.legalName}`, sx - 40, doc.y + 1, { width: 240, align: "right" });
 
   // Footer
   doc.moveTo(M, H - 92).lineTo(W - M, H - 92).lineWidth(0.6).strokeColor(C.line).stroke();
   doc.font("Body").fontSize(7.8).fillColor(C.muted).text(brand.footerNote, M, H - 84, { width: CW, align: "center", lineGap: 1.5 });
-  doc.font("Medium").fontSize(7.8).fillColor(C.teal).text(`${site.url.replace("https://", "")} · Issued by ${r.issuedByName ?? site.name}`, M, doc.y + 4, { width: CW, align: "center" });
+  doc.font("Medium").fontSize(7.8).fillColor(C.teal).text(`${site.url.replace("https://", "")} · ${t(L, "issuedBy")} ${r.issuedByName ?? site.name}`, M, doc.y + 4, { width: CW, align: "center" });
   doc.rect(0, H - 6, W, 6).fill(C.teal);
   doc.end();
   return done;
@@ -243,4 +250,4 @@ export function amountInWords(amount: number, currency: string) {
   return `${big} ${major ? words(major) : "Zero"}${minor ? ` and ${words(minor)} ${small}` : ""} Only`;
 }
 
-export const receiptFileName = (r: Pick<Receipt, "number" | "kind">) => `${r.kind === "bill" ? "Bill" : "Receipt"}-${r.number}.pdf`;
+export const receiptFileName = (r: Pick<Receipt, "number" | "kind">) => `${r.kind === "bill" ? "Bill" : r.kind === "credit" ? "Credit-note" : "Receipt"}-${r.number}.pdf`;

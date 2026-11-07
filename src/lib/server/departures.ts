@@ -101,3 +101,9 @@ export async function notifyAssignment(departureId: string, guideId: string): Pr
   await db.departureStaff.update({ where: { id: row.id }, data: { notifiedAt: new Date() } });
   return "sent";
 }
+
+/** Days off a guide has during a trip's dates. */
+export async function onLeave(guideId: string, slug: string, start: Date) {
+  const end = endOf(slug, start);
+  return db.guideLeave.findMany({ where: { guideId, from: { lte: end }, to: { gte: start } }, orderBy: { from: "asc" } });
+}

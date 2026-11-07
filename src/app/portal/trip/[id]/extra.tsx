@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Images, MessageCircle, Mountain, UserRound } from "lucide-react";
+import { Backpack, FileText, Images, MessageCircle, Mountain, UserRound } from "lucide-react";
 import { Star } from "lucide-react";
 import { useState, useTransition } from "react";
 import { inputClass } from "@/components/admin/ui";
@@ -35,6 +35,7 @@ export function BottomNav({ photos, unread = 0 }: { photos: boolean; unread?: nu
     { href: "#trip", label: "Trip", Icon: Mountain },
     { href: "#documents", label: "Documents", Icon: FileText },
     { href: "#details", label: "Details", Icon: UserRound },
+    { href: "#packing", label: "Packing", Icon: Backpack },
     { href: "#messages", label: "Messages", Icon: MessageCircle },
     ...(photos ? [{ href: "#photos", label: "Photos", Icon: Images }] : []),
   ];
@@ -45,7 +46,7 @@ export function BottomNav({ photos, unread = 0 }: { photos: boolean; unread?: nu
         <ul className="mx-auto flex max-w-lg justify-around">
           {items.map(({ href, label, Icon }) => (
             <li key={href}>
-              <a href={href} onClick={href === "#messages" ? (e) => { if (window.matchMedia("(max-width: 639px)").matches) { e.preventDefault(); window.dispatchEvent(new Event("bca-open-chat")); } } : undefined} className="relative flex flex-col items-center gap-0.5 px-3 py-2 text-[11px] font-semibold text-muted hover:text-pine">
+              <a href={href} onClick={href === "#messages" ? (e) => { if (window.matchMedia("(max-width: 639px)").matches) { e.preventDefault(); window.dispatchEvent(new Event("bca-open-chat")); } } : undefined} className="relative flex flex-col items-center gap-0.5 px-1.5 py-2 text-[11px] min-[400px]:px-2.5 font-semibold text-muted hover:text-pine">
                 <Icon className="size-5" aria-hidden />{label}
                 {href === "#messages" && unread ? <span className="absolute top-1 right-2 grid min-w-4 place-items-center rounded-full bg-crimson px-1 text-[10px] leading-4 text-white">{unread}<span className="sr-only"> new</span></span> : null}
               </a>

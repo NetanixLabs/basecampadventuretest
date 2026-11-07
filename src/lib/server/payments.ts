@@ -116,6 +116,8 @@ export async function applyPayment(
     ]);
     const { receiptForPayment } = await import("@/lib/server/receipts");
     await receiptForPayment(pay.id).catch((e) => console.error("[receipt] auto receipt failed", e));
+    const { notifyBooking } = await import("@/lib/server/push");
+    await notifyBooking(booking.id, { kind: "payment", title: "Payment received, thank you!", body: `${usd(amount)} for ${booking.tripTitle}. ${total - paid > 0.5 ? `Balance: ${usd(total - paid)}.` : "Paid in full."}`, href: `/trip/${booking.id}/#payments` }, booking.travellerId ? [booking.travellerId] : []);
     const { autoInvite } = await import("@/lib/server/portal");
     await autoInvite(booking.id).catch((e) => console.error("[portal] auto invite failed", e));
   }

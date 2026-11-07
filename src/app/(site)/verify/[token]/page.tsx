@@ -21,7 +21,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ token: 
   const ok = r ? isGenuine(r) : false;
   const state = !r ? "missing" : !ok ? "tampered" : r.voidedAt ? "void" : "genuine";
   const look = {
-    genuine: { Icon: BadgeCheck, tone: "text-moss bg-moss/12", title: "Genuine", text: `This ${r?.kind === "bill" ? "bill" : "receipt"} was issued by ${site.legalName} and has not been changed.` },
+    genuine: { Icon: BadgeCheck, tone: "text-moss bg-moss/12", title: "Genuine", text: `This ${r?.kind === "bill" ? "bill" : r?.kind === "credit" ? "credit note" : "receipt"} was issued by ${site.legalName} and has not been changed.` },
     void: { Icon: CircleAlert, tone: "text-amber-700 bg-amber-100", title: "Cancelled", text: "This document was issued by us but has since been cancelled." },
     tampered: { Icon: CircleX, tone: "text-crimson bg-crimson/10", title: "Not valid", text: "The details of this document do not match our records. Please contact us." },
     missing: { Icon: CircleX, tone: "text-crimson bg-crimson/10", title: "Not found", text: "We have no receipt or bill with this code. Please check the link or contact us." },
@@ -35,10 +35,10 @@ export default async function VerifyPage({ params }: { params: Promise<{ token: 
         {r && (state === "genuine" || state === "void") ? (
           <>
           <dl className="mt-6 grid grid-cols-[9rem_1fr] gap-y-2 border-t border-ink/10 pt-5 text-sm">
-            <dt className="text-ink-soft">{r.kind === "bill" ? "Bill" : "Receipt"} no.</dt><dd className="font-mono font-semibold">{r.number}</dd>
+            <dt className="text-ink-soft">{r.kind === "bill" ? "Bill" : r.kind === "credit" ? "Credit note" : "Receipt"} no.</dt><dd className="font-mono font-semibold">{r.number}</dd>
             <dt className="text-ink-soft">Issued</dt><dd>{r.issuedAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kathmandu" })}</dd>
-            <dt className="text-ink-soft">{r.kind === "bill" ? "Billed to" : "Received from"}</dt><dd>{mask(r.customerName)}</dd>
-            <dt className="text-ink-soft">{r.kind === "bill" ? "Amount due" : "Amount"}</dt><dd className="font-semibold">{fmt(Number(r.total), r.currency)}</dd>
+            <dt className="text-ink-soft">{r.kind === "bill" ? "Billed to" : r.kind === "credit" ? "Refunded to" : "Received from"}</dt><dd>{mask(r.customerName)}</dd>
+            <dt className="text-ink-soft">{r.kind === "bill" ? "Amount due" : r.kind === "credit" ? "Amount refunded" : "Amount"}</dt><dd className="font-semibold">{fmt(Number(r.total), r.currency)}</dd>
             <dt className="text-ink-soft">Verification code</dt><dd className="font-mono text-sm tracking-widest">{r.code}</dd>
             <dt className="text-ink-soft">Fingerprint</dt><dd className="font-mono text-xs leading-5 tracking-wider">{r.signature.slice(0, 20).toUpperCase().replace(/(.{4})(?=.)/g, "$1 ")}</dd>
           </dl>

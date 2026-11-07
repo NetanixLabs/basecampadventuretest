@@ -6,8 +6,8 @@ import { audit } from "@/lib/admin/audit";
 import { db } from "@/lib/admin/db";
 import { officeEmail, sendTemplate } from "@/lib/admin/email/send";
 import { Denied, assertUser } from "@/lib/admin/guards";
-import { createReceipt, isGenuine, receiptForPayment, verifyUrl } from "@/lib/server/receipts";
-import { receiptFileName, receiptPdf } from "@/lib/server/receipt-pdf";
+import { createReceipt, issueCreditNote, pdfFor, receiptForPayment, verifyUrl } from "@/lib/server/receipts";
+import { receiptFileName } from "@/lib/server/receipt-pdf";
 
 type R = { ok: boolean; message: string; id?: string };
 const fail = (e: unknown): R => ({ ok: false, message: e instanceof Denied ? e.message : e instanceof Error && e.message.startsWith("!") ? e.message.slice(1) : "Something went wrong. Please try again." });
@@ -72,9 +72,10 @@ export async function emailReceipt(id: string): Promise<R> {
     if (!r.customerEmail) return { ok: false, message: "This receipt has no email address." };
     if (r.voidedAt) return { ok: false, message: "Cancelled receipts can't be sent." };
     const url = verifyUrl(r);
-    const pdf = await receiptPdf(r, url, isGenuine(r));
+    const pdf = await pdfFor(r);
     const total = `${r.currency} ${Number(r.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-    const sent = await sendTemplate(r.kind === "bill" ? "bill-email" : "receipt-email", r.customerEmail, { name: r.customerName.split(" ")[0], number: r.number, total }, { buttonHref: url, replyTo: await officeEmail(), attachments: [{ filename: receiptFileName(r), content: pdf, contentType: "application/pdf" }] });
+    const against = r.creditForId ? (await db.receipt.findUnique({ where: { id: r.creditForId }, select: { number: true } }))?.number ?? "" : "";
+    const sent = await sendTemplate(r.kind === "bill" ? "bill-email" : r.kind === "credit" ? "credit-note-email" : "receipt-email", r.customerEmail, { name: r.customerName.split(" ")[0], number: r.number, total, receipt: against }, { buttonHref: url, replyTo: await officeEmail(), attachments: [{ filename: receiptFileName(r), content: pdf, contentType: "application/pdf" }] });
     if (!sent.ok) return { ok: false, message: `The email couldn't be sent: ${sent.error}` };
     await audit(user.id, "receipt.email", "receipt", id, r.customerEmail);
     return { ok: true, message: `Sent to ${r.customerEmail}.` };
@@ -90,6 +91,21 @@ export async function receiptForPaymentAction(paymentId: string): Promise<R> {
     if (!r) return { ok: false, message: "Only successful payments get a receipt." };
     revalidatePath("/admin/bookings");
     return { ok: true, message: `Receipt ${r.number} ready.`, id: r.id };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** A credit note for a refund (part or all of a receipt). */
+export async function creditNote(receiptId: string, input: { amount: number; reason: string; method: string; recordRefund: boolean; email: boolean }): Promise<R> {
+  try {
+    const { user } = await assertUser("receipts");
+    const n = await issueCreditNote(receiptId, { amount: Number(input.amount), reason: String(input.reason ?? ""), method: String(input.method ?? ""), recordRefund: Boolean(input.recordRefund) }, { id: user.id, name: user.name });
+    await audit(user.id, "receipt.credit", "receipt", n.id, `${n.number} for ${receiptId}`);
+    let note = "";
+    if (input.email && n.customerEmail) note = (await emailReceipt(n.id)).ok ? ` Emailed to ${n.customerEmail}.` : " The email couldn't be sent; use Email on the credit note.";
+    revalidatePath(`/admin/receipts/${receiptId}`);
+    return { ok: true, message: `Credit note ${n.number} created.${note}`, id: n.id };
   } catch (e) {
     return fail(e);
   }

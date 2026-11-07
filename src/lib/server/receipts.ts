@@ -5,6 +5,9 @@ import { db } from "@/lib/admin/db";
 import { env } from "@/lib/admin/env";
 import { safeEqual } from "@/lib/admin/crypto";
 import { getBrand } from "@/lib/server/receipt-brand";
+import { LOCALE, asDocLang, t } from "@/lib/receipt-i18n";
+import { getTrip } from "@/lib/content";
+import { translation } from "@/lib/i18n";
 
 /**
  * Receipts (money received) and bills (money asked for).
@@ -19,7 +22,11 @@ export type ReceiptItem = { description: string; qty: number; unitPrice: number 
 /** Where the booking stands, in cents, printed under the totals. */
 export type ReceiptSummary = { tripTotal: number; paidBefore: number; thisPayment: number; balance: number; tripPrice?: number; discount?: number; discountCode?: string | null };
 export type ReceiptInput = {
-  kind: "receipt" | "bill";
+  kind: "receipt" | "bill" | "credit";
+  /** Language the PDF is printed in. */
+  lang?: string;
+  /** Credit notes: the receipt refunded; its VAT treatment is used. */
+  creditFor?: { id: string; vatMode: string; vatRate: unknown } | null;
   bookingId?: string | null;
   paymentId?: string | null;
   customerName: string;
@@ -94,11 +101,12 @@ export async function createReceipt(input: ReceiptInput, by: { id: string | null
   const items = cleanItems(input.items);
   if (!items.length) throw new Error("!Add at least one line with a description and amount.");
   const lineCents = items.reduce((s, i) => s + i.qty * cents(i.unitPrice), 0);
-  const rate = brand.vatMode === "none" ? 0 : brand.vatRate;
+  const vatMode = (input.creditFor?.vatMode ?? brand.vatMode) as "none" | "included" | "added";
+  const rate = vatMode === "none" ? 0 : input.creditFor ? Number(input.creditFor.vatRate) : brand.vatRate;
   // VAT included: the VAT part of a gross price is price × rate / (100 + rate).
-  const vatCents = brand.vatMode === "added" ? Math.round((lineCents * rate) / 100) : brand.vatMode === "included" ? Math.round((lineCents * rate) / (100 + rate)) : 0;
-  const totalCents = brand.vatMode === "added" ? lineCents + vatCents : lineCents;
-  const subtotalCents = brand.vatMode === "included" ? lineCents - vatCents : lineCents;
+  const vatCents = vatMode === "added" ? Math.round((lineCents * rate) / 100) : vatMode === "included" ? Math.round((lineCents * rate) / (100 + rate)) : 0;
+  const totalCents = vatMode === "added" ? lineCents + vatCents : lineCents;
+  const subtotalCents = vatMode === "included" ? lineCents - vatCents : lineCents;
   if (totalCents <= 0) throw new Error("!The total must be more than zero.");
   const subtotal = fromCents(subtotalCents);
   const vat = fromCents(vatCents);
@@ -115,7 +123,7 @@ export async function createReceipt(input: ReceiptInput, by: { id: string | null
       }
     : null;
   const year = new Date().getUTCFullYear();
-  const prefix = `${input.kind === "bill" ? brand.billPrefix : brand.receiptPrefix}-${year}-`;
+  const prefix = `${input.kind === "bill" ? brand.billPrefix : input.kind === "credit" ? brand.creditPrefix : brand.receiptPrefix}-${year}-`;
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const last = await db.receipt.findFirst({ where: { number: { startsWith: prefix } }, orderBy: { number: "desc" }, select: { number: true } });
@@ -127,13 +135,13 @@ export async function createReceipt(input: ReceiptInput, by: { id: string | null
       customerName: input.customerName.trim().slice(0, 120),
       customerEmail: input.customerEmail?.trim().toLowerCase().slice(0, 200) || null,
       currency: (input.currency || "USD").toUpperCase().slice(0, 3),
-      paidVia: input.kind === "receipt" ? input.paidVia?.slice(0, 60) || null : null,
+      paidVia: input.kind !== "bill" ? input.paidVia?.slice(0, 60) || null : null,
       items,
       subtotal,
       vat,
       total,
       issuedAt: new Date(new Date().toISOString().slice(0, 19) + ".000Z"),
-      paidAt: input.kind === "receipt" ? input.paidAt ?? new Date() : null,
+      paidAt: input.kind !== "bill" ? input.paidAt ?? new Date() : null,
       summary,
     };
     try {
@@ -145,7 +153,9 @@ export async function createReceipt(input: ReceiptInput, by: { id: string | null
           paymentId: input.paymentId || null,
           customerAddress: input.customerAddress?.trim().slice(0, 300) || null,
           vatRate: rate,
-          vatMode: brand.vatMode,
+          vatMode,
+          lang: ["de", "fr", "es"].includes(input.lang ?? "") ? input.lang! : "en",
+          creditForId: input.creditFor?.id ?? null,
           notes: input.notes?.trim().slice(0, 1000) || null,
           issuedById: by.id,
           issuedByName: by.name,
@@ -170,7 +180,10 @@ export async function receiptForPayment(paymentId: string, by: { id: string | nu
   if (!p || p.status !== "succeeded" || !p.bookingId) return null;
   const b = await db.booking.findUnique({ where: { id: p.bookingId } });
   if (!b) return null;
-  const date = b.startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const L = asDocLang(b.lang);
+  const date = b.startDate.toLocaleDateString(LOCALE[L], { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const trip = getTrip(b.tripSlug);
+  const title = (L !== "en" && trip ? translation(trip, L)?.title : null) || b.tripTitle;
   const raw = p.raw as { note?: string } | null;
   // Advance paid before this payment (successful payments only, earlier ones first).
   const earlier = await db.payment.findMany({ where: { bookingId: b.id, status: "succeeded", id: { not: p.id }, createdAt: { lte: p.createdAt } }, select: { amount: true } });
@@ -184,12 +197,61 @@ export async function receiptForPayment(paymentId: string, by: { id: string | nu
       paymentId: p.id,
       customerName: b.leadName,
       customerEmail: b.leadEmail,
-      items: [{ description: `${b.tripTitle}, starting ${date}, ${b.pax} ${b.pax === 1 ? "traveller" : "travellers"} (booking ${b.reference})`, qty: 1, unitPrice: Number(p.amount) }],
+      lang: L,
+      items: [{ description: t(L, "tripLine", { trip: title, date, pax: `${b.pax} ${t(L, b.pax === 1 ? "traveller" : "travellers")}`, ref: b.reference }), qty: 1, unitPrice: Number(p.amount) }],
       currency: p.currency,
-      paidVia: p.provider === "manual" ? raw?.note?.slice(0, 60) || "Paid at the office" : "Card via WeTravel",
+      paidVia: p.provider === "manual" ? raw?.note?.slice(0, 60) || t(L, "atOffice") : p.provider === "hbl" ? t(L, "viaHbl") : t(L, "viaWetravel"),
       paidAt: p.createdAt,
       summary: { tripTotal, paidBefore, thisPayment, balance: Math.max(0, tripTotal - paidBefore - thisPayment), tripPrice: cents(Number(b.subtotal)), discount: cents(Number(b.discount)), discountCode: b.discountCode },
     },
     by,
   );
+}
+
+/** The PDF of any receipt, bill or credit note (a credit note names the receipt it refunds). */
+export async function pdfFor(r: Receipt) {
+  const { receiptPdf } = await import("@/lib/server/receipt-pdf");
+  const against = r.creditForId ? (await db.receipt.findUnique({ where: { id: r.creditForId }, select: { number: true } }))?.number ?? null : null;
+  return receiptPdf(r, verifyUrl(r), isGenuine(r), against);
+}
+
+/** Money already refunded against a receipt (credit notes that aren't cancelled), in cents. */
+export async function creditedCents(receiptId: string) {
+  const rows = await db.receipt.findMany({ where: { creditForId: receiptId, kind: "credit", voidedAt: null }, select: { total: true } });
+  return rows.reduce((s, x) => s + cents(Number(x.total)), 0);
+}
+
+/**
+ * A credit note: part or all of a receipt refunded. Optionally records the
+ * refund against the booking (so "paid" goes down) and emails the PDF.
+ */
+export async function issueCreditNote(receiptId: string, input: { amount: number; reason: string; method: string; recordRefund: boolean }, by: { id: string | null; name: string }) {
+  const r = await db.receipt.findUnique({ where: { id: receiptId } });
+  if (!r || r.kind !== "receipt") throw new Error("!Credit notes can only be made for receipts (money received).");
+  if (r.voidedAt) throw new Error("!This receipt is cancelled.");
+  const amountC = cents(input.amount);
+  const left = cents(Number(r.total)) - (await creditedCents(r.id));
+  if (amountC <= 0) throw new Error("!Enter the amount refunded.");
+  if (amountC > left) throw new Error(`!At most ${fromCents(left)} ${r.currency} can still be refunded on this receipt.`);
+  const reason = input.reason.replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 200);
+  if (reason.length < 3) throw new Error("!Write the reason for the refund (printed on the credit note).");
+  const L = asDocLang(r.lang);
+  const desc = { en: `Refund for receipt ${r.number}: ${reason}`, de: `Erstattung zu Beleg ${r.number}: ${reason}`, fr: `Remboursement du reçu ${r.number} : ${reason}`, es: `Reembolso del recibo ${r.number}: ${reason}` }[L];
+  // With VAT added on top, the line is the net part, so the credit total equals the money returned.
+  const rate = Number(r.vatRate);
+  const line = r.vatMode === "added" ? Math.round((amountC * 100) / (100 + rate)) / 100 : amountC / 100;
+  const note = await createReceipt(
+    { kind: "credit", lang: L, creditFor: { id: r.id, vatMode: r.vatMode, vatRate: r.vatRate }, bookingId: r.bookingId, customerName: r.customerName, customerEmail: r.customerEmail, customerAddress: r.customerAddress, items: [{ description: desc, qty: 1, unitPrice: line }], currency: r.currency, paidVia: input.method.trim().slice(0, 60) || r.paidVia, paidAt: new Date(), notes: null },
+    by,
+  );
+  if (input.recordRefund && r.bookingId) {
+    const b = await db.booking.findUnique({ where: { id: r.bookingId } });
+    if (b) {
+      await db.payment.create({ data: { bookingId: b.id, provider: "refund", providerId: `refund:${note.id}`, amount: -Number(note.total), currency: note.currency, status: "succeeded", raw: { note: `Refund, credit note ${note.number}`, creditNote: note.id } } });
+      const rows = await db.payment.findMany({ where: { bookingId: b.id, status: "succeeded" }, select: { amount: true } });
+      const paid = Math.max(0, rows.reduce((s, x) => s + cents(Number(x.amount)), 0)) / 100;
+      await db.booking.update({ where: { id: b.id }, data: { paid, ...(paid <= 0 ? { status: "refunded" } : {}) } });
+    }
+  }
+  return note;
 }

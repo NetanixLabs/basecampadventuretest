@@ -6,6 +6,7 @@ import sharp from "sharp";
 import type { Booking, Guide } from "@/generated/prisma/client";
 import { site } from "@/lib/site";
 import { readDetails } from "@/lib/server/portal";
+import { db } from "@/lib/admin/db";
 
 /** One sheet for the field team: dates, team with phones, every traveller's essentials. A4 landscape. */
 const C = { teal: "#00788a", tealSoft: "#e3f2f4", ink: "#1f2527", soft: "#4a5357", muted: "#6b7478", line: "#d8e3e6", red: "#b42318" };
@@ -62,20 +63,23 @@ export async function departurePdf(o: { title: string; start: Date; end: Date; b
     y += 18;
   };
   header();
-  o.bookings.forEach((b, i) => {
-    const det = readDetails(b.detailsEnc);
+  // Group members with their own trip page add their own row under the booking.
+  const access = await db.bookingAccess.findMany({ where: { bookingId: { in: o.bookings.map((b) => b.id) } }, orderBy: { createdAt: "asc" }, include: { traveller: { select: { name: true } } } }).catch(() => []);
+  const rowsOut: { b: Booking; name: string | null; detailsEnc: string | null }[] = o.bookings.flatMap((b) => [{ b, name: null, detailsEnc: b.detailsEnc }, ...access.filter((a) => a.bookingId === b.id).map((a) => ({ b, name: a.traveller.name, detailsEnc: a.detailsEnc }))]);
+  rowsOut.forEach(({ b, name, detailsEnc }, i) => {
+    const det = readDetails(detailsEnc);
     const paid = Number(b.paid) >= Number(b.total) - 0.005 ? "Paid" : Number(b.paid) > 0 ? "Part" : "Unpaid";
     const cells = [
-      `${b.leadName}\n${b.reference}`,
-      String(b.pax),
-      det.nationality || b.leadCountry,
-      b.leadPhone,
+      name ? `   ${name}\n   (group, ${b.reference})` : `${b.leadName}\n${b.reference}`,
+      name ? "" : String(b.pax),
+      det.nationality || (name ? "–" : b.leadCountry),
+      name ? "–" : b.leadPhone,
       [det.passportNumber, det.passportExpiry && `exp ${det.passportExpiry}`].filter(Boolean).join("\n") || "–",
       [det.arrivalFlight, det.arrivalTime?.replace("T", " ")].filter(Boolean).join("\n") || "–",
       det.hotel || "–",
       [det.diet && `Food: ${det.diet}`, det.medical && `Medical: ${det.medical}`].filter(Boolean).join("\n") || "–",
       [det.emergencyName, det.emergencyRelation, det.emergencyPhone].filter(Boolean).join(", ") || "–",
-      paid,
+      name ? "" : paid,
     ];
     doc.font("Body").fontSize(8);
     const h = Math.max(24, ...cells.map((t, j) => doc.heightOfString(t, { width: cols[j].w - 8 }) + 10));

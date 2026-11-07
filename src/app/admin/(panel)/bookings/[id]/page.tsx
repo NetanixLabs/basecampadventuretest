@@ -12,12 +12,15 @@ import { MissingReceipts } from "./missing-receipts";
 import Link from "next/link";
 import { features } from "@/lib/admin/features";
 import { DETAIL_FIELDS, FILE_KINDS, eligible, readDetails } from "@/lib/server/portal";
+import { docChecklist, packingItems, cleanExtra } from "@/lib/server/checklist";
+import { Readiness } from "./readiness";
+import { savedReplies } from "@/lib/server/replies";
 
 export const metadata = { title: "Booking" };
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = await requireUser("sales");
-  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } }, receipts: { orderBy: { issuedAt: "desc" } } } });
+  const b = await db.booking.findUnique({ where: { id: (await params).id }, include: { payments: { orderBy: { createdAt: "desc" } }, traveller: true, files: { orderBy: { createdAt: "desc" } }, receipts: { orderBy: { issuedAt: "desc" } }, access: { orderBy: { createdAt: "asc" }, include: { traveller: { select: { id: true, name: true, email: true, passwordHash: true } } } }, packing: true } });
   if (!b) notFound();
   const unread = await unreadFor(b.id, "office");
   if (unread) await markRead(b.id, "office");
@@ -26,6 +29,19 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
     WHERE payload::text LIKE ${"%" + b.reference + "%"} OR payload::text LIKE ${"%" + (b.wetravelId ?? b.reference) + "%"}
     ORDER BY "createdAt" DESC LIMIT 10`.catch(() => []);
   const balance = Math.max(0, Number(b.total) - Number(b.paid));
+  const leadDetails = readDetails(b.detailsEnc);
+  const memberDetails = b.access.map((a) => readDetails(a.detailsEnc));
+  const docs = docChecklist(b, b.files, [leadDetails, ...memberDetails]);
+  const packItems = packingItems(b.tripSlug).length;
+  const packFor = (travellerId: string | null) => {
+    const p = b.packing.find((x) => x.travellerId === travellerId);
+    const extra = cleanExtra(p?.extra);
+    return { packed: (p?.packed.length ?? 0) + extra.filter((x) => x.packed).length, total: packItems + extra.length };
+  };
+  const people = [
+    ...(b.traveller ? [{ id: b.traveller.id, name: b.leadName, email: b.traveller.email, lead: true, joined: Boolean(b.traveller.passwordHash), ...packFor(b.traveller.id), details: Object.keys(leadDetails).length }] : []),
+    ...b.access.map((a, i) => ({ id: a.traveller.id, name: a.traveller.name, email: a.traveller.email, lead: false, joined: Boolean(a.traveller.passwordHash), ...packFor(a.traveller.id), details: Object.keys(memberDetails[i]).length, info: DETAIL_FIELDS.filter((x) => memberDetails[i][x.key]).map((x) => [x.label, String(memberDetails[i][x.key])] as [string, string]) })),
+  ];
   const f = await features();
   const agents = can(user, "operations") ? await db.agent.findMany({ where: { OR: [{ active: true }, { id: b.agentId ?? "" }] }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true, code: true } }) : null;
   const rows: [string, React.ReactNode][] = [
@@ -62,7 +78,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               <ul className="divide-y divide-line text-sm">
                 {b.payments.map((p) => (
                   <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <span><strong>{money(Number(p.amount))}</strong> · {p.provider === "manual" ? `recorded by hand${(p.raw as { note?: string })?.note ? `: ${(p.raw as { note?: string }).note}` : ""}` : "WeTravel"}<span className="block text-xs text-muted">{when(p.createdAt)}</span></span>
+                    <span><strong>{money(Number(p.amount))}</strong> · {p.provider === "refund" ? "refund (credit note)" : p.provider === "hbl" ? "Himalayan Bank" : p.provider === "manual" ? `recorded by hand${(p.raw as { note?: string })?.note ? `: ${(p.raw as { note?: string }).note}` : ""}` : "WeTravel"}<span className="block text-xs text-muted">{when(p.createdAt)}</span></span>
                     <Badge tone={p.status === "succeeded" ? "green" : p.status === "refunded" ? "gray" : "amber"}>{p.status}</Badge>
                   </li>
                 ))}
@@ -76,7 +92,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
               </details>
             ) : null}
           </Card>
-          <BookingMessages bookingId={b.id} messages={await thread(b.id)} unread={unread} />
+          <BookingMessages bookingId={b.id} messages={await thread(b.id)} unread={unread} replies={await savedReplies()} name={b.leadName} />
           <Card title="Receipts & bills" info="Every successful payment gets a numbered, signed receipt automatically. Open the PDF, email it, or make a bill for the balance." actions={<Link href={`/receipts/new?booking=${b.id}&kind=bill`} className="text-sm font-semibold text-pine hover:underline">New bill</Link>}>
             {b.receipts.length ? (
               <ul className="divide-y divide-line text-sm">
@@ -84,12 +100,12 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
                   <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
                     <Link href={`/receipts/${r.id}`} className="font-mono font-semibold text-pine">{r.number}</Link>
                     <span>{money(Number(r.total), r.currency)}</span>
-                    {r.voidedAt ? <Badge tone="red">Cancelled</Badge> : <Badge tone={r.kind === "bill" ? "amber" : "green"}>{r.kind === "bill" ? "Bill" : "Paid"}</Badge>}
+                    {r.voidedAt ? <Badge tone="red">Cancelled</Badge> : <Badge tone={r.kind === "bill" ? "amber" : r.kind === "credit" ? "red" : "green"}>{r.kind === "bill" ? "Bill" : r.kind === "credit" ? "Credit note" : "Paid"}</Badge>}
                   </li>
                 ))}
               </ul>
             ) : <p className="text-sm text-muted">No receipts yet.</p>}
-            <MissingReceipts payments={b.payments.filter((p) => p.status === "succeeded" && !b.receipts.some((r) => r.paymentId === p.id)).map((p) => ({ id: p.id, label: `${money(Number(p.amount))} · ${when(p.createdAt)}` }))} />
+            <MissingReceipts payments={b.payments.filter((p) => p.status === "succeeded" && Number(p.amount) > 0 && !b.receipts.some((r) => r.paymentId === p.id)).map((p) => ({ id: p.id, label: `${money(Number(p.amount))} · ${when(p.createdAt)}` }))} />
           </Card>
           <PortalCard
             bookingId={b.id}
@@ -102,6 +118,7 @@ export default async function BookingPage({ params }: { params: Promise<{ id: st
           />
         </div>
         <div className="space-y-6">
+        {eligible(b) ? <Readiness bookingId={b.id} docs={docs} people={people} pax={b.pax} lang={b.lang} source={b.source} canInvite={Boolean(b.traveller) && f.portal.enabled} detailFields={DETAIL_FIELDS.length} /> : null}
         {agents ? <AgentSelect bookingId={b.id} agentId={b.agentId} agents={agents.map((a) => ({ id: a.id, label: `${a.company || a.name} (${a.code})` }))} /> : null}
         <BookingControls id={b.id} status={b.status} notes={b.internalNotes ?? ""} paymentUrl={b.paymentUrl ?? ""} balance={balance} />
         </div>

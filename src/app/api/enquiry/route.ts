@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clientIpFrom } from "@/lib/ip";
 import { z } from "zod";
 import { saveEnquiry } from "@/lib/server/sales";
+import { sourceFromCookie } from "@/lib/sources";
 import { rateLimited, reference } from "@/lib/server/store";
 
 const schema = z.object({
@@ -43,6 +44,6 @@ export async function POST(req: Request) {
   const { website: _honeypot, ...data } = parsed.data;
   void _honeypot;
   const { kind, name, email, phone, country, trip, ...rest } = data;
-  await saveEnquiry({ reference: ref, kind, name, email, phone, country, trip, data: rest, ip });
+  await saveEnquiry({ reference: ref, kind, name, email, phone, country, trip, data: rest, ip, source: sourceFromCookie(req.headers.get("cookie")) });
   return NextResponse.json({ ok: true, reference: ref });
 }

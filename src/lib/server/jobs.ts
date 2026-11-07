@@ -34,6 +34,67 @@ export async function paymentReminders() {
   return sent;
 }
 
+/**
+ * The second, more personal reminder for unpaid bookings, a few days after the
+ * first one, optionally with a small discount code made by the office.
+ */
+export async function secondPaymentReminders() {
+  const f = (await features()).abandoned;
+  if (!f.enabled || !f.second) return 0;
+  const before = new Date(Date.now() - f.secondDays * 86_400_000);
+  const due = await db.booking.findMany({
+    where: { status: "awaiting_payment", paid: 0, reminderSentAt: { lt: before, gt: new Date(Date.now() - 21 * 86_400_000) }, reminder2SentAt: null, paymentUrl: { not: null }, startDate: { gt: new Date(Date.now() + 14 * 86_400_000) } },
+    take: 50,
+  });
+  let code: { code: string; kind: string; value: unknown } | null = null;
+  if (f.secondCode) code = await db.discountCode.findFirst({ where: { code: f.secondCode, active: true }, select: { code: true, kind: true, value: true } }).catch(() => null);
+  const { payLink } = await import("@/lib/server/gateway");
+  let sent = 0;
+  for (const b of due) {
+    // A newer booking by the same person (they booked again) needs no reminder.
+    const again = await db.booking.count({ where: { leadEmail: b.leadEmail, createdAt: { gt: b.createdAt }, status: { in: ["deposit_paid", "paid", "confirmed"] } } });
+    const claimed = await db.booking.updateMany({ where: { id: b.id, reminder2SentAt: null }, data: { reminder2SentAt: new Date() } });
+    if (!claimed.count || again) continue;
+    const off = code ? (code.kind === "percent" ? `${Number(code.value)}%` : usd(Number(code.value))) : "";
+    const offer = code ? `As a small thank-you, use the code **${code.code}** for ${off} off when you book again on our website.` : "";
+    const r = await sendTemplate("payment-reminder-2", b.leadEmail, { name: b.leadName.split(" ")[0], reference: b.reference, trip: b.tripTitle, date: dateText(b.startDate), due: usd(Number(b.due)), code: code?.code ?? "", offer }, {
+      buttonHref: code ? `${site()}/booking/?${new URLSearchParams({ trip: b.tripSlug, date: b.startDate.toISOString().slice(0, 10), pax: String(b.pax), code: code.code })}` : payLink(b.reference),
+      details: [["Reference", b.reference], ["Trip", b.tripTitle], ["Starts", dateText(b.startDate)], ...(code ? ([["Discount code", code.code]] as [string, string][]) : [])],
+      replyTo: await officeEmail(),
+    });
+    if (r.ok) sent++;
+  }
+  return sent;
+}
+
+/** Reminders for missing documents (passport, photo, insurance, flights) at the stages set in Features. */
+export async function documentReminders() {
+  const f = (await features()).docs;
+  if (!f.enabled) return 0;
+  const { bookingDocs } = await import("@/lib/server/checklist");
+  const { notifyBooking } = await import("@/lib/server/push");
+  const portal = (process.env.PORTAL_URL ?? "https://my.basecampadventure.com").replace(/\/$/, "");
+  const stages = [...new Set(String(f.days).split(",").map((x) => Math.round(Number(x.trim()))).filter((n) => n >= 1 && n <= 180))].sort((a, b) => b - a);
+  let sent = 0;
+  for (const days of stages) {
+    const stage = String(days);
+    const due = await db.booking.findMany({ where: { status: { in: ["deposit_paid", "paid", "confirmed"] }, travellerId: { not: null }, startDate: { gte: new Date(Date.now() + (days - 1) * 86_400_000), lte: new Date(Date.now() + days * 86_400_000) }, NOT: { docReminders: { has: stage } } }, include: { access: { include: { traveller: { select: { email: true, name: true } } } } }, take: 100 });
+    for (const b of due) {
+      const missing = (await bookingDocs(b)).filter((d) => !d.done);
+      const claimed = await db.booking.updateMany({ where: { id: b.id, NOT: { docReminders: { has: stage } } }, data: { docReminders: { push: stage } } });
+      if (!claimed.count || !missing.length) continue;
+      const list = missing.map((d) => `• **${d.label}**${d.need > 1 ? ` (${d.have} of ${d.need} received)` : ""}`).join("\n");
+      const people = [{ email: b.leadEmail, name: b.leadName }, ...b.access.map((a) => a.traveller)];
+      for (const p of people) {
+        const r = await sendTemplate("documents-reminder", p.email, { name: p.name.split(" ")[0], trip: b.tripTitle, date: dateText(b.startDate), days, missing: list }, { buttonHref: `${portal}/trip/${b.id}/#documents`, replyTo: await officeEmail() });
+        if (r.ok) sent++;
+      }
+      await notifyBooking(b.id, { kind: "reminder", title: `${days} days to go: documents missing`, body: `Still needed: ${missing.map((d) => d.label.toLowerCase()).join(", ")}.`, href: `/trip/${b.id}/#documents` });
+    }
+  }
+  return sent;
+}
+
 export async function reviewRequests() {
   const f = (await features()).reviews;
   if (!f.enabled) return 0;
@@ -109,6 +170,8 @@ export async function balanceReminders() {
         replyTo: await officeEmail(),
       });
       if (r.ok) sent++;
+      const { notifyBooking } = await import("@/lib/server/push");
+      await notifyBooking(b.id, { kind: "reminder", title: `Balance due: ${balance}`, body: `${b.tripTitle} starts in ${days} days. Tap to pay securely.`, href: `/trip/${b.id}/#payments` }, b.travellerId ? [b.travellerId] : []);
     }
   }
   return sent;
@@ -134,6 +197,8 @@ export async function dayBeforeEmails() {
       replyTo: await officeEmail(),
     });
     if (r.ok) sent++;
+    const { notifyBooking } = await import("@/lib/server/push");
+    await notifyBooking(b.id, { kind: "trip", title: "Your trip starts tomorrow!", body: `Pickup: ${pickup}. Guide: ${guide}.` });
   }
   return sent;
 }
@@ -175,7 +240,7 @@ export async function expirePortal() {
 
 export async function runJobs() {
   const out: Record<string, number | string> = {};
-  for (const [name, job] of Object.entries({ reminders: paymentReminders, preTrip: preTripEmails, balance: balanceReminders, dayBefore: dayBeforeEmails, rates: refreshRates, galleryWatermarks: async () => ((await (await import("@/lib/admin/bulk-watermark")).startBulkWatermark({ auto: true })).ok ? 1 : 0), pagesAfterWatermark: async () => (await (await import("@/lib/admin/bulk-watermark")).refreshIfPending()) ? 1 : 0, reviews: reviewRequests, portalExpired: expirePortal, savedReminders })) {
+  for (const [name, job] of Object.entries({ reminders: paymentReminders, reminders2: secondPaymentReminders, documents: documentReminders, preTrip: preTripEmails, balance: balanceReminders, dayBefore: dayBeforeEmails, rates: refreshRates, galleryWatermarks: async () => ((await (await import("@/lib/admin/bulk-watermark")).startBulkWatermark({ auto: true })).ok ? 1 : 0), pagesAfterWatermark: async () => (await (await import("@/lib/admin/bulk-watermark")).refreshIfPending()) ? 1 : 0, reviews: reviewRequests, portalExpired: expirePortal, savedReminders })) {
     try {
       out[name] = await job();
     } catch (e) {

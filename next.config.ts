@@ -45,7 +45,6 @@ const nextConfig: NextConfig = {
   // WordPress served every URL with a trailing slash. Matching it means not a
   // single indexed URL changes shape on the day of the switch.
   trailingSlash: true,
-  experimental: { viewTransition: true },
   // Server routes read the imported content at runtime; ship it with them.
   outputFileTracingIncludes: {
     "/api/**": ["./src/content/trips.json"],

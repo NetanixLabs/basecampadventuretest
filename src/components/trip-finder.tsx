@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Compass, Landmark, Mountain, MountainSnow, RotateCcw, Sailboat, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TripCard } from "@/components/trip-card";
 import type { TripCard as Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -103,6 +103,15 @@ export function TripFinder({ trips, regionNames }: { trips: Card[]; regionNames:
     requestAnimationFrame(() => document.getElementById("finder")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
   const restart = () => { setA({}); setStep(0); };
+  // Anonymous: the answers only (no cookie or person), so the office learns what people look for.
+  const logged = useRef("");
+  useEffect(() => {
+    if (!done) return;
+    const key = JSON.stringify(a);
+    if (logged.current === key) return;
+    logged.current = key;
+    void fetch("/api/finder/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: a, results: results.length }), keepalive: true }).catch(() => undefined);
+  }, [done, a, results.length]);
 
   return (
     <div id="finder" className="scroll-mt-28">

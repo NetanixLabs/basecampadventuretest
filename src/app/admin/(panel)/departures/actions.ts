@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/admin/audit";
 import { db } from "@/lib/admin/db";
 import { Denied, assertUser } from "@/lib/admin/guards";
-import { clashes, depKey, notifyAssignment, parseKey } from "@/lib/server/departures";
+import { clashes, depKey, notifyAssignment, onLeave, parseKey } from "@/lib/server/departures";
 import { getTrip } from "@/lib/content";
 
 type R = { ok: boolean; message: string; clash?: string };
@@ -24,7 +24,8 @@ export async function assignStaff(key: string, guideId: string, role: string, fo
     if (!g) return { ok: false, message: "Choose someone from the team." };
     const d = await departureFor(key);
     const busy = await clashes(guideId, d.tripSlug, d.startDate, d.id);
-    if (busy.length && !force) return { ok: false, clash: `${g.name} is already on ${busy.map((b) => `${b.tripSlug.replace(/-/g, " ")} from ${b.startDate.toISOString().slice(0, 10)}`).join(", ")}.`, message: "Double booking" };
+    const off = await onLeave(guideId, d.tripSlug, d.startDate);
+    if ((busy.length || off.length) && !force) return { ok: false, clash: [busy.length ? `${g.name} is already on ${busy.map((b) => `${b.tripSlug.replace(/-/g, " ")} from ${b.startDate.toISOString().slice(0, 10)}`).join(", ")}.` : "", off.length ? `${g.name} has days off ${off.map((l) => `${l.from.toISOString().slice(0, 10)} to ${l.to.toISOString().slice(0, 10)}${l.note ? ` (${l.note})` : ""}`).join(", ")}.` : ""].filter(Boolean).join(" "), message: "Double booking" };
     await db.departureStaff.upsert({ where: { departureId_guideId: { departureId: d.id, guideId } }, create: { departureId: d.id, guideId, role: role as (typeof ROLES)[number] }, update: { role: role as (typeof ROLES)[number] } });
     await audit(user.id, "departure.assign", "departure", d.id, `${g.name} as ${role}`);
     const told = await notifyAssignment(d.id, guideId).catch(() => "failed" as const);
@@ -104,5 +105,42 @@ export async function resendAssignment(key: string, guideId: string): Promise<R>
     return r === "sent" ? { ok: true, message: "Sent." } : { ok: false, message: r === "no-email" ? "No email address for this person." : r === "off" ? "Assignment emails are switched off in Settings, Features." : "Could not send." };
   } catch (e) {
     return { ok: false, message: e instanceof Denied ? e.message : "Could not send." };
+  }
+}
+
+/** Days a guide or porter isn't available (holiday, other job, sick). */
+export async function addLeave(input: { guideId: string; from: string; to: string; note: string }): Promise<R> {
+  try {
+    const { user } = await assertUser("operations");
+    const g = await db.guide.findUnique({ where: { id: String(input.guideId) } });
+    if (!g) return { ok: false, message: "Choose someone from the team." };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.from) || !/^\d{4}-\d{2}-\d{2}$/.test(input.to || input.from)) return { ok: false, message: "Choose the dates." };
+    const from = new Date(`${input.from}T00:00:00Z`);
+    const to = new Date(`${input.to || input.from}T00:00:00Z`);
+    if (to < from) return { ok: false, message: "The last day is before the first day." };
+    if (to.getTime() - from.getTime() > 366 * 86_400_000) return { ok: false, message: "At most one year at a time." };
+    const note = String(input.note ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 120) || null;
+    await db.guideLeave.create({ data: { guideId: g.id, from, to, note } });
+    // Already assigned during these days? Say so, the office decides.
+    const deps = await db.departureStaff.findMany({ where: { guideId: g.id }, include: { departure: true } });
+    const { endOf } = await import("@/lib/server/departures");
+    const hit = deps.filter((x) => x.departure.startDate <= to && endOf(x.departure.tripSlug, x.departure.startDate) >= from);
+    await audit(user.id, "guide.leave", "guide", g.id, `${input.from} to ${input.to || input.from}`);
+    revalidatePath("/calendar");
+    return { ok: true, message: hit.length ? `Saved. Note: ${g.name} is assigned to ${hit.map((x) => `${getTrip(x.departure.tripSlug)?.title ?? x.departure.tripSlug} (${x.departure.startDate.toISOString().slice(0, 10)})`).join(", ")} during these days.` : `Days off saved for ${g.name}.` };
+  } catch (e) {
+    return { ok: false, message: e instanceof Denied ? e.message : "Couldn't save." };
+  }
+}
+
+export async function removeLeave(id: string): Promise<R> {
+  try {
+    const { user } = await assertUser("operations");
+    await db.guideLeave.delete({ where: { id } });
+    await audit(user.id, "guide.leave-remove", "guide", null, id);
+    revalidatePath("/calendar");
+    return { ok: true, message: "Removed." };
+  } catch (e) {
+    return { ok: false, message: e instanceof Denied ? e.message : "Couldn't remove." };
   }
 }

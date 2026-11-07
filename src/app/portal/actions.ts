@@ -10,7 +10,7 @@ import { dummyHash, hashPassword, passwordProblem, verifyPassword } from "@/lib/
 import { limit, RULES } from "@/lib/admin/rate-limit";
 import { features } from "@/lib/admin/features";
 import { clientIpFrom } from "@/lib/ip";
-import { checkToken, cleanDetails, createPortalSession, endPortalSession, getTraveller, ownBooking, writeDetails } from "@/lib/server/portal";
+import { checkToken, cleanDetails, createPortalSession, endPortalSession, getTraveller, isLead, ownBooking, writeDetails } from "@/lib/server/portal";
 
 export type PortalState = { error?: string; ok?: string; email?: string } | null;
 
@@ -80,7 +80,9 @@ export async function saveTravellerDetails(bookingId: string, values: Record<str
   if (!t) return { ok: false, message: "Please sign in again." };
   const b = await ownBooking(t.id, bookingId);
   if (!b) return { ok: false, message: "Not found." };
-  await db.booking.update({ where: { id: b.id }, data: { detailsEnc: writeDetails(cleanDetails(values)) } });
+  const detailsEnc = writeDetails(cleanDetails(values));
+  if (isLead(t.id, b)) await db.booking.update({ where: { id: b.id }, data: { detailsEnc } });
+  else await db.bookingAccess.update({ where: { bookingId_travellerId: { bookingId: b.id, travellerId: t.id } }, data: { detailsEnc } });
   return { ok: true, message: "Saved. Thank you!" };
 }
 
@@ -99,4 +101,67 @@ export async function writePortalReview(bookingId: string, input: { rating: numb
   await db.tripReview.create({ data: { bookingId: b.id, tripSlug: b.tripSlug, name: t.name.split(" ")[0], country: String(input.country ?? "").trim().slice(0, 60) || b.leadCountry, rating, title: String(input.title ?? "").replace(/<[^>]*>/g, "").trim().slice(0, 120) || null, body, consent: true } });
   await db.booking.update({ where: { id: b.id }, data: { reviewTokenHash: null } });
   return { ok: true, message: "Dhanyabad! Your review is with our team and will appear on the trip page once approved." };
+}
+
+// ---- Packing checklist, group, notifications ----
+
+export async function savePacking(bookingId: string, packed: string[], extra: { name: string; packed: boolean }[]): Promise<{ ok: boolean }> {
+  const t = await getTraveller();
+  if (!t) return { ok: false };
+  const b = await ownBooking(t.id, bookingId);
+  if (!b) return { ok: false };
+  const r = await limit(`portal:packing:${t.id}`, { limit: 300, windowMs: 3600_000, blockMs: 600_000 });
+  if (!r.ok) return { ok: false };
+  const { cleanExtra, packingItems } = await import("@/lib/server/checklist");
+  const names = new Set(packingItems(b.tripSlug).map((i) => i.name));
+  const clean = [...new Set((Array.isArray(packed) ? packed : []).map(String).filter((n) => names.has(n)))];
+  const data = { packed: clean, extra: cleanExtra(extra) };
+  await db.packingList.upsert({ where: { bookingId_travellerId: { bookingId: b.id, travellerId: t.id } }, create: { bookingId: b.id, travellerId: t.id, ...data }, update: data });
+  return { ok: true };
+}
+
+export async function inviteToGroup(bookingId: string, input: { name: string; email: string }): Promise<{ ok: boolean; message: string }> {
+  const t = await getTraveller();
+  if (!t) return { ok: false, message: "Please sign in again." };
+  const b = await ownBooking(t.id, bookingId);
+  if (!b || !isLead(t.id, b)) return { ok: false, message: "Only the lead traveller can add people." };
+  const r = await limit(`portal:group:${t.id}`, { limit: 15, windowMs: 3600_000, blockMs: 3600_000 });
+  if (!r.ok) return { ok: false, message: "Too many invitations. Try again later." };
+  const { addGroupMember } = await import("@/lib/server/group");
+  return addGroupMember(b.id, { name: String(input.name ?? ""), email: String(input.email ?? "") }, t.name);
+}
+
+export async function removeFromGroup(bookingId: string, travellerId: string): Promise<{ ok: boolean; message: string }> {
+  const t = await getTraveller();
+  if (!t) return { ok: false, message: "Please sign in again." };
+  const b = await ownBooking(t.id, bookingId);
+  if (!b || !isLead(t.id, b)) return { ok: false, message: "Only the lead traveller can remove people." };
+  const { removeGroupMember } = await import("@/lib/server/group");
+  await removeGroupMember(b.id, String(travellerId));
+  return { ok: true, message: "Removed." };
+}
+
+export async function readNotices(): Promise<void> {
+  const t = await getTraveller();
+  if (!t) return;
+  await db.notification.updateMany({ where: { travellerId: t.id, readAt: null }, data: { readAt: new Date() } });
+}
+
+export async function savePush(sub: { endpoint: string; keys?: { p256dh?: string; auth?: string } } | null, remove = false): Promise<{ ok: boolean; message: string }> {
+  const t = await getTraveller();
+  if (!t) return { ok: false, message: "Please sign in again." };
+  if (!(await features()).push.enabled) return { ok: false, message: "Notifications are switched off." };
+  const endpoint = String(sub?.endpoint ?? "");
+  const { validEndpoint } = await import("@/lib/server/push");
+  if (remove) {
+    await db.pushSubscription.deleteMany({ where: { travellerId: t.id, endpoint } });
+    return { ok: true, message: "Notifications are off on this device." };
+  }
+  const p256dh = String(sub?.keys?.p256dh ?? "");
+  const auth = String(sub?.keys?.auth ?? "");
+  if (!validEndpoint(endpoint) || !/^[A-Za-z0-9_-]{40,200}$/.test(p256dh) || !/^[A-Za-z0-9_-]{10,60}$/.test(auth)) return { ok: false, message: "This browser can't receive notifications." };
+  if ((await db.pushSubscription.count({ where: { travellerId: t.id } })) >= 10) await db.pushSubscription.deleteMany({ where: { travellerId: t.id, createdAt: { lt: new Date(Date.now() - 60_000) } } });
+  const ua = (await headers()).get("user-agent")?.slice(0, 200) ?? null;
+  await db.pushSubscription.upsert({ where: { endpoint }, create: { travellerId: t.id, endpoint, p256dh, auth, userAgent: ua }, update: { travellerId: t.id, p256dh, auth, userAgent: ua } });
+  return { ok: true, message: "Notifications are on. We'll let you know when there's news." };
 }

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const booking = await ownBooking(t.id, String(form?.get("booking") ?? ""));
   if (!booking || !(file instanceof File)) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const count = await import("@/lib/admin/db").then(({ db }) => db.travellerFile.count({ where: { bookingId: booking.id, uploadedBy: "traveller" } }));
-  if (count >= 25) return NextResponse.json({ error: "That's the most files for one booking. Delete one first." }, { status: 400 });
+  if (count >= 25 + 6 * booking.pax) return NextResponse.json({ error: "That's the most files for one booking. Delete one first." }, { status: 400 });
   const kind = String(form?.get("kind") ?? "other");
   try {
     await storeFile(booking.id, (TRAVELLER_KINDS as readonly string[]).includes(kind) ? kind : "other", file.name, Buffer.from(await file.arrayBuffer()), "traveller");

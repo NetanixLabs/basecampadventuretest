@@ -12,6 +12,7 @@ export type ReceiptBrand = {
   vatRate: number;
   receiptPrefix: string;
   billPrefix: string;
+  creditPrefix: string;
   footerNote: string;
   bankDetails: string;
 };
@@ -25,6 +26,7 @@ export const BRAND_DEFAULTS: ReceiptBrand = {
   vatRate: 13,
   receiptPrefix: "BCA-R",
   billPrefix: "BCA-B",
+  creditPrefix: "BCA-CN",
   footerNote: "Thank you for travelling with Base Camp Adventure. This receipt is generated electronically and can be verified by scanning the QR code.",
   bankDetails: "",
 };

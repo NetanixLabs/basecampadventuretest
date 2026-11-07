@@ -37,6 +37,9 @@ export async function POST(req: Request) {
     if (!res.ok) return NextResponse.json({ error: res.error }, { status: 400 });
     await markRead(b.id, "office");
     if (b.travellerId && !waiting) await sendTemplate("portal-message-traveller", b.leadEmail, { name: b.leadName.split(" ")[0], trip: b.tripTitle }, { buttonHref: `${env().PORTAL_URL.replace(/\/$/, "")}/trip/${b.id}/#messages`, replyTo: await officeEmail() }).catch(() => undefined);
+    // The text stays private: the notification only says who replied.
+    const { notifyBooking } = await import("@/lib/server/push");
+    await notifyBooking(b.id, { kind: "message", title: `${user.name.split(" ")[0]} from our office replied`, body: `New message about your ${b.tripTitle}. Tap to read it.`, href: `/trip/${b.id}/#messages` });
     await audit(user.id, "booking.message", "booking", b.id);
     return NextResponse.json({ ok: true, messages: await thread(b.id), note: b.travellerId ? "" : "Saved. The traveller will see it once their account is created." }, { headers: noStore });
   } catch (e) {

@@ -5,7 +5,7 @@ import { useRef, useState, useTransition } from "react";
 import { Card, inputClass, Label } from "@/components/admin/ui";
 import { saveReceiptSettings } from "./actions";
 
-type V = { signatory: string; signatoryTitle: string; vatMode: "none" | "included" | "added"; vatRate: number; receiptPrefix: string; billPrefix: string; footerNote: string; bankDetails: string };
+type V = { signatory: string; signatoryTitle: string; vatMode: "none" | "included" | "added"; vatRate: number; receiptPrefix: string; billPrefix: string; creditPrefix: string; footerNote: string; bankDetails: string };
 
 function ImageSlot({ kind, label, has, hint }: { kind: "signature" | "stamp"; label: string; has: boolean; hint: string }) {
   const router = useRouter();
@@ -72,6 +72,7 @@ export function ReceiptSettingsForm({ initial, has }: { initial: V; has: { signa
             <div><Label htmlFor="rs-vr">VAT rate (%)</Label><input id="rs-vr" inputMode="decimal" value={v.vatRate} onChange={(e) => setV({ ...v, vatRate: Number(e.target.value.replace(/[^0-9.]/g, "")) || 0 })} className={inputClass} /></div>
             <div><Label htmlFor="rs-rp" info="Receipts are numbered automatically: prefix, year and a running number, e.g. BCA-R-2026-0001.">Receipt number prefix</Label><input id="rs-rp" value={v.receiptPrefix} onChange={(e) => setV({ ...v, receiptPrefix: e.target.value.toUpperCase() })} className={`${inputClass} font-mono`} /></div>
             <div><Label htmlFor="rs-bp">Bill number prefix</Label><input id="rs-bp" value={v.billPrefix} onChange={(e) => setV({ ...v, billPrefix: e.target.value.toUpperCase() })} className={`${inputClass} font-mono`} /></div>
+            <div><Label htmlFor="rs-cp" info="Credit notes (refunds) are numbered on their own, e.g. BCA-CN-2026-0001.">Credit note prefix</Label><input id="rs-cp" value={v.creditPrefix} onChange={(e) => setV({ ...v, creditPrefix: e.target.value.toUpperCase() })} className={`${inputClass} font-mono`} /></div>
             <div className="sm:col-span-2"><Label htmlFor="rs-bd" info="Printed on bills so travellers can pay by bank transfer. Leave empty to hide.">Bank details (bills)</Label><textarea id="rs-bd" rows={3} value={v.bankDetails} onChange={(e) => setV({ ...v, bankDetails: e.target.value })} className={inputClass} /></div>
             <div className="sm:col-span-2"><Label htmlFor="rs-f">Note at the bottom</Label><textarea id="rs-f" rows={2} value={v.footerNote} onChange={(e) => setV({ ...v, footerNote: e.target.value })} className={inputClass} /></div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
+import { Check, Upload } from "lucide-react";
 import { inputClass, Label } from "@/components/admin/ui";
 import { saveTravellerDetails } from "../../actions";
 
@@ -42,10 +43,15 @@ export function DetailsForm({ bookingId, initial, fields }: { bookingId: string;
 type FileRow = { id: string; name: string; kind: string; bytes: number; fromOffice: boolean; date: string };
 const size = (n: number) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
-export function Documents({ bookingId, files }: { bookingId: string; files: FileRow[] }) {
+type DocItem = { key: string; label: string; hint: string; kind: string; have: number; need: number; done: boolean; byOffice: boolean };
+
+export function Documents({ bookingId, files, checklist = [] }: { bookingId: string; files: FileRow[]; checklist?: DocItem[] }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
-  const [kind, setKind] = useState("passport");
+  const [kind, setKindState] = useState("passport");
+  // The kind is read when the file arrives, after the picker closes.
+  const kindRef = useRef("passport");
+  const setKind = (k: string) => { kindRef.current = k; setKindState(k); };
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -55,7 +61,7 @@ export function Documents({ bookingId, files }: { bookingId: string; files: File
     setMsg("");
     const body = new FormData();
     body.set("booking", bookingId);
-    body.set("kind", kind);
+    body.set("kind", kindRef.current);
     body.set("file", file);
     const r = await fetch("/api/upload/", { method: "POST", body }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : {};
@@ -86,8 +92,30 @@ export function Documents({ bookingId, files }: { bookingId: string; files: File
     </li>
   );
 
+  const ready = checklist.filter((c) => c.done).length;
   return (
     <div className="mt-4 space-y-6">
+      {checklist.length ? (
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">What we need from you</p>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${ready === checklist.length ? "bg-pine/10 text-pine" : "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"}`}>{ready} of {checklist.length} done</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-pine transition-all" style={{ width: `${Math.round((ready / checklist.length) * 100)}%` }} /></div>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {checklist.map((c) => (
+              <li key={c.key} className={`flex items-start gap-3 rounded-xl border p-3 ${c.done ? "border-pine/30 bg-pine/5" : "border-line"}`}>
+                <span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full ${c.done ? "bg-pine text-white" : "border-2 border-amber-400"}`} aria-hidden>{c.done ? <Check className="size-3.5" strokeWidth={3} /> : null}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{c.label}<span className="sr-only">{c.done ? ": done" : ": missing"}</span></span>
+                  <span className="block text-xs leading-snug text-muted">{c.byOffice ? "Received by our office." : c.need > 1 ? `${c.have} of ${c.need} travellers. ${c.hint}` : c.hint}</span>
+                </span>
+                {!c.done ? <button type="button" disabled={busy} onClick={() => { setKind(c.kind); input.current?.click(); }} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs font-semibold hover:border-pine hover:text-pine"><Upload className="size-3" aria-hidden />Upload</button> : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div>
         <p className="text-xs font-semibold tracking-[0.14em] text-muted uppercase">From our office</p>
         {office.length ? <ul className="divide-y divide-line">{office.map((f) => <Row key={f.id} f={f} canDelete={false} />)}</ul> : <p className="mt-2 text-sm text-muted">Your vouchers, permits and final itinerary will appear here.</p>}

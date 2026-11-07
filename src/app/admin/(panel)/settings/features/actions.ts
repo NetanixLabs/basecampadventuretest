@@ -22,6 +22,13 @@ export async function saveFeatures(input: Features, secrets: { WHATSAPP_TOKEN?: 
     f.watermark.size = Math.min(30, Math.max(5, Math.round(Number(f.watermark.size)) || 10));
     f.balance.days = [...new Set(String(f.balance.days ?? "").split(",").map((x) => Math.round(Number(x.trim()))).filter((n) => n >= 1 && n <= 180))].sort((a, b) => b - a).join(",") || "60,30,14";
     f.currency.auto = Boolean(f.currency.auto);
+    f.balance.dueDays = Math.min(120, Math.max(0, Math.round(Number(f.balance.dueDays)) || 30));
+    f.docs.days = [...new Set(String(f.docs.days ?? "").split(",").map((x) => Math.round(Number(x.trim()))).filter((n) => n >= 1 && n <= 180))].sort((a, b) => b - a).join(",") || "45,21,10";
+    f.abandoned.second = Boolean(f.abandoned.second);
+    f.abandoned.secondDays = Math.min(30, Math.max(1, Math.round(Number(f.abandoned.secondDays)) || 3));
+    f.abandoned.secondCode = String(f.abandoned.secondCode ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
+    if (f.abandoned.secondCode && !(await db.discountCode.findFirst({ where: { code: f.abandoned.secondCode, active: true } }))) return { ok: false, message: `The discount code ${f.abandoned.secondCode} doesn't exist or is switched off (Sales → Discount codes).` };
+    f.push.enabled = Boolean(f.push.enabled);
     f.saved.reminderDays = Math.min(30, Math.max(1, Math.round(Number(f.saved.reminderDays)) || 3));
     f.payments.nprRate = Math.min(1000, Math.max(1, Math.round(Number(f.payments.nprRate) * 100) / 100 || 133));
     if (!f.payments.wetravel && !f.payments.hbl) return { ok: false, message: "Keep at least one payment method switched on." };

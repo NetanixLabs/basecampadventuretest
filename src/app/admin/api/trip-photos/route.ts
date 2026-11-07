@@ -30,6 +30,11 @@ export async function POST(req: Request) {
         /* not an image: skipped */
       }
     }
+    if (added) {
+      const { notifyBooking } = await import("@/lib/server/push");
+      const on = await db.booking.findMany({ where: { tripSlug: k.slug, startDate: k.date, status: { in: ["deposit_paid", "paid", "confirmed"] } }, select: { id: true, tripTitle: true } });
+      for (const b of on) await notifyBooking(b.id, { kind: "photos", title: "New trip photos", body: `${added} new ${added === 1 ? "photo" : "photos"} from ${b.tripTitle}. Tap to see and download.`, href: `/trip/${b.id}/#photos` });
+    }
     await audit(user.id, "departure.photos", "departure", dep.id, String(added));
     return NextResponse.json({ ok: true, added });
   } catch (e) {

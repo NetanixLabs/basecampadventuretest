@@ -12,6 +12,7 @@ const schema = z.object({
   vatRate: z.coerce.number().min(0).max(30),
   receiptPrefix: z.string().trim().regex(/^[A-Z0-9-]{1,12}$/, "Prefixes use capital letters, numbers and hyphens (max 12)."),
   billPrefix: z.string().trim().regex(/^[A-Z0-9-]{1,12}$/, "Prefixes use capital letters, numbers and hyphens (max 12)."),
+  creditPrefix: z.string().trim().regex(/^[A-Z0-9-]{1,12}$/, "Prefixes use capital letters, numbers and hyphens (max 12)."),
   footerNote: z.string().trim().max(400),
   bankDetails: z.string().trim().max(600),
 });

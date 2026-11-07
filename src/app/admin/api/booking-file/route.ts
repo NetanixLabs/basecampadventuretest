@@ -17,6 +17,8 @@ export async function POST(req: Request) {
     if (!booking || !(file instanceof File)) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const kind = String(form.get("kind") ?? "other");
     const f = await storeFile(booking.id, kind in FILE_KINDS ? kind : "other", file.name, Buffer.from(await file.arrayBuffer()), user.id);
+    const { notifyBooking } = await import("@/lib/server/push");
+    await notifyBooking(booking.id, { kind: "document", title: "New document from our office", body: `${FILE_KINDS[f.kind as keyof typeof FILE_KINDS] ?? "Document"}: ${f.name}`, href: `/trip/${booking.id}/#documents` });
     await audit(user.id, "booking.file.upload", "booking", booking.id, f.name);
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -33,8 +33,13 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
   return (
     <form onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await saveFeatures(f, secrets); setMsg(r.message); if (r.ok) setSecrets({ WHATSAPP_TOKEN: "", WHATSAPP_PHONE_ID: "", CALLMEBOT_KEYS: "" }); }); }} className="space-y-6 pb-24 lg:pb-0">
       <div className="grid gap-6 lg:grid-cols-2">
-        <Feature title="Reminder for unpaid bookings" info="If a traveller starts a booking but hasn't paid on WeTravel after this many hours, they get one friendly reminder with their payment link." on={f.abandoned.enabled} onChange={(v) => set("abandoned", { enabled: v })}>
-          <div><Label htmlFor="ab-h">Send after (hours)</Label><input id="ab-h" inputMode="numeric" value={f.abandoned.afterHours} onChange={(e) => set("abandoned", { afterHours: num(e.target.value) })} className={inputClass} /></div>
+        <Feature title="Reminders for unpaid bookings" info="If a traveller starts a booking but hasn't paid after this many hours, they get a friendly reminder with their payment link. A second, more personal reminder can follow a few days later, optionally with a small discount code (make the code under Sales → Discount codes first)." on={f.abandoned.enabled} onChange={(v) => set("abandoned", { enabled: v })}>
+          <div><Label htmlFor="ab-h">First reminder after (hours)</Label><input id="ab-h" inputMode="numeric" value={f.abandoned.afterHours} onChange={(e) => set("abandoned", { afterHours: num(e.target.value) })} className={inputClass} /></div>
+          <label className="flex items-center justify-between gap-3 text-sm font-semibold">Second reminder<Switch on={f.abandoned.second} onChange={(v) => set("abandoned", { second: v })} label="Second reminder" /></label>
+          <div className={cn("grid grid-cols-2 gap-3", !f.abandoned.second && "opacity-45")}>
+            <div><Label htmlFor="ab-d2" info="Days after the first reminder.">Days later</Label><input id="ab-d2" inputMode="numeric" value={f.abandoned.secondDays} onChange={(e) => set("abandoned", { secondDays: num(e.target.value) })} className={inputClass} /></div>
+            <div><Label htmlFor="ab-c" info="Optional. Leave empty for no discount.">Discount code</Label><input id="ab-c" value={f.abandoned.secondCode} onChange={(e) => set("abandoned", { secondCode: e.target.value.toUpperCase() })} className={`${inputClass} font-mono`} placeholder="e.g. COMEBACK5" /></div>
+          </div>
         </Feature>
 
         <Feature title="Reviews after the trip" info="After the trip ends, travellers get an email with 1–5 stars. Their review waits for your approval under Reviews & videos → Traveller reviews, then appears on the trip page." on={f.reviews.enabled} onChange={(v) => set("reviews", { enabled: v })}>
@@ -56,8 +61,17 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
         </Feature>
 
         <Feature title="Balance reminders" info="Travellers who paid a deposit get a reminder with the pay-now link this many days before the trip, once per stage. Nothing is sent once the balance is paid. The 30-day reminder is skipped while the one-month email is on, because it already shows the balance." on={f.balance.enabled} onChange={(v) => set("balance", { enabled: v })}>
-          <div><Label htmlFor="bal-d" info="Days before the start date, separated by commas.">Send at (days before)</Label><input id="bal-d" value={f.balance.days} onChange={(e) => set("balance", { days: e.target.value })} className={`${inputClass} font-mono`} placeholder="60,30,14" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label htmlFor="bal-d" info="Days before the start date, separated by commas.">Send at (days before)</Label><input id="bal-d" value={f.balance.days} onChange={(e) => set("balance", { days: e.target.value })} className={`${inputClass} font-mono`} placeholder="60,30,14" /></div>
+            <div><Label htmlFor="bal-due" info="Shown to travellers as the due date of the balance in their payment plan. 0 = on arrival.">Balance due (days before)</Label><input id="bal-due" inputMode="numeric" value={f.balance.dueDays} onChange={(e) => set("balance", { dueDays: num(e.target.value) })} className={inputClass} /></div>
+          </div>
         </Feature>
+
+        <Feature title="Missing documents reminders" info="Travellers see a document checklist on their trip page: passport copy, passport photo and insurance for each traveller, and the flight tickets. If something is still missing this many days before the trip, everyone in the group gets a reminder email and a phone notification. You can tick an item as received on the booking page if it came by email or WhatsApp." on={f.docs.enabled} onChange={(v) => set("docs", { enabled: v })}>
+          <div><Label htmlFor="doc-d" info="Days before the start date, separated by commas.">Send at (days before)</Label><input id="doc-d" value={f.docs.days} onChange={(e) => set("docs", { days: e.target.value })} className={`${inputClass} font-mono`} placeholder="45,21,10" /></div>
+        </Feature>
+
+        <Feature title="Phone notifications for travellers" info="Travellers can switch on notifications on their trip page (on iPhone after adding the page to the home screen). They are notified when the office replies, a document or trip photos are added, a payment arrives, and for reminders. No app or phone number needed; the notifications are encrypted." on={f.push.enabled} onChange={(v) => set("push", { enabled: v })} />
 
         <Feature title="Email guides and porters their assignments" info="When you assign someone to a departure (Operations, Departures), they get an email with the departure list PDF attached: travellers, flights, food needs and medical notes. Only for staff with an email address in Guides & porters." on={f.guideNotify.enabled} onChange={(v) => set("guideNotify", { enabled: v })} />
 

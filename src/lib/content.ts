@@ -50,7 +50,7 @@ function fileFor(name: string): { file: string; modified: number } | null {
   for (const d of [liveDir, repoDir]) {
     const file = path.join(d, `${name}.json`);
     try {
-      return { file, modified: statSync(file).mtimeMs };
+      return { file, modified: statSync(/*turbopackIgnore: true*/ file).mtimeMs };
     } catch {
       /* try the next place */
     }
@@ -91,7 +91,7 @@ export function load<T>(name: string, fallback: T): T {
   const existing = parsedContent.get(name);
   if (existing?.file === f.file && existing.modified === f.modified) return existing.value as T;
   try {
-    const value = JSON.parse(readFileSync(f.file, "utf8"), (_k, v) => {
+    const value = JSON.parse(readFileSync(/*turbopackIgnore: true*/ f.file, "utf8"), (_k, v) => {
       if (typeof v !== "string") return v;
       let s = v.includes('class="measurement"') ? withFeet(v) : v;
       if (s.includes('href="')) s = directLinks(s);

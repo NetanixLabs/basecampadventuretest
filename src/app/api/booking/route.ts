@@ -11,6 +11,7 @@ import { features } from "@/lib/admin/features";
 import { db } from "@/lib/admin/db";
 import { hblEnabled } from "@/lib/server/hbl";
 import { payLink } from "@/lib/server/gateway";
+import { sourceFromCookie } from "@/lib/sources";
 
 const schema = z.object({
   trip: z.string().trim().min(1).max(200),
@@ -131,6 +132,9 @@ export async function POST(req: Request) {
     ip,
     gateway,
     agentId: agent?.id ?? null,
+    source: agent ? "Agent" : sourceFromCookie(req.headers.get("cookie")),
+    // Booked on a German, French or Spanish page: receipts in that language.
+    lang: /\/(de|fr|es)\//.exec(new URL(req.headers.get("referer") ?? "http://x/").pathname)?.[1] ?? "en",
   });
   } catch (e) {
     if (e instanceof SeatsFull) return NextResponse.json({ ok: false, error: `${e.message} Choose fewer travellers or another date.` }, { status: 409 });

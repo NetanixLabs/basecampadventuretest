@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/admin/db";
 import { features } from "@/lib/admin/features";
 import { getTrip } from "@/lib/content";
-import { eligible, getTraveller, PAID_STATUSES } from "@/lib/server/portal";
+import { eligible, getTraveller, PAID_STATUSES, visibleBookings } from "@/lib/server/portal";
 import { PortalShell } from "./shell";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export default async function PortalHome() {
   if (!(await features()).portal.enabled) redirect("/login/");
   const t = await getTraveller();
   if (!t) redirect("/login/");
-  const bookings = (await db.booking.findMany({ where: { travellerId: t.id, status: { in: [...PAID_STATUSES] } }, orderBy: { startDate: "asc" } })).filter(eligible);
+  const bookings = (await db.booking.findMany({ where: { ...visibleBookings(t.id), status: { in: [...PAID_STATUSES] } }, orderBy: { startDate: "asc" } })).filter(eligible);
   if (bookings.length === 1) redirect(`/trip/${bookings[0].id}/`);
   return (
     <PortalShell name={t.name}>

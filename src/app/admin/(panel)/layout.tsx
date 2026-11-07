@@ -26,6 +26,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           label: "Operations",
           items: [
             { href: "/departures", label: "Departures", icon: "Compass" as const },
+            { href: "/calendar", label: "Calendar", icon: "CalendarRange" as const },
             { href: "/team-field", label: "Guides & porters", icon: "HardHat" as const },
             { href: "/agents", label: "Agents", icon: "Handshake" as const },
           ],

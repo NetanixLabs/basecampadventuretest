@@ -98,7 +98,7 @@ export function FeaturedTrips({ groups, regionNames, regions }: { groups: TripGr
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.5, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
             >
-              <TripCard trip={t} regionName={regionNames[t.destinations[0]]} priority={i < 4} />
+              <TripCard trip={t} regionName={regionNames[t.destinations[0]]} />
             </motion.div>
           ))}
         </AnimatePresence>

@@ -1,6 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { db } from "@/lib/admin/db";
+import { getTraveller } from "@/lib/server/portal";
 import { portalSignOut } from "./actions";
+import { NoticeBell } from "./notices";
 
 /** Sign-in screens: photo on the left (large screens), form on the right. */
 export function PortalAuthShell({ title, subtitle, children }: { title: string; subtitle?: React.ReactNode; children: React.ReactNode }) {
@@ -30,7 +33,9 @@ export function PortalAuthShell({ title, subtitle, children }: { title: string; 
 }
 
 /** The signed-in frame: logo, the traveller's name, sign out. */
-export function PortalShell({ name, children }: { name: string; children: React.ReactNode }) {
+export async function PortalShell({ name, children }: { name: string; children: React.ReactNode }) {
+  const t = await getTraveller();
+  const notices = t ? await db.notification.findMany({ where: { travellerId: t.id }, orderBy: { createdAt: "desc" }, take: 15 }) : [];
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-card/95 backdrop-blur">
@@ -44,6 +49,7 @@ export function PortalShell({ name, children }: { name: string; children: React.
           </Link>
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden font-semibold sm:inline">{name}</span>
+            {t ? <NoticeBell notices={notices.map((n) => ({ id: n.id, kind: n.kind, title: n.title, body: n.body, href: n.href, read: Boolean(n.readAt), at: n.createdAt.toISOString() }))} /> : null}
             <form action={portalSignOut}><button className="rounded-full border border-line px-4 py-1.5 font-semibold hover:border-pine hover:text-pine">Sign out</button></form>
           </div>
         </div>

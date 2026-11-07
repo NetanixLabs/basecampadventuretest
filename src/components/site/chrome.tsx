@@ -6,6 +6,7 @@ import { SmoothScroll } from "@/components/site/smooth-scroll";
 import { Integrations } from "@/components/site/integrations";
 import { WhatsappFab } from "@/components/site/whatsapp-fab";
 import { ShortlistBar } from "@/components/shortlist";
+import { Visit } from "@/components/visit";
 import { getFeatures, getPublicSettings } from "@/lib/content";
 import { organizationLd, websiteLd } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -38,6 +39,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       <Integrations {...ids} />
       <SmoothScroll />
       <ProseLightbox />
+      <Visit />
       <JsonLd data={[organizationLd(), websiteLd()]} />
     </>
   );

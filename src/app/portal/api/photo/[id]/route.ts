@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { db } from "@/lib/admin/db";
-import { PAID_STATUSES, getTraveller, readFileData } from "@/lib/server/portal";
+import { PAID_STATUSES, getTraveller, readFileData, visibleBookings } from "@/lib/server/portal";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!t) return new NextResponse("Not found", { status: 404 });
   const p = await db.tripPhoto.findUnique({ where: { id: (await params).id }, include: { departure: true } });
   if (!p) return new NextResponse("Not found", { status: 404 });
-  const on = await db.booking.count({ where: { travellerId: t.id, tripSlug: p.departure.tripSlug, startDate: p.departure.startDate, status: { in: [...PAID_STATUSES] } } });
+  const on = await db.booking.count({ where: { ...visibleBookings(t.id), tripSlug: p.departure.tripSlug, startDate: p.departure.startDate, status: { in: [...PAID_STATUSES] } } });
   if (!on) return new NextResponse("Not found", { status: 404 });
   const url = new URL(req.url);
   const w = Number(url.searchParams.get("w"));

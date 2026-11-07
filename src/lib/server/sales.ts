@@ -15,14 +15,14 @@ const adminLink = (path: string) => `${(process.env.ADMIN_URL ?? "https://admin.
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 const dateText = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-export type EnquiryInput = { reference: string; kind: string; name: string; email: string; phone?: string; country?: string; trip?: string; data: Record<string, unknown>; ip: string };
+export type EnquiryInput = { reference: string; kind: string; name: string; email: string; phone?: string; country?: string; trip?: string; data: Record<string, unknown>; ip: string; source?: string | null };
 
 export async function saveEnquiry(e: EnquiryInput) {
   let id: string | null = null;
   try {
     if (!adminConfigured()) throw new Error("no database");
     const row = await db.enquiry.create({
-      data: { reference: e.reference, kind: e.kind, name: e.name, email: e.email.toLowerCase(), phone: e.phone || null, country: e.country || null, trip: e.trip || null, data: e.data as object, ip: e.ip },
+      data: { reference: e.reference, kind: e.kind, name: e.name, email: e.email.toLowerCase(), phone: e.phone || null, country: e.country || null, trip: e.trip || null, data: e.data as object, ip: e.ip, source: e.source ?? null },
     });
     id = row.id;
     const { upsertCustomer } = await import("@/lib/server/customers");
@@ -57,6 +57,8 @@ export type BookingInput = {
   paymentUrl: string | null; wetravelId: string | null; paymentError: string | null; ip: string;
   gateway?: string | null;
   agentId?: string | null;
+  source?: string | null;
+  lang?: string;
 };
 
 /** Thrown when a fixed departure has fewer seats left than the booking needs. */
@@ -87,7 +89,7 @@ export async function saveBooking(b: BookingInput) {
           reference: b.reference, status: b.paymentUrl ? "awaiting_payment" : "requested", tripSlug: b.tripSlug, tripTitle: b.tripTitle,
           startDate: new Date(`${b.startDate}T00:00:00Z`), pax: b.pax, each: b.each, subtotal: b.subtotal, discountCode: b.discountCode, discount: b.discount,
           total: b.total, plan: b.plan, due: b.due, leadName: b.lead.name, leadEmail: b.lead.email.toLowerCase(), leadPhone: b.lead.phone, leadCountry: b.lead.country,
-          notes: b.notes || null, paymentUrl: b.paymentUrl, wetravelId: b.wetravelId, paymentError: b.paymentError, ip: b.ip, gateway: b.gateway ?? null, agentId: b.agentId ?? null,
+          notes: b.notes || null, paymentUrl: b.paymentUrl, wetravelId: b.wetravelId, paymentError: b.paymentError, ip: b.ip, gateway: b.gateway ?? null, agentId: b.agentId ?? null, source: b.source ?? null, lang: ["de", "fr", "es"].includes(b.lang ?? "") ? b.lang : "en",
         },
       });
     });

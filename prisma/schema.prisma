@@ -223,6 +223,8 @@ model Enquiry {
   data      Json
   notes     String?
   ip        String?
+  /// Where the visitor came from (Google, Instagram, an agent…).
+  source    String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -289,6 +291,16 @@ model Booking {
   balanceReminders  String[]        @default([])
   /// Day-before email (pickup and guide).
   pretrip1At        DateTime?
+  /// Language the traveller booked in (receipts and emails): en, de, fr, es.
+  lang              String          @default("en")
+  /// Where the traveller came from (Google, Instagram, an agent…).
+  source            String?
+  /// Second abandoned-booking reminder.
+  reminder2SentAt   DateTime?
+  /// Missing-document reminder stages already sent, e.g. ["45","21"].
+  docReminders      String[]        @default([])
+  /// Checklist items the office marked as received another way, e.g. ["passport"].
+  docsDone          String[]        @default([])
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   payments          Payment[]
@@ -298,6 +310,8 @@ model Booking {
   messages          PortalMessage[]
   files             TravellerFile[]
   reviews           TripReview[]
+  access            BookingAccess[]
+  packing           PackingList[]
 
   @@index([status, createdAt])
   @@index([leadEmail])
@@ -437,6 +451,10 @@ model Traveller {
   bookings     Booking[]
   sessions     TravellerSession[]
   tokens       TravellerToken[]
+  access       BookingAccess[]
+  packing      PackingList[]
+  push         PushSubscription[]
+  notices      Notification[]
 }
 
 model TravellerSession {
@@ -530,6 +548,7 @@ model Customer {
 enum ReceiptKind {
   receipt
   bill
+  credit
 }
 
 /// A receipt for money received, or a manual bill. Numbered, signed (HMAC)
@@ -566,6 +585,10 @@ model Receipt {
   voidReason      String?
   /// HMAC of the receipt's contents; a changed receipt fails verification.
   signature       String
+  /// Language the PDF is printed in: en, de, fr, es.
+  lang            String      @default("en")
+  /// For a credit note: the receipt it refunds.
+  creditForId     String?
   booking         Booking?    @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@index([issuedAt])
@@ -595,6 +618,7 @@ model Guide {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   assignments DepartureStaff[]
+  leave       GuideLeave[]
 }
 
 /// Partner travel agencies that send us travellers.
@@ -696,4 +720,99 @@ model SavedList {
   createdAt  DateTime  @default(now())
 
   @@index([remindAt])
+}
+
+/// Other travellers in a group, each with their own sign-in to the same booking.
+model BookingAccess {
+  id          String    @id @default(cuid())
+  bookingId   String
+  travellerId String
+  invitedBy   String?
+  /// This traveller's own details (passport, flights…), AES-256-GCM encrypted JSON.
+  detailsEnc  String?
+  createdAt   DateTime  @default(now())
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  traveller   Traveller @relation(fields: [travellerId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, travellerId])
+  @@index([travellerId])
+}
+
+/// Each traveller's own packing checklist for a trip.
+model PackingList {
+  id          String    @id @default(cuid())
+  bookingId   String
+  travellerId String
+  /// Names of the items already in the bag.
+  packed      String[]  @default([])
+  /// The traveller's own extra items: [{ name, packed }].
+  extra       Json?
+  updatedAt   DateTime  @updatedAt
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  traveller   Traveller @relation(fields: [travellerId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, travellerId])
+}
+
+/// A phone or browser that asked for notifications (Web Push).
+model PushSubscription {
+  id          String    @id @default(cuid())
+  travellerId String
+  endpoint    String    @unique
+  p256dh      String
+  auth        String
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  traveller   Traveller @relation(fields: [travellerId], references: [id], onDelete: Cascade)
+
+  @@index([travellerId])
+}
+
+/// Notices shown on the traveller's page (and sent to their phone).
+model Notification {
+  id          String    @id @default(cuid())
+  travellerId String
+  bookingId   String?
+  kind        String
+  title       String
+  body        String
+  href        String?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  traveller   Traveller @relation(fields: [travellerId], references: [id], onDelete: Cascade)
+
+  @@index([travellerId, createdAt])
+}
+
+/// Days a guide or porter is not available.
+model GuideLeave {
+  id        String   @id @default(cuid())
+  guideId   String
+  from      DateTime @db.Date
+  to        DateTime @db.Date
+  note      String?
+  createdAt DateTime @default(now())
+  guide     Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@index([from, to])
+}
+
+/// One use of the trip finder (anonymous): the answers and how many trips matched.
+model FinderAnswer {
+  id        String   @id @default(cuid())
+  answers   Json
+  results   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Website visits per day and source (no cookies, no personal data).
+model VisitDay {
+  day    DateTime @db.Date
+  source String
+  visits Int      @default(0)
+
+  @@id([day, source])
 }

@@ -5,6 +5,7 @@ import { db } from "@/lib/admin/db";
 import { can, requireUser } from "@/lib/admin/guards";
 import { CUSTOMER_FIELDS, readCustomerDetails } from "@/lib/server/customers";
 import { CustomerForm } from "./form";
+import { SEGMENTS, customerStats } from "@/lib/server/segments";
 
 export const metadata = { title: "Customer" };
 
@@ -22,9 +23,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       ])
     : [[], [], []];
   const paid = bookings.reduce((s, b) => s + Number(b.paid), 0);
+  const groups = c ? (await customerStats([c.email])).get(c.email.toLowerCase())?.segments.map((x) => SEGMENTS[x]) ?? [] : [];
   return (
     <>
-      <PageHeader title={c?.name ?? "New customer"} description={c ? `${c.email} · customer since ${day(c.createdAt)}` : undefined} back={{ href: "/customers", label: "Customers" }} actions={c && can(user, "receipts") ? <Link href={`/receipts/new?customer=${c.id}&kind=bill`} className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold hover:border-pine">New bill</Link> : null} />
+      <PageHeader title={c?.name ?? "New customer"} description={c ? `${c.email} · customer since ${day(c.createdAt)}${groups.length ? ` · ${groups.join(", ")}` : ""}` : undefined} back={{ href: "/customers", label: "Customers" }} actions={c && can(user, "receipts") ? <Link href={`/receipts/new?customer=${c.id}&kind=bill`} className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold hover:border-pine">New bill</Link> : null} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] [&>*]:min-w-0">
         <CustomerForm id={c?.id ?? null} fields={CUSTOMER_FIELDS} initial={{ name: c?.name ?? "", email: c?.email ?? "", phone: c?.phone ?? "", country: c?.country ?? "", notes: c?.notes ?? "", tags: c?.tags ?? [], details: readCustomerDetails(c?.detailsEnc ?? null) as Record<string, string> }} />
         {c ? (
