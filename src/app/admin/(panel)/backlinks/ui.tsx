@@ -22,7 +22,7 @@ const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./,
 type Missing = { path: string; hits: number; lastSeen: string; referrers: { url: string; n: number; own: boolean }[]; suggestion: { path: string; title: string } | null };
 
 export function MissingList({ rows }: { rows: Missing[] }) {
-  if (!rows.length) return <p className="text-sm text-muted">No broken addresses. Every link people followed led to a real page.</p>;
+  if (!rows.length) return <p className="text-sm text-muted">No broken addresses.</p>;
   return <ul className="divide-y divide-line">{rows.map((r) => <MissingRow key={r.path} row={r} />)}</ul>;
 }
 
@@ -53,10 +53,10 @@ function MissingRow({ row }: { row: Missing }) {
             </li>
           ))}
         </ul>
-      ) : <p className="mt-1.5 text-xs text-muted">Typed in or from a bookmark (no linking page known).</p>}
+      ) : <p className="mt-1.5 text-xs text-muted">No referring page.</p>}
       <form
         className="mt-3 flex flex-wrap items-center gap-2"
-        onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "redirect", title: `Send ${row.path} to ${to}`, detail: "A permanent redirect, live at once: visitors and Google opening the old address go to this page, and the links to it keep their value.", action: "Add redirect" }))) return; const r = await fixMissingAction(row.path, to); setNote(r.ok ? { tone: "green", text: r.message ?? "Fixed." } : { tone: "red", text: r.error }); if (r.ok) router.refresh(); }); }}
+        onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "redirect", title: `Send ${row.path} to ${to}`, detail: "Permanent redirect, live immediately.", action: "Add redirect" }))) return; const r = await fixMissingAction(row.path, to); setNote(r.ok ? { tone: "green", text: r.message ?? "Fixed." } : { tone: "red", text: r.error }); if (r.ok) router.refresh(); }); }}
       >
         <ArrowRight className="size-4 text-muted" />
         <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="/trip/the-right-page/" aria-label={`Send ${row.path} to`} className={cn(inputClass, "max-w-md flex-1 py-2 font-mono text-[13px]")} required />
@@ -79,12 +79,12 @@ export function AddBacklinks() {
   const [pending, start] = useTransition();
   return (
     <form onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await addBacklinksAction(text, label); setNote(r.ok ? { tone: "green", text: r.message ?? "Added." } : { tone: "red", text: r.error }); if (r.ok) { setText(""); setLabel(""); router.refresh(); } }); }}>
-      <label htmlFor="bl-urls" className="text-sm font-semibold">Pages that link to you</label>
+      <label htmlFor="bl-urls" className="text-sm font-semibold">Linking pages</label>
       <textarea id="bl-urls" value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder={"https://www.lonelyplanet.com/nepal/…\nhttps://partner-agency.com/our-partners/"} className={cn(inputClass, "mt-1.5 font-mono text-[13px]")} />
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <label htmlFor="bl-note" className="text-sm font-semibold">Note (optional)</label>
-          <input id="bl-note" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Partner agency, guest article, directory" className={cn(inputClass, "mt-1.5")} />
+          <input id="bl-note" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Partner agency" className={cn(inputClass, "mt-1.5")} />
         </div>
         <button type="submit" disabled={pending || !text.trim()} className="inline-flex items-center gap-2 rounded-full bg-pine px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{pending ? <Loader2 className="size-4 animate-spin" /> : null} Add and check</button>
       </div>
@@ -118,7 +118,7 @@ const STATUS: Record<string, { tone: Tone; label: string; help: string }> = {
 
 export function BacklinkList({ rows, siteUrl }: { rows: Link[]; siteUrl: string }) {
   const [filter, setFilter] = useState("");
-  if (!rows.length) return <p className="text-sm text-muted">No backlinks added yet. Paste a few above.</p>;
+  if (!rows.length) return <p className="text-sm text-muted">No backlinks yet.</p>;
   const shown = filter ? rows.filter((r) => r.status === filter) : rows;
   const domains = new Set(rows.map((r) => host(r.sourceUrl))).size;
   return (

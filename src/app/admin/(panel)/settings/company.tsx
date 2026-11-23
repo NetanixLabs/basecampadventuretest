@@ -42,7 +42,7 @@ export function CompanyForm({ initial }: { initial: V }) {
   ));
   return (
     <Card title="Company & contact" info="These details appear across the whole website (header, footer, contact page, booking page, Google's business information) and in every email. Saving updates everything at once.">
-      <form onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save company and contact details", detail: "They change at once across the whole website (header, footer, contact page, Google's business details) and in every email.", action: "Save" }))) return; const r = await saveCompany(v); setMsg(r.ok ? r.message ?? "Saved." : r.error); }); }} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save company and contact details", detail: "Updates the website and all emails immediately.", action: "Save" }))) return; const r = await saveCompany(v); setMsg(r.ok ? r.message ?? "Saved." : r.error); }); }} className="space-y-6">
         <div>
           <p className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Contact</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group("contact")}</div>

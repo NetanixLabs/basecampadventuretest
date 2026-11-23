@@ -36,7 +36,7 @@ export function Composer({ trips, codes }: { trips: { value: string; label: stri
     return () => clearTimeout(t);
   }, [v]);
   const send = (test: boolean) => start(async () => {
-    if (!test && !(await stepUp({ purpose: "newsletter", title: "Send this newsletter to every subscriber now", detail: "This can't be undone. Send yourself a test first if you haven't.", action: "Send to everyone" }))) return;
+    if (!test && !(await stepUp({ purpose: "newsletter", title: "Send this newsletter to every subscriber now", detail: "Cannot be undone. Send a test first.", action: "Send to everyone" }))) return;
     const r = await sendCampaign(v, test);
     setMsg(r.ok ? r.message : r.error);
   });

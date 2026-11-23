@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Check, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FolderOpen, Loader2, RefreshCw, Search, Trash2, Upload, X } from "lucide-react";
 import { MediaPicker, UploadBar, kb, thumb, uploadFile, uploadMany, type Item, type Progress } from "@/components/admin/form/media-field";
 import { inputClass } from "@/components/admin/ui";
+import { Info } from "@/components/admin/info";
 import { useStepUp } from "@/components/admin/step-up";
 import type { Use } from "@/lib/admin/media-usage";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,7 @@ export function MediaLibrary({ siteUrl, canPublish }: { siteUrl: string; canPubl
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const bulkDelete = async () => {
-    if (!(await stepUp({ purpose: "delete", title: `Delete ${selected.size} ${selected.size === 1 ? "file" : "files"} for good`, detail: "Files still used on the website are skipped. This can't be undone.", action: "Delete", danger: true }))) return;
+    if (!(await stepUp({ purpose: "delete", title: `Delete ${selected.size} ${selected.size === 1 ? "file" : "files"} for good`, detail: "Permanent. Files in use are skipped.", action: "Delete", danger: true }))) return;
     const r = await deleteManyAction([...selected]);
     if (!r.ok) return setNote({ tone: "red", text: r.error });
     setNote({ tone: r.kept ? "red" : "green", text: `${r.deleted} deleted.${r.kept ? ` ${r.kept} kept because the website still uses them.` : ""}` });
@@ -95,7 +96,7 @@ export function MediaLibrary({ siteUrl, canPublish }: { siteUrl: string; canPubl
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {([["", "All"], ["unused", "Not used anywhere"], ["noalt", "Needs a description"]] as const).map(([k, label]) => (
+        {([["", "All"], ["unused", "Not used anywhere"], ["noalt", "Missing alt text"]] as const).map(([k, label]) => (
           <button key={k} type="button" onClick={() => reset(() => setShow(k))} className={cn("rounded-full border px-3.5 py-1.5 text-xs font-semibold transition", show === k ? "border-pine bg-pine/10 text-pine" : "border-line bg-card text-ink-soft hover:border-pine")}>{label}</button>
         ))}
         <span className="mx-1 hidden h-5 w-px bg-line sm:block" />
@@ -124,14 +125,14 @@ export function MediaLibrary({ siteUrl, canPublish }: { siteUrl: string; canPubl
 
       <p className="mb-3 flex items-center gap-2 text-sm text-muted">
         {loading ? <Loader2 className="size-3.5 animate-spin" /> : null}
-        {data ? `${data.total.toLocaleString()} ${kind === "image" ? "photos" : "videos"}${show === "unused" ? " not used anywhere" : show === "noalt" ? " need a description" : ""}` : "Loading…"}
-        <span className="hidden sm:inline">· drop files anywhere here to upload</span>
+        {data ? `${data.total.toLocaleString()} ${kind === "image" ? "photos" : "videos"}${show === "unused" ? " not used anywhere" : show === "noalt" ? " missing alt text" : ""}` : "Loading…"}
+        <span className="hidden sm:inline">· drop files to upload</span>
       </p>
 
       {/* Grid */}
       {data && !items.length ? (
         <div className="rounded-2xl border border-dashed border-line px-6 py-14 text-center text-sm text-muted">
-          {show === "unused" ? "Every file is in use. Nothing to tidy up." : show === "noalt" ? "Every photo has a description. Well done." : q ? "Nothing found." : "No files yet. Drop some here."}
+          {show === "unused" ? "All files are in use." : show === "noalt" ? "All photos have alt text." : q ? "Nothing found." : "No files yet. Drop some here."}
         </div>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
@@ -147,7 +148,7 @@ export function MediaLibrary({ siteUrl, canPublish }: { siteUrl: string; canPubl
                   {selecting ? <span className={cn("absolute top-2 left-2 grid size-6 place-items-center rounded-md border-2 shadow", on ? "border-pine bg-pine text-white" : "border-white bg-black/20")}>{on ? <Check className="size-4" /> : null}</span> : null}
                   <span className="absolute top-2 right-2 flex flex-col items-end gap-1">
                     {m.unused ? <span className="rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-bold text-white">Not used</span> : null}
-                    {m.weakAlt && !m.mime.startsWith("video/") ? <span className="rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold text-amber-950">No description</span> : null}
+                    {m.weakAlt && !m.mime.startsWith("video/") ? <span className="rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold text-amber-950">No alt text</span> : null}
                   </span>
                   <span className="block truncate px-2 pt-1.5 text-xs font-medium">{m.alt || m.src.split("/").pop()}</span>
                   <span className="block px-2 pb-1.5 text-[11px] text-muted">{m.width ? `${m.width}×${m.height} · ` : ""}{kb(m.bytes)}</span>
@@ -229,18 +230,18 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
     setBusy(true);
     const r = await updateMediaAction(item.id, alt);
     setBusy(false);
-    setMsg(r.ok ? { tone: "green", text: "Description saved." } : { tone: "red", text: r.error });
+    setMsg(r.ok ? { tone: "green", text: "Saved." } : { tone: "red", text: r.error });
     if (r.ok) onSaved(alt);
   };
 
   const replace = async () => {
     if (!candidate) return;
-    if (!(await stepUp({ purpose: "replace", title: `Replace this ${isVideo ? "video" : "photo"} on ${usedBy?.length ?? 0} ${usedBy?.length === 1 ? "page" : "pages"}`, detail: "It changes on the live website at once. Each page keeps a version from before in its history.", action: "Replace everywhere" }))) return;
+    if (!(await stepUp({ purpose: "replace", title: `Replace this ${isVideo ? "video" : "photo"} on ${usedBy?.length ?? 0} ${usedBy?.length === 1 ? "page" : "pages"}`, detail: "Live immediately. Previous versions stay in each page's history.", action: "Replace everywhere" }))) return;
     setBusy(true);
     const r = await replaceMediaAction(item.id, candidate.id);
     setBusy(false);
     if (!r.ok) return setMsg({ tone: "red", text: r.error });
-    onChanged(`Photo replaced in ${r.entries + r.sections} ${r.entries + r.sections === 1 ? "place" : "places"} and live on the website. The old file is now unused; you can delete it.`);
+    onChanged(`Replaced on ${r.entries + r.sections} ${r.entries + r.sections === 1 ? "page" : "pages"}. The old file is now unused.`);
   };
 
   const uploadReplacement = async (files: FileList) => {
@@ -292,10 +293,9 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
 
           {!isVideo ? (
             <section>
-              <label className="block text-sm font-semibold" htmlFor="alt">Description (alt text)</label>
+              <label className="flex items-center gap-1.5 text-sm font-semibold" htmlFor="alt">Alt text <Info>Describe the photo, e.g. “Trekkers crossing a suspension bridge near Namche Bazaar”. Used by Google and screen readers, and as the default wherever the photo is added.</Info></label>
               <textarea id="alt" value={alt} onChange={(e) => setAlt(e.target.value)} rows={2} className={cn(inputClass, "mt-1.5", item.weakAlt && alt === item.alt && "border-amber-300")} />
-              <p className="mt-1 text-xs text-muted">Describe what's in the photo, e.g. "Trekkers crossing a suspension bridge near Namche Bazaar". Google uses this. New uses of the photo start with it.</p>
-              <button type="button" disabled={busy || alt === item.alt} onClick={saveAlt} className="mt-2 rounded-full bg-pine px-5 py-2 text-sm font-semibold text-white disabled:opacity-40">Save description</button>
+              <button type="button" disabled={busy || alt === item.alt} onClick={saveAlt} className="mt-2 rounded-full bg-pine px-5 py-2 text-sm font-semibold text-white disabled:opacity-40">Save</button>
             </section>
           ) : null}
 
@@ -315,13 +315,13 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
                     </li>
                   ))}
                 </ul>
-              ) : <p className="mt-2 text-sm text-muted">Not used anywhere. It's safe to delete.</p>}
+              ) : <p className="mt-2 text-sm text-muted">Not used. Safe to delete.</p>}
           </section>
 
           {canPublish && inUse && !usedBy?.some((u) => !u.href) ? (
             <section className="rounded-2xl border border-pine/30 bg-pine/[0.04] p-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold"><RefreshCw className="size-4 text-pine" /> Replace everywhere</h3>
-              <p className="mt-1 text-xs text-muted">Put another {isVideo ? "video" : "photo"} in place of this one on all {usedBy!.length} {usedBy!.length === 1 ? "place" : "places"} above, in one step. It goes live straight away. Each page keeps a version from before, in its history.</p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">{usedBy!.length === 1 ? "Swap it on this page." : `Swap it on all ${usedBy!.length} pages at once.`} <Info>Goes live immediately. Each page keeps the previous version in its history.</Info></p>
               <input ref={file} type="file" hidden accept={isVideo ? "video/mp4,video/webm" : "image/*,.heic,.heif"} onChange={(e) => { if (e.target.files) void uploadReplacement(e.target.files); e.target.value = ""; }} />
               {progress ? <div className="mt-3"><UploadBar progress={progress} /></div> : null}
               {candidate ? (
@@ -353,7 +353,7 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
         <div className="flex items-center gap-3 border-t border-line px-5 py-3">
           {inUse ? <p className="mr-auto flex items-center gap-1.5 text-xs text-muted"><AlertTriangle className="size-3.5" /> In use, so it can't be deleted.</p> : <span className="mr-auto" />}
           <button type="button" disabled={busy || usedBy === null || inUse} onClick={async () => {
-            if (!(await stepUp({ purpose: "delete", title: `Delete ${item.src.split("/").pop()} for good`, detail: "Nothing on the website uses it. This can't be undone.", action: "Delete", danger: true }))) return;
+            if (!(await stepUp({ purpose: "delete", title: `Delete ${item.src.split("/").pop()} for good`, detail: "Permanent.", action: "Delete", danger: true }))) return;
             const r = await deleteMediaAction(item.id);
             if (r.ok) onChanged("File deleted."); else { setMsg({ tone: "red", text: r.error }); setUsedBy(r.usedBy ?? usedBy); }
           }} className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40 dark:border-red-900 dark:text-red-300"><Trash2 className="size-4" /> Delete</button>

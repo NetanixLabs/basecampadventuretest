@@ -13,7 +13,7 @@ export function RowActions({ collection, id, title, status, singular }: { collec
   const stepUp = useStepUp();
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ask: string, code = false) =>
     start(async () => {
-      if (code ? !(await stepUp({ purpose: "delete", title: `Delete “${title}” for good`, detail: `This can't be undone. To take it off the website but keep it, use Hide instead.`, action: "Delete for good", danger: true })) : !confirm(ask)) return;
+      if (code ? !(await stepUp({ purpose: "delete", title: `Delete “${title}” for good`, detail: "Permanent. Use Hide to keep it offline instead.", action: "Delete for good", danger: true })) : !confirm(ask)) return;
       const r = await fn();
       if (!r.ok) alert(r.error);
       router.refresh();

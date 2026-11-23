@@ -80,7 +80,7 @@ function Dialog({ req, method, onDone }: { req: StepUpRequest; method: "code" | 
         <div className={cn("flex items-start gap-3 border-b border-line px-5 py-4", req.danger ? "bg-red-50 dark:bg-red-950/40" : "bg-pine/5")}>
           <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", req.danger ? "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200" : "bg-pine/15 text-pine")}><ShieldCheck className="size-5" /></span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold tracking-wide text-muted uppercase">Confirm a sensitive change</p>
+            <p className="text-xs font-semibold tracking-wide text-muted uppercase">Confirmation required</p>
             <h2 id="stepup-title" className="mt-0.5 font-bold leading-snug">{req.title}</h2>
           </div>
           <button type="button" disabled={busy} onClick={() => onDone(false)} className="grid size-8 place-items-center rounded-full text-muted hover:text-ink" aria-label="Cancel"><X className="size-4" /></button>
@@ -89,10 +89,10 @@ function Dialog({ req, method, onDone }: { req: StepUpRequest; method: "code" | 
           {req.detail ? <div className="text-sm text-ink-soft">{req.detail}</div> : null}
           <label className="flex items-start gap-2.5 text-sm">
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 size-4 accent-[var(--pine)]" />
-            <span>I understand and want to make this change.</span>
+            <span>I confirm this change.</span>
           </label>
           <div>
-            <label htmlFor="stepup-code" className="flex items-center gap-1.5 text-sm font-semibold"><KeyRound className="size-4 text-muted" /> {method === "code" ? "Code from your authenticator app" : "Your password"}</label>
+            <label htmlFor="stepup-code" className="flex items-center gap-1.5 text-sm font-semibold"><KeyRound className="size-4 text-muted" /> {method === "code" ? "Authenticator code" : "Password"}</label>
             <input
               ref={input}
               id="stepup-code"
@@ -105,7 +105,7 @@ function Dialog({ req, method, onDone }: { req: StepUpRequest; method: "code" | 
               maxLength={method === "code" ? 20 : 200}
               className={cn(inputClass, "mt-1.5", method === "code" && "text-center font-mono text-lg tracking-[0.3em]")}
             />
-            <p className="mt-1.5 text-xs text-muted">{method === "code" ? "Lost your phone? A backup code works too." : "Two-step sign-in is off on this server, so your password is asked instead."}</p>
+            <p className="mt-1.5 text-xs text-muted">{method === "code" ? "A backup code also works." : "Two-step sign-in is off: use your password."}</p>
           </div>
           {error ? <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-200">{error}</p> : null}
         </div>

@@ -45,13 +45,13 @@ export default async function BacklinksPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Backlinks & broken links"
-        description="Links from other websites are one of the strongest signals Google uses. Keep them working, and keep track of who links to you."
-        info="Broken addresses: someone opened an address on the site that doesn't exist, often from an old link on another website. Fix each with a redirect to the right page, and the link keeps its value for Google. Backlinks: pages on other websites that link to you; each is checked every week. Sites sending visitors: websites people came from, counted automatically without storing anything personal."
+        description="Keep links from other websites working and tracked."
+        info="Links from other websites are a strong Google ranking signal. Broken addresses: pages visitors tried to open that don't exist. Backlinks: pages that link to you, checked weekly. Sites sending visitors: counted without personal data."
       />
       <div className="grid gap-4 sm:grid-cols-4">
-        <Stat label="Broken addresses" value={missing.length} hint={lost ? `${lost} linked from other websites` : "visitors who hit a dead end"} href="/backlinks?tab=missing" />
-        <Stat label="Backlinks passing value" value={count("live")} hint={`${count("nofollow")} more marked nofollow`} href="/backlinks?tab=backlinks" />
-        <Stat label="Backlinks lost" value={count("missing") + count("error")} hint="the page no longer links, or is gone" href="/backlinks?tab=backlinks" />
+        <Stat label="Broken addresses" value={missing.length} hint={lost ? `${lost} from other websites` : "dead ends"} href="/backlinks?tab=missing" />
+        <Stat label="Backlinks passing value" value={count("live")} hint={`+${count("nofollow")} nofollow`} href="/backlinks?tab=backlinks" />
+        <Stat label="Backlinks lost" value={count("missing") + count("error")} hint="removed or page down" href="/backlinks?tab=backlinks" />
         <Stat label="Sites sending visitors" value={sites.length} hint={`${sites.reduce((n, [, d]) => n + d.visits, 0).toLocaleString()} visits`} href="/backlinks?tab=referrals" />
       </div>
 
@@ -62,20 +62,20 @@ export default async function BacklinksPage({ searchParams }: { searchParams: Pr
       </nav>
 
       {tab === "missing" ? (
-        <Card title="Addresses that showed “not found”" description="Most visited first. Fix the ones linked from other websites first: each is a backlink that's currently wasted." info="Pick the page each address should go to (a suggestion is filled in when one looks right) and press Fix. It becomes a permanent redirect, which passes the link's value to the new page. Ignore the ones that don't matter, like typing mistakes.">
+        <Card title="Broken addresses" description="Most visited first." info="Fix the ones linked from other websites first. Choose the right page (a suggestion is filled in) and press Fix: a permanent redirect passes the link's value to that page. Ignore typos and noise.">
           <MissingList rows={missing.map((m) => ({ path: m.path, hits: m.hits, lastSeen: m.lastSeen.toISOString(), referrers: Object.entries((m.referrers as Record<string, number>) ?? {}).sort((a, b) => b[1] - a[1]).map(([url, n]) => ({ url, n, own: isOwn(url) })), suggestion: suggest(m.path) }))} />
         </Card>
       ) : tab === "backlinks" ? (
         <div className="space-y-6">
-          <Card title="Add backlinks" description="Paste the addresses of pages on other websites that link to you, one per line. Good places to find them: Google Search Console → Links → Top linking sites, partner and association pages, travel blogs, directories.">
+          <Card title="Add backlinks" description="One address per line." info="Where to find them: Google Search Console → Links → Top linking sites; partner and association pages, directories, travel blogs.">
             <AddBacklinks />
           </Card>
-          <Card title="Your backlinks" description="Each one is checked every week: is the link still there, which page it points to, with what words, and whether it passes value." actions={backlinks.length ? <CheckAll /> : null}>
+          <Card title="Your backlinks" description="Checked weekly." info="Each check confirms the link is still there, the page it points to, the link text, and whether it passes ranking value (not nofollow)." actions={backlinks.length ? <CheckAll /> : null}>
             <BacklinkList rows={backlinks.map((b) => ({ id: b.id, sourceUrl: b.sourceUrl, target: b.target, anchor: b.anchor, status: b.status, rel: b.rel, note: b.note, lastChecked: b.lastChecked?.toISOString() ?? null, lastError: b.lastError }))} siteUrl={site.url} />
           </Card>
         </div>
       ) : (
-        <Card title="Websites that sent visitors" description="Counted from each visit's first page. Only the website's name and the page they landed on are kept.">
+        <Card title="Sites sending visitors" info="Counted on the first page of each visit. Only the website name and landing page are stored.">
           {sites.length ? (
             <ul className="divide-y divide-line">
               {sites.map(([domain, d]) => (
@@ -90,7 +90,7 @@ export default async function BacklinksPage({ searchParams }: { searchParams: Pr
                 </li>
               ))}
             </ul>
-          ) : <p className="text-sm text-muted">Nothing yet. Websites appear here as soon as someone arrives from them.</p>}
+          ) : <p className="text-sm text-muted">No visits from other websites yet.</p>}
         </Card>
       )}
     </>

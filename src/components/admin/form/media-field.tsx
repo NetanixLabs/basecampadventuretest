@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, FolderOpen, ImagePlus, Loader2, RefreshCw, Search, Star, Trash2, Upload, X } from "lucide-react";
 import { inputClass } from "@/components/admin/ui";
+import { Info } from "@/components/admin/info";
 import { cn } from "@/lib/utils";
 
 export type Img = { src: string; w: number; h: number; alt: string };
@@ -145,23 +146,22 @@ export function ImageField({ value, onChange, folder, minWidth = 0 }: { value: I
             </p>
             <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold hover:border-pine hover:text-pine"><FolderOpen className="size-3.5" /> Replace from library</button>
             <button type="button" onClick={() => input.current?.click()} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold hover:border-pine hover:text-pine"><Upload className="size-3.5" /> Upload new</button>
-            <button type="button" onClick={() => { if (confirm("Remove this photo from here? It stays in the media library.")) onChange(null); }} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-red-700 hover:border-red-300 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"><Trash2 className="size-3.5" /> Remove</button>
+            <button type="button" onClick={() => { if (confirm("Remove this photo? It stays in the media library.")) onChange(null); }} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-red-700 hover:border-red-300 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"><Trash2 className="size-3.5" /> Remove</button>
           </div>
           {small ? (
             <p className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-              <AlertTriangle className="size-3.5 shrink-0" /> This photo is {value.w} px wide. Here it can look blurry on big screens; at least {minWidth} px is best.
+              <AlertTriangle className="size-3.5 shrink-0" /> Low resolution ({value.w} px). Use at least {minWidth} px.
             </p>
           ) : null}
           <div className="border-t border-line px-3 py-2.5">
-            <label className="mb-1 block text-xs font-semibold text-ink-soft" htmlFor={`alt-${value.src}`}>Photo description</label>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-ink-soft" htmlFor={`alt-${value.src}`}>Alt text <Info>Describe the photo for Google and screen readers.</Info></label>
             <input
               id={`alt-${value.src}`}
               value={value.alt}
               onChange={(e) => onChange({ ...value, alt: e.target.value })}
-              placeholder="e.g. Trekkers crossing a suspension bridge near Namche Bazaar"
+              placeholder="e.g. Suspension bridge near Namche Bazaar"
               className={cn(inputClass, "py-2", !value.alt.trim() && "border-amber-300 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20")}
             />
-            <p className="mt-1 text-[11px] text-muted">For Google and for visitors who can't see the photo.</p>
           </div>
         </div>
       ) : (
@@ -169,12 +169,12 @@ export function ImageField({ value, onChange, folder, minWidth = 0 }: { value: I
           {progress ? <div className="w-full max-w-sm"><UploadBar progress={progress} /></div> : (
             <>
               <ImagePlus className="size-8 text-pine" />
-              <p className="text-sm font-semibold">{over ? "Drop the photo to upload it" : "Drag a photo here from your computer"}</p>
+              <p className="text-sm font-semibold">{over ? "Drop to upload" : "Drop a photo here"}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 <button type="button" onClick={() => input.current?.click()} className="inline-flex items-center gap-1.5 rounded-full bg-pine px-4 py-2 text-sm font-semibold text-white hover:bg-pine-deep"><Upload className="size-4" /> Upload</button>
                 <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-semibold hover:border-pine hover:text-pine"><FolderOpen className="size-4" /> Choose from library</button>
               </div>
-              {minWidth ? <p className="text-xs text-muted">Best at least {minWidth} px wide.</p> : null}
+              {minWidth ? <p className="text-xs text-muted">Min. {minWidth} px wide</p> : null}
             </>
           )}
         </div>
@@ -225,13 +225,13 @@ export function GalleryField({ value, onChange, folder }: { value: Img[]; onChan
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <p className="mr-auto text-xs text-muted">
           <span className="font-semibold text-ink-soft">{value.length} {value.length === 1 ? "photo" : "photos"}</span>
-          {missing ? <span className="ml-2 text-amber-700 dark:text-amber-300">· {missing} without a description</span> : null}
-          {value.length > 1 ? <span className="ml-2 hidden sm:inline">· drag to change the order</span> : null}
+          {missing ? <span className="ml-2 text-amber-700 dark:text-amber-300">· {missing} missing alt text</span> : null}
+          {value.length > 1 ? <span className="ml-2 hidden sm:inline">· drag to reorder</span> : null}
         </p>
         <button type="button" onClick={() => setPicker({ replace: null })} className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold hover:border-pine hover:text-pine"><FolderOpen className="size-3.5" /> Add from library</button>
         <button type="button" onClick={() => input.current?.click()} className="inline-flex items-center gap-1.5 rounded-full bg-pine px-3 py-1.5 text-xs font-semibold text-white hover:bg-pine-deep"><Upload className="size-3.5" /> Upload photos</button>
         {value.length > 1 ? (
-          <button type="button" onClick={() => { if (confirm(`Remove all ${value.length} photos from this gallery? They stay in the media library.`)) onChange([]); }} className="rounded-full px-2 py-1.5 text-xs font-semibold text-muted hover:text-red-700">Remove all</button>
+          <button type="button" onClick={() => { if (confirm(`Remove all ${value.length} photos? They stay in the media library.`)) onChange([]); }} className="rounded-full px-2 py-1.5 text-xs font-semibold text-muted hover:text-red-700">Remove all</button>
         ) : null}
       </div>
       {progress ? <div className="mb-3"><UploadBar progress={progress} /></div> : null}
@@ -272,7 +272,7 @@ export function GalleryField({ value, onChange, folder }: { value: Img[]; onChan
             <input
               value={img.alt}
               onChange={(e) => onChange(value.map((x, j) => (j === i ? { ...x, alt: e.target.value } : x)))}
-              placeholder="Add a description…"
+              placeholder="Alt text…"
               aria-label={`Description of photo ${i + 1}`}
               className={cn("w-full border-t border-line bg-card px-2 py-1.5 text-xs focus:bg-pine/5 focus:outline-none", !img.alt.trim() && "bg-amber-50/70 placeholder:text-amber-700 dark:bg-amber-950/30 dark:placeholder:text-amber-300")}
             />
@@ -282,7 +282,7 @@ export function GalleryField({ value, onChange, folder }: { value: Img[]; onChan
           <button type="button" onClick={() => input.current?.click()} className={cn("flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-3 text-center text-sm font-semibold text-pine transition hover:border-pine hover:bg-pine/5", over ? "border-pine bg-pine/5" : "border-line")}>
             <ImagePlus className="size-6" />
             {over ? "Drop to add" : "Add photos"}
-            <span className="text-[11px] font-normal text-muted">or drag them in from your computer</span>
+            <span className="text-[11px] font-normal text-muted">or drop here</span>
           </button>
         </li>
       </ul>
@@ -475,7 +475,7 @@ export function MediaPicker({ onPick, onClose, multiple, folder, kind = "image",
                 <span className="hidden sm:inline">· {data.total.toLocaleString()} {noun}s</span>
               </>
             ) : (
-              <span>Drag files from your computer straight into this window.</span>
+              <span>Drop files here to upload.</span>
             )}
           </div>
           <div className="flex items-center gap-3">

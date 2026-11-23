@@ -39,6 +39,11 @@ git -C "$ROOT/repo" archive HEAD | tar -x -C "$NEW"
 cd "$NEW"
 npm ci --no-audit --no-fund
 npm run build
+# Resized photos are kept in one folder shared by every release, so a deploy
+# doesn't make every photo be resized again (12,000+ sizes, minutes of CPU).
+mkdir -p "$ROOT/cache/images"
+rm -rf "$NEW/.next/cache/images" && mkdir -p "$NEW/.next/cache" && ln -s "$ROOT/cache/images" "$NEW/.next/cache/images"
+find "$ROOT/cache/images" -type f -mtime +60 -delete 2>/dev/null || true
 
 echo "== 3/5 Database migrations"
 npx prisma migrate deploy
@@ -69,6 +74,9 @@ if [ "$ok" != 0 ]; then
   fi
   exit 1
 fi
+
+# Prepare photo sizes for new or changed pages in the background, at low priority.
+nohup nice -n 19 node "$NEW/scripts/warm-cache.mjs" http://127.0.0.1:3000 >> "$ROOT/backups/warm-cache.log" 2>&1 &
 
 # Keep the last 5 releases for instant rollback.
 ls -1dt "$ROOT"/releases/*/ | tail -n +6 | xargs -r rm -rf

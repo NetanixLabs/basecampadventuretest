@@ -155,7 +155,7 @@ export function EntryEditor({
                     {canPublish ? (
                       <MenuItem danger icon={<Trash2 className="size-4" />} onClick={() => start(async () => {
                         setMenu(false);
-                        if (!(await stepUp({ purpose: "delete", title: `Delete “${title}” for good`, detail: `This can't be undone.${status === "published" ? " It disappears from the website. To keep it but take it off the site, use Hide instead." : ""}`, action: "Delete for good", danger: true }))) return;
+                        if (!(await stepUp({ purpose: "delete", title: `Delete “${title}” for good`, detail: status === "published" ? "Permanent. Removed from the website. Use Hide to keep it offline instead." : "Permanent.", action: "Delete for good", danger: true }))) return;
                         const r = await deleteAction(def.key, id);
                         if (r.ok) router.push(`/c/${def.key}`); else setMessage({ tone: "red", text: r.error });
                       })}>Delete for good</MenuItem>

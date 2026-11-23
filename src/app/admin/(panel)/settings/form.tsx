@@ -12,7 +12,7 @@ export function SettingsForm({ initial }: { initial: { tawkProperty: string; taw
   const stepUp = useStepUp();
   return (
     <Card title="Website integrations">
-      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save website integrations", detail: "Chat, analytics and verification codes change on the live website at once.", action: "Save" }))) return; const r = await saveSettings(v); setMsg(r.ok ? r.message ?? "Saved." : r.error); }); }}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save website integrations", detail: "Applies to the live website immediately.", action: "Save" }))) return; const r = await saveSettings(v); setMsg(r.ok ? r.message ?? "Saved." : r.error); }); }}>
         <div>
           <Label htmlFor="tp" info={<>tawk.to → Administration → Chat Widget: the long ID in the widget code (after embed.tawk.to/). The chat bubble sits bottom-right, WhatsApp bottom-left, so they never overlap.</>}>tawk.to Property ID</Label>
           <input id="tp" value={v.tawkProperty} onChange={(e) => setV({ ...v, tawkProperty: e.target.value })} className={`${inputClass} font-mono`} placeholder="5f1a2b3c4d5e6f7a8b9c0d1e" />
