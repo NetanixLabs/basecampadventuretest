@@ -9,9 +9,9 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import Youtube from "@tiptap/extension-youtube";
 import {
-  Bold, Code2, Heading2, Heading3, Heading4, ImagePlus, Italic, Link2, List, ListOrdered, Minus, Quote, Redo2, Table as TableIcon, Underline, Undo2, Clapperboard as YoutubeIcon,
+  ArrowLeftRight, Bold, Code2, FileText, Trash2, Heading2, Heading3, Heading4, ImagePlus, Italic, Link2, List, ListOrdered, Minus, Quote, Redo2, Table as TableIcon, Underline, Undo2, Clapperboard as YoutubeIcon,
 } from "lucide-react";
-import { MediaPicker } from "@/components/admin/form/media-field";
+import { MediaPicker, UploadBar, uploadMany, type Progress } from "@/components/admin/form/media-field";
 import { cn } from "@/lib/utils";
 
 /** Keeps altitude markup from the old site (<span class="measurement" data-meters>) so feet are still added. */
@@ -28,8 +28,29 @@ const Measurement = Mark.create({
  */
 export function RichText({ value, onChange, minimal }: { value: string; onChange: (html: string) => void; minimal?: boolean }) {
   const [source, setSource] = useState(false);
-  const [picker, setPicker] = useState(false);
+  const [picker, setPicker] = useState<"insert" | "replace" | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
   const last = useRef(value);
+  const editorRef = useRef<Editor | null>(null);
+
+  /** Photos dropped or pasted into the text are uploaded and placed where they were dropped. */
+  const dropPhotos = (files: File[], pos?: number) => {
+    const photos = files.filter((f) => f.type.startsWith("image/"));
+    if (!photos.length || minimal) return false;
+    setProblem(null);
+    void uploadMany(photos, { onProgress: setProgress }).then(({ done, errors }) => {
+      const ed = editorRef.current;
+      if (ed && done.length) {
+        const chain = ed.chain().focus();
+        if (pos !== undefined) chain.setTextSelection(pos);
+        done.forEach((m) => chain.setImage({ src: m.src, alt: m.alt, width: m.width || undefined, height: m.height || undefined } as never));
+        chain.run();
+      }
+      if (errors.length) setProblem(errors.join(" "));
+    });
+    return true;
+  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -45,13 +66,30 @@ export function RichText({ value, onChange, minimal }: { value: string; onChange
       Measurement,
     ],
     content: value,
-    editorProps: { attributes: { class: cn("prose-admin min-h-40 px-4 py-3 focus:outline-none", !minimal && "min-h-72") } },
+    editorProps: {
+      attributes: { class: cn("prose-admin min-h-40 px-4 py-3 focus:outline-none", !minimal && "min-h-72") },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved || !event.dataTransfer?.files.length) return false;
+        const at = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos;
+        if (!dropPhotos([...event.dataTransfer.files], at)) return false;
+        event.preventDefault();
+        return true;
+      },
+      handlePaste: (_view, event) => {
+        const files = [...(event.clipboardData?.files ?? [])];
+        if (!files.length || !dropPhotos(files)) return false;
+        event.preventDefault();
+        return true;
+      },
+    },
     onUpdate: ({ editor }) => {
       const html = editor.isEmpty ? "" : editor.getHTML();
       last.current = html;
       onChange(html);
     },
   });
+
+  useEffect(() => { editorRef.current = editor; }, [editor]);
 
   // When the value changes from outside (e.g. an older version restored), show it.
   useEffect(() => {
@@ -65,7 +103,7 @@ export function RichText({ value, onChange, minimal }: { value: string; onChange
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-card focus-within:border-pine">
-      {editor ? <Toolbar editor={editor} minimal={minimal} source={source} setSource={setSource} onImage={() => setPicker(true)} /> : <div className="h-11 border-b border-line" />}
+      {editor ? <Toolbar editor={editor} minimal={minimal} source={source} setSource={setSource} onImage={() => setPicker("insert")} onReplaceImage={() => setPicker("replace")} /> : <div className="h-11 border-b border-line" />}
       {source ? (
         <textarea
           value={value}
@@ -79,21 +117,30 @@ export function RichText({ value, onChange, minimal }: { value: string; onChange
         <EditorContent editor={editor} />
       )}
       {!minimal ? <div className="border-t border-line px-4 py-1.5 text-right text-xs text-muted">{words.toLocaleString()} words · about {Math.max(1, Math.round(words / 220))} min read</div> : null}
+      {progress ? <div className="border-t border-line p-2"><UploadBar progress={progress} /></div> : null}
+      {problem ? <p className="border-t border-line bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-200" role="alert">{problem}</p> : null}
       {picker && editor ? (
         <MediaPicker
-          onClose={() => setPicker(false)}
+          title={picker === "replace" ? "Replace photo" : "Insert photos"}
+          onClose={() => setPicker(null)}
           onPick={(items) => {
-            items.forEach((m) => editor.chain().focus().setImage({ src: m.src, alt: m.alt, width: m.width || undefined, height: m.height || undefined } as never).run());
-            setPicker(false);
+            if (picker === "replace") {
+              const m = items[0];
+              const alt = (editor.getAttributes("image").alt as string | undefined) || m.alt;
+              editor.chain().focus().updateAttributes("image", { src: m.src, alt, width: m.width || null, height: m.height || null }).run();
+            } else {
+              items.forEach((m) => editor.chain().focus().setImage({ src: m.src, alt: m.alt, width: m.width || undefined, height: m.height || undefined } as never).run());
+            }
+            setPicker(null);
           }}
-          multiple
+          multiple={picker === "insert"}
         />
       ) : null}
     </div>
   );
 }
 
-function Toolbar({ editor, minimal, source, setSource, onImage }: { editor: Editor; minimal?: boolean; source: boolean; setSource: (b: boolean) => void; onImage: () => void }) {
+function Toolbar({ editor, minimal, source, setSource, onImage, onReplaceImage }: { editor: Editor; minimal?: boolean; source: boolean; setSource: (b: boolean) => void; onImage: () => void; onReplaceImage: () => void }) {
   const s = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -108,6 +155,7 @@ function Toolbar({ editor, minimal, source, setSource, onImage }: { editor: Edit
       ordered: e.isActive("orderedList"),
       quote: e.isActive("blockquote"),
       table: e.isActive("table"),
+      image: e.isActive("image"),
       undo: e.can().undo(),
       redo: e.can().redo(),
     }),
@@ -149,6 +197,17 @@ function Toolbar({ editor, minimal, source, setSource, onImage }: { editor: Edit
           <Btn label="YouTube video" onClick={youtube}><YoutubeIcon /></Btn>
           <Btn on={s.table} label="Table" onClick={() => (s.table ? undefined : c().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run())}><TableIcon /></Btn>
           <Btn label="Divider" onClick={() => c().setHorizontalRule().run()}><Minus /></Btn>
+          {s.image ? (
+            <span className="ml-1 flex flex-wrap items-center gap-1 rounded-lg bg-pine/10 px-1.5 py-1 text-xs">
+              <span className="px-1 font-semibold text-pine">Photo:</span>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onReplaceImage} className="inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-1 font-semibold hover:border-pine"><ArrowLeftRight className="size-3" /> Replace</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => {
+                const alt = prompt("Describe the photo (for Google and screen readers)", String(editor.getAttributes("image").alt ?? ""));
+                if (alt !== null) c().updateAttributes("image", { alt: alt.trim() }).run();
+              }} className="inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-1 font-semibold hover:border-pine"><FileText className="size-3" /> Description</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => c().deleteSelection().run()} className="inline-flex items-center gap-1 rounded-md border border-line bg-card px-2 py-1 font-semibold text-red-700 hover:border-red-300 dark:text-red-300"><Trash2 className="size-3" /> Remove</button>
+            </span>
+          ) : null}
           {s.table ? (
             <span className="ml-1 flex flex-wrap gap-1 text-xs">
               {[

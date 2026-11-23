@@ -19,7 +19,7 @@ export type OptionSource = "trips" | "destinations" | "activities" | "categories
 type Base = { name: string; label: string; help?: string; required?: boolean; wide?: boolean };
 
 export type Field =
-  | (Base & { type: "text"; placeholder?: string; max?: number; mono?: boolean })
+  | (Base & { type: "text"; placeholder?: string; max?: number; mono?: boolean; /** Shows a photo picker; the field holds the photo's address. */ picker?: "image"; folder?: string })
   | (Base & { type: "textarea"; rows?: number; max?: number })
   | (Base & { type: "richtext"; minimal?: boolean })
   | (Base & { type: "number"; min?: number; max?: number; step?: number; suffix?: string })
@@ -27,7 +27,7 @@ export type Field =
   | (Base & { type: "date" })
   | (Base & { type: "select"; options?: Option[]; source?: OptionSource; allowEmpty?: boolean })
   | (Base & { type: "multiselect"; options?: Option[]; source?: OptionSource; ordered?: boolean })
-  | (Base & { type: "image"; folder?: string })
+  | (Base & { type: "image"; folder?: string; /** Warns below this width (px). */ minWidth?: number })
   | (Base & { type: "gallery"; folder?: string })
   | (Base & { type: "strings"; itemLabel?: string; placeholder?: string })
   | (Base & { type: "repeater"; itemLabel: string; titleField?: string; fields: Field[]; collapsed?: boolean })
@@ -179,8 +179,8 @@ const trips: CollectionDef = {
     {
       title: "Photos",
       fields: [
-        { name: "cover", label: "Main photo", type: "image", folder: "trips", wide: true, help: "Wide landscape photos work best (at least 1600 px wide)." },
-        { name: "gallery", label: "Gallery", type: "gallery", folder: "trips", wide: true, help: "Drag to reorder. The first photos are shown in the slider." },
+        { name: "cover", label: "Main photo", type: "image", folder: "trips", wide: true, minWidth: 1600, help: "Wide landscape photos work best (at least 1600 px wide). Drag a photo onto it to replace it." },
+        { name: "gallery", label: "Gallery", type: "gallery", folder: "trips", wide: true, help: "Drag to reorder. The first photos are shown in the slider. Drop photos from your computer to add them." },
         { name: "map", label: "Route map", type: "image", folder: "trips", wide: true },
         {
           name: "travellerPhotos", label: "Photos from travellers", type: "repeater", itemLabel: "traveller photo", titleField: "traveller", collapsed: true, wide: true,
@@ -252,7 +252,7 @@ const trips: CollectionDef = {
             { name: "name", label: "Item", type: "text" },
             { name: "category", label: "Group", type: "text", placeholder: "Trail essentials" },
             { name: "description", label: "Why", type: "text", wide: true },
-            { name: "image", label: "Picture (path)", type: "text", mono: true, wide: true },
+            { name: "image", label: "Picture", type: "text", picker: "image", folder: "equipment", wide: true },
           ],
         },
       ],
@@ -324,7 +324,7 @@ const posts: CollectionDef = {
     {
       title: "Card & listing",
       fields: [
-        { name: "cover", label: "Cover photo", type: "image", folder: "blog", wide: true },
+        { name: "cover", label: "Cover photo", type: "image", folder: "blog", wide: true, minWidth: 1200 },
         { name: "excerpt", label: "Excerpt", type: "textarea", rows: 3, max: 320, wide: true, help: "Shown on the blog page and article cards." },
         { name: "categories", label: "Categories", type: "multiselect", source: "categories", wide: true },
         { name: "tags", label: "Tags", type: "multiselect", source: "tags", wide: true },
@@ -351,7 +351,7 @@ const pages: CollectionDef = {
       fields: [
         { name: "title", label: "Title", type: "text", required: true, wide: true },
         { name: "slug", label: "Web address", type: "text", required: true, mono: true },
-        { name: "cover", label: "Header photo", type: "image", folder: "pages", wide: true },
+        { name: "cover", label: "Header photo", type: "image", folder: "pages", wide: true, minWidth: 1600 },
         { name: "excerpt", label: "Summary", type: "textarea", rows: 2, wide: true },
         { name: "html", label: "Content", type: "richtext", wide: true },
       ],
@@ -521,7 +521,7 @@ const awards: CollectionDef = {
         { name: "slug", label: "Reference", type: "text", required: true, mono: true },
         { name: "issuer", label: "Given by", type: "text", placeholder: "Tripadvisor" },
         { name: "year", label: "Year", type: "number", min: 2000, max: 2100 },
-        { name: "image", label: "Badge image (path)", type: "text", mono: true, wide: true },
+        { name: "image", label: "Badge image", type: "text", picker: "image", folder: "awards", wide: true },
         { name: "href", label: "Link", type: "text", wide: true },
       ],
     },

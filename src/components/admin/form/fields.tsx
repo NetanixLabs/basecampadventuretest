@@ -6,7 +6,7 @@ import type { Field, Option, OptionSource } from "@/lib/admin/collections";
 import { getPath, setPath } from "@/lib/admin/paths";
 import { inputClass, Label } from "@/components/admin/ui";
 import { Info } from "@/components/admin/info";
-import { ImageField, GalleryField } from "@/components/admin/form/media-field";
+import { ImageField, GalleryField, ImagePathField } from "@/components/admin/form/media-field";
 import { RichText } from "@/components/admin/form/rich-text";
 import { SeoField } from "@/components/admin/form/seo-field";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,7 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
 
   switch (f.type) {
     case "text":
+      if (f.picker === "image") return <div>{label}<ImagePathField id={id} value={String(value ?? "")} onChange={onChange} folder={f.folder} /></div>;
       return (
         <div>
           {label}
@@ -135,7 +136,7 @@ export function FieldView({ field: f, value, onChange, ctx }: { field: Field; va
       return (
         <div>
           {label}
-          <ImageField value={(value as never) ?? null} onChange={onChange} folder={f.folder} />
+          <ImageField value={(value as never) ?? null} onChange={onChange} folder={f.folder} minWidth={f.minWidth} />
         </div>
       );
     case "gallery":

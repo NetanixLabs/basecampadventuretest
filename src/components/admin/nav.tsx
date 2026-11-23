@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3, BookOpen, CalendarCheck, FileText, Film, Image as ImageIcon, Inbox, LayoutDashboard, LogOut, Mail, MapPinned, Menu,
   Mountain, Percent, Search, Settings, Shield, Sparkles, Star, Tag, Users, Waypoints, X, Receipt, Contact, Compass, Handshake, LineChart, HardHat,
@@ -17,6 +17,12 @@ export type NavGroup = { label: string; items: { href: string; label: string; ic
 export function AdminNav({ groups, user, signOut }: { groups: NavGroup[]; user: { name: string; email: string; role: string }; signOut: () => Promise<void> }) {
   const path = usePathname().replace(/^\/admin/, "") || "/";
   const [open, setOpen] = useState(false);
+  // Editing screens use the whole page; the menu opens from a button.
+  const editing = /^\/(c\/[^/]+\/[^/]+|singles\/[^/]+)\/?$/.test(path);
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-full-edit", editing);
+    return () => document.documentElement.removeAttribute("data-full-edit");
+  }, [editing]);
   const active = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`));
 
   const body = (
@@ -82,9 +88,15 @@ export function AdminNav({ groups, user, signOut }: { groups: NavGroup[]; user: 
           <Menu className="size-5" />
         </button>
       </div>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-card lg:block">{body}</aside>
+      {editing ? (
+        <button type="button" onClick={() => setOpen(true)} className="fixed top-4 left-4 z-50 hidden size-11 place-items-center rounded-full border border-line bg-card shadow-md hover:border-pine hover:text-pine lg:grid" aria-label="Open menu" title="Menu">
+          <Menu className="size-5" />
+        </button>
+      ) : (
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-line bg-card lg:block">{body}</aside>
+      )}
       {open ? (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Admin menu">
+        <div className={cn("fixed inset-0 z-50", !editing && "lg:hidden")} role="dialog" aria-modal="true" aria-label="Admin menu">
           <button type="button" className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} aria-label="Close menu" />
           <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-card shadow-xl">
             <button type="button" onClick={() => setOpen(false)} className="absolute top-4 right-4 grid size-9 place-items-center rounded-full border border-line" aria-label="Close menu">

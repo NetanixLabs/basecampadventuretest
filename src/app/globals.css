@@ -669,3 +669,9 @@
     text-transform: uppercase;
   }
 }
+
+/* Admin editing screens use the whole page (the menu opens from a button). */
+@media (min-width: 64rem) {
+  html[data-full-edit] .admin-shell { padding-left: 0; }
+  html[data-full-edit] .admin-main { max-width: 1680px; padding-left: 5.5rem; padding-right: 2.5rem; }
+}
