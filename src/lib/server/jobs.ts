@@ -240,7 +240,7 @@ export async function expirePortal() {
 
 export async function runJobs() {
   const out: Record<string, number | string> = {};
-  for (const [name, job] of Object.entries({ reminders: paymentReminders, reminders2: secondPaymentReminders, documents: documentReminders, preTrip: preTripEmails, balance: balanceReminders, dayBefore: dayBeforeEmails, rates: refreshRates, galleryWatermarks: async () => ((await (await import("@/lib/admin/bulk-watermark")).startBulkWatermark({ auto: true })).ok ? 1 : 0), pagesAfterWatermark: async () => (await (await import("@/lib/admin/bulk-watermark")).refreshIfPending()) ? 1 : 0, reviews: reviewRequests, portalExpired: expirePortal, savedReminders })) {
+  for (const [name, job] of Object.entries({ reminders: paymentReminders, reminders2: secondPaymentReminders, documents: documentReminders, preTrip: preTripEmails, balance: balanceReminders, dayBefore: dayBeforeEmails, rates: refreshRates, galleryWatermarks: async () => ((await (await import("@/lib/admin/bulk-watermark")).startBulkWatermark({ auto: true })).ok ? 1 : 0), pagesAfterWatermark: async () => (await (await import("@/lib/admin/bulk-watermark")).refreshIfPending()) ? 1 : 0, reviews: reviewRequests, portalExpired: expirePortal, savedReminders, backlinks: async () => (await import("@/lib/admin/backlinks")).recheckDue(5) })) {
     try {
       out[name] = await job();
     } catch (e) {

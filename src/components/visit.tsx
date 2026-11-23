@@ -14,7 +14,7 @@ export function Visit() {
       if (navigator.webdriver || /(^|;\s*)bca_src=/.test(document.cookie)) return;
       const source = classify(document.referrer, new URLSearchParams(location.search), location.hostname);
       document.cookie = `bca_src=${encodeURIComponent(source)}; path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
-      const body = JSON.stringify({ source });
+      const body = JSON.stringify({ source, ref: document.referrer, path: location.pathname });
       if (!navigator.sendBeacon?.("/api/visit/", new Blob([body], { type: "application/json" }))) void fetch("/api/visit/", { method: "POST", body, headers: { "Content-Type": "application/json" }, keepalive: true });
     } catch {
       /* counting is optional */

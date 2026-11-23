@@ -6,11 +6,11 @@ import { useEffect, useState } from "react";
 import {
   BarChart3, BookOpen, CalendarCheck, FileText, Film, Image as ImageIcon, Inbox, LayoutDashboard, LogOut, Mail, MapPinned, Menu,
   Mountain, Percent, Search, Settings, Shield, Sparkles, Star, Tag, Users, Waypoints, X, Receipt, Contact, Compass, Handshake, LineChart, HardHat,
-  CalendarRange,
+  CalendarRange, Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ICONS = { BarChart3, BookOpen, CalendarCheck, FileText, Film, ImageIcon, Inbox, LayoutDashboard, Mail, MapPinned, Mountain, Percent, Search, Settings, Shield, Sparkles, Star, Tag, Users, Waypoints, Receipt, Contact, Compass, Handshake, LineChart, HardHat, CalendarRange } as const;
+const ICONS = { BarChart3, BookOpen, CalendarCheck, FileText, Film, ImageIcon, Inbox, LayoutDashboard, Mail, MapPinned, Mountain, Percent, Search, Settings, Shield, Sparkles, Star, Tag, Users, Waypoints, Receipt, Contact, Compass, Handshake, LineChart, HardHat, CalendarRange, Link2 } as const;
 export type IconName = keyof typeof ICONS;
 export type NavGroup = { label: string; items: { href: string; label: string; icon: IconName; badge?: number }[] };
 

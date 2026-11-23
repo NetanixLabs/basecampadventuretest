@@ -52,7 +52,7 @@ export default async function SeoHealth() {
 
   return (
     <>
-      <PageHeader title="SEO health" description="Checks every live page the way Google reads it. Fix the red ones first." />
+      <PageHeader title="SEO health" description="Checks every live page the way Google reads it. Fix the red ones first." actions={<Link href="/backlinks" className="rounded-full border border-line bg-card px-4 py-2 text-sm font-semibold hover:border-pine">Backlinks &amp; broken links →</Link>} />
       <div className="grid gap-4 sm:grid-cols-4">
         <Stat label="Health" value={`${health}%`} hint={`${entries.length} live pages checked`} />
         <Stat label="Important" value={score("high")} hint="duplicate titles, missing descriptions" />

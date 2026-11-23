@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { adminRedirect } from "@/lib/redirect-map";
 
 /**
  * One app, two sites.
@@ -66,6 +67,15 @@ export function proxy(req: NextRequest) {
   if (!app) {
     if (inside(pathname, "admin") || inside(pathname, "portal")) {
       return new NextResponse("Not found", { status: 404, headers: { "X-Robots-Tag": "noindex" } });
+    }
+    // Redirects made in the admin, for any address (old links from other websites keep working).
+    if (req.method === "GET" || req.method === "HEAD") {
+      const r = adminRedirect(pathname);
+      if (r && r.to !== pathname) {
+        const to = new URL(r.to, req.nextUrl.origin);
+        if (to.origin === req.nextUrl.origin) req.nextUrl.searchParams.forEach((v, k) => { if (!to.searchParams.has(k)) to.searchParams.set(k, v); });
+        return NextResponse.redirect(to, r.permanent ? 301 : 302);
+      }
     }
     // Partner agent links (?ref=CODE): remembered for 30 days, then used at booking.
     const ref = req.nextUrl.searchParams.get("ref");

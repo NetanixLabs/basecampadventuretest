@@ -816,3 +816,51 @@ model VisitDay {
 
   @@id([day, source])
 }
+
+// ------------------------------------------------------------- backlinks & 404s
+
+/// An address on our site that someone tried to open and that doesn't exist,
+/// with the pages that linked to it. Fixed with a redirect.
+model MissingPage {
+  path       String   @id
+  hits       Int      @default(0)
+  /// Up to 20 pages on other sites (or ours) that linked here: { url: hits }.
+  referrers  Json     @default("{}")
+  firstSeen  DateTime @default(now())
+  lastSeen   DateTime @default(now())
+  /// Dismissed by the office (e.g. a bot probing for /wp-login.php).
+  ignored    Boolean  @default(false)
+
+  @@index([ignored, lastSeen])
+}
+
+/// A page on another website that links to us, checked from time to time.
+model Backlink {
+  id          String    @id @default(cuid())
+  sourceUrl   String    @unique
+  /// Our page it points to (path), as found on the last check.
+  target      String?
+  anchor      String?
+  /// live | nofollow | missing | error | unchecked
+  status      String    @default("unchecked")
+  /// rel attribute found on the link, e.g. "nofollow sponsored".
+  rel         String?
+  note        String?
+  lastChecked DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([status])
+}
+
+/// Other websites that sent visitors, per landing page (domain only, nothing personal).
+model Referral {
+  domain    String
+  path      String
+  visits    Int      @default(0)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  @@id([domain, path])
+  @@index([lastSeen])
+}

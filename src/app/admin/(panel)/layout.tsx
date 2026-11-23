@@ -52,7 +52,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     {
       label: "Growth",
       items: [
-        ...(can(r, "content") ? [{ href: "/seo", label: "SEO health", icon: "Search" as const }, { href: "/redirects", label: "Redirects", icon: "Waypoints" as const }] : []),
+        ...(can(r, "content") ? [{ href: "/seo", label: "SEO health", icon: "Search" as const }, { href: "/backlinks", label: "Backlinks & broken links", icon: "Link2" as const }, { href: "/redirects", label: "Redirects", icon: "Waypoints" as const }] : []),
         ...(can(r, "email") ? [{ href: "/emails", label: "Email templates", icon: "Mail" as const }] : []),
       ],
     },
