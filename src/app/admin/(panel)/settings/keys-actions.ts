@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { audit } from "@/lib/admin/audit";
 import { CONFIG_KEYS, saveConfig, type ConfigKey } from "@/lib/admin/config";
 import { sendRaw } from "@/lib/admin/email/send";
@@ -7,7 +9,9 @@ import { Denied, assertUser } from "@/lib/admin/guards";
 
 export async function saveKeys(values: Partial<Record<ConfigKey, string | null>>): Promise<{ ok: boolean; message: string }> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "keys");
     const clean = Object.fromEntries(Object.entries(values).filter(([k]) => k in CONFIG_KEYS)) as Partial<Record<ConfigKey, string | null>>;
     if (clean.WETRAVEL_ENV && !["production", "sandbox"].includes(clean.WETRAVEL_ENV)) return { ok: false, message: "WeTravel mode must be production or sandbox." };
     if (clean.SMTP_PORT && !/^\d{2,5}$/.test(clean.SMTP_PORT)) return { ok: false, message: "The SMTP port is a number, usually 587 or 465." };

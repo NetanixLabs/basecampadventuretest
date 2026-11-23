@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { audit } from "@/lib/admin/audit";
 import { bulkStatus, refreshIfPending, startBulkWatermark, undoBulkWatermark, type BulkState } from "@/lib/admin/bulk-watermark";
 import { Denied, assertUser } from "@/lib/admin/guards";
@@ -19,7 +21,9 @@ export async function watermarkStatus(): Promise<Public | null> {
 
 export async function watermarkExisting(): Promise<{ ok: boolean; message: string }> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const r = await startBulkWatermark();
     if (r.ok) await audit(user.id, "media.watermark-existing", "settings", null);
     return r;
@@ -30,7 +34,9 @@ export async function watermarkExisting(): Promise<{ ok: boolean; message: strin
 
 export async function undoWatermarkExisting(): Promise<{ ok: boolean; message: string }> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const r = await undoBulkWatermark();
     if (r.ok) await audit(user.id, "media.watermark-undo", "settings", null);
     return r;

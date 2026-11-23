@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Check, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FolderOpen, Loader2, RefreshCw, Search, Trash2, Upload, X } from "lucide-react";
 import { MediaPicker, UploadBar, kb, thumb, uploadFile, uploadMany, type Item, type Progress } from "@/components/admin/form/media-field";
 import { inputClass } from "@/components/admin/ui";
+import { useStepUp } from "@/components/admin/step-up";
 import type { Use } from "@/lib/admin/media-usage";
 import { cn } from "@/lib/utils";
 import { deleteManyAction, deleteMediaAction, replaceMediaAction, updateMediaAction, usageAction } from "./actions";
@@ -31,6 +32,7 @@ export function MediaLibrary({ siteUrl, canPublish }: { siteUrl: string; canPubl
   const [note, setNote] = useState<{ tone: "green" | "red"; text: string } | null>(null);
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const stepUp = useStepUp();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,7 +57,7 @@ export function MediaLibrary({ siteUrl, canPublish }: { siteUrl: string; canPubl
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const bulkDelete = async () => {
-    if (!confirm(`Delete ${selected.size} ${selected.size === 1 ? "file" : "files"} for good? Files still used on the website are skipped.`)) return;
+    if (!(await stepUp({ purpose: "delete", title: `Delete ${selected.size} ${selected.size === 1 ? "file" : "files"} for good`, detail: "Files still used on the website are skipped. This can't be undone.", action: "Delete", danger: true }))) return;
     const r = await deleteManyAction([...selected]);
     if (!r.ok) return setNote({ tone: "red", text: r.error });
     setNote({ tone: r.kept ? "red" : "green", text: `${r.deleted} deleted.${r.kept ? ` ${r.kept} kept because the website still uses them.` : ""}` });
@@ -206,6 +208,7 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
   const [picker, setPicker] = useState(false);
   const [progress, setProgress] = useState<Progress | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const stepUp = useStepUp();
   const isVideo = item.mime.startsWith("video/");
   const url = `${siteUrl}${item.src}`;
 
@@ -232,6 +235,7 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
 
   const replace = async () => {
     if (!candidate) return;
+    if (!(await stepUp({ purpose: "replace", title: `Replace this ${isVideo ? "video" : "photo"} on ${usedBy?.length ?? 0} ${usedBy?.length === 1 ? "page" : "pages"}`, detail: "It changes on the live website at once. Each page keeps a version from before in its history.", action: "Replace everywhere" }))) return;
     setBusy(true);
     const r = await replaceMediaAction(item.id, candidate.id);
     setBusy(false);
@@ -349,7 +353,7 @@ function Details({ item, siteUrl, canPublish, position, onPrev, onNext, onClose,
         <div className="flex items-center gap-3 border-t border-line px-5 py-3">
           {inUse ? <p className="mr-auto flex items-center gap-1.5 text-xs text-muted"><AlertTriangle className="size-3.5" /> In use, so it can't be deleted.</p> : <span className="mr-auto" />}
           <button type="button" disabled={busy || usedBy === null || inUse} onClick={async () => {
-            if (!confirm("Delete this file for good?")) return;
+            if (!(await stepUp({ purpose: "delete", title: `Delete ${item.src.split("/").pop()} for good`, detail: "Nothing on the website uses it. This can't be undone.", action: "Delete", danger: true }))) return;
             const r = await deleteMediaAction(item.id);
             if (r.ok) onChanged("File deleted."); else { setMsg({ tone: "red", text: r.error }); setUsedBy(r.usedBy ?? usedBy); }
           }} className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40 dark:border-red-900 dark:text-red-300"><Trash2 className="size-4" /> Delete</button>

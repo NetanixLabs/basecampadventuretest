@@ -58,6 +58,10 @@ model Session {
   /// SHA-256 of the cookie token; the token itself is never stored.
   tokenHash     String    @unique
   mfaVerifiedAt DateTime?
+  /// A sensitive change confirmed with a fresh authenticator code: when, and which kind.
+  /// Valid for 2 minutes and used up by the change itself.
+  stepUpAt      DateTime?
+  stepUpFor     String?
   expiresAt     DateTime
   lastSeenAt    DateTime  @default(now())
   revokedAt     DateTime?

@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { z } from "zod";
 import { audit } from "@/lib/admin/audit";
 import { Denied, assertUser } from "@/lib/admin/guards";
@@ -19,7 +21,9 @@ const schema = z.object({
 
 export async function saveReceiptSettings(input: unknown): Promise<{ ok: boolean; message: string }> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const p = schema.safeParse(input);
     if (!p.success) return { ok: false, message: p.error.issues[0]?.message ?? "Check the form." };
     const brand = await getBrand();

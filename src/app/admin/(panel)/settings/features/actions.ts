@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import type { Prisma } from "@/generated/prisma/client";
 import { audit } from "@/lib/admin/audit";
 import { saveConfig } from "@/lib/admin/config";
@@ -10,7 +12,9 @@ import { FEATURE_DEFAULTS, withFeatureDefaults, type Features } from "@/lib/feat
 
 export async function saveFeatures(input: Features, secrets: { WHATSAPP_TOKEN?: string; WHATSAPP_PHONE_ID?: string; CALLMEBOT_KEYS?: string }): Promise<{ ok: boolean; message: string }> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const f = withFeatureDefaults(input);
     f.abandoned.afterHours = Math.min(168, Math.max(1, Math.round(Number(f.abandoned.afterHours) || 24)));
     f.reviews.afterDays = Math.min(60, Math.max(0, Math.round(Number(f.reviews.afterDays) || 2)));

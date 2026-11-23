@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { audit } from "@/lib/admin/audit";
@@ -49,7 +51,9 @@ async function removeFile(id: string, userId: string) {
 
 export async function deleteMediaAction(id: string): Promise<R> {
   try {
-    const { user } = await assertUser("media");
+    const auth = await assertUser("media");
+    const { user } = auth;
+    await assertStepUp(auth, "delete");
     const r = await removeFile(id, user.id);
     forgetUsage();
     if (!r.deleted) return { ok: false, error: "This file is still used on the website. Remove it there first, or use Replace everywhere.", usedBy: r.usedBy };
@@ -62,7 +66,9 @@ export async function deleteMediaAction(id: string): Promise<R> {
 /** Deletes several files; any still in use are skipped and named. */
 export async function deleteManyAction(ids: string[]): Promise<{ ok: true; deleted: number; kept: number } | { ok: false; error: string }> {
   try {
-    const { user } = await assertUser("media");
+    const auth = await assertUser("media");
+    const { user } = auth;
+    await assertStepUp(auth, "delete");
     let deleted = 0, kept = 0;
     for (const id of ids.slice(0, 200)) {
       const r = await removeFile(id, user.id);
@@ -82,7 +88,9 @@ export async function deleteManyAction(ids: string[]): Promise<{ ok: true; delet
  */
 export async function replaceMediaAction(id: string, withId: string): Promise<{ ok: true; entries: number; sections: number; newSrc: string } | { ok: false; error: string }> {
   try {
-    const { user } = await assertUser("media");
+    const auth = await assertUser("media");
+    const { user } = auth;
+    await assertStepUp(auth, "replace");
     if (!can(user, "publish")) return { ok: false, error: "Replacing a photo puts it live on the website, which needs the Publish permission." };
     const [from, to] = await Promise.all([db.media.findUnique({ where: { id } }), db.media.findUnique({ where: { id: withId } })]);
     if (!from || !to) return { ok: false, error: "That photo isn't in the library any more." };

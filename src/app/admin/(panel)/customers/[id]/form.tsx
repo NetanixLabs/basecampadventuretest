@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Card, inputClass, Label } from "@/components/admin/ui";
 import { deleteCustomer, saveCustomer } from "../actions";
+import { useStepUp } from "@/components/admin/step-up";
 
 type V = { name: string; email: string; phone: string; country: string; notes: string; tags: string[]; details: Record<string, string> };
 
@@ -13,6 +14,7 @@ export function CustomerForm({ id, initial, fields }: { id: string | null; initi
   const [tagText, setTagText] = useState(initial.tags.join(", "));
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   return (
     <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await saveCustomer(id, { ...v, tags: tagText.split(",").map((t) => t.trim()).filter(Boolean) }); setMsg(r.message); if (r.ok && !id && r.id) router.replace(`/customers/${r.id}`); else router.refresh(); }); }}>
       <Card title="Contact">
@@ -34,7 +36,7 @@ export function CustomerForm({ id, initial, fields }: { id: string | null; initi
       <Card title="Notes"><textarea rows={5} value={v.notes} onChange={(e) => setV({ ...v, notes: e.target.value })} className={inputClass} aria-label="Notes" placeholder="Preferences, past feedback, room sharing, anything useful…" /></Card>
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={pending} className="rounded-full bg-pine px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{pending ? "Saving…" : "Save customer"}</button>
-        {id ? <button type="button" disabled={pending} onClick={() => start(async () => { if (!confirm("Delete this customer record? Their bookings and receipts are kept.")) return; const r = await deleteCustomer(id); if (r.ok) router.push("/customers"); else setMsg(r.message); })} className="rounded-full px-4 py-2.5 text-sm font-semibold text-muted hover:text-red-600">Delete</button> : null}
+        {id ? <button type="button" disabled={pending} onClick={() => start(async () => { if (!(await stepUp({ purpose: "delete", title: `Delete the customer record of ${v.name || "this customer"}`, detail: "Their bookings and receipts are kept. This can't be undone.", action: "Delete", danger: true }))) return; const r = await deleteCustomer(id); if (r.ok) router.push("/customers"); else setMsg(r.message); })} className="rounded-full px-4 py-2.5 text-sm font-semibold text-muted hover:text-red-600">Delete</button> : null}
         {msg ? <p role="status" className="text-sm">{msg}</p> : null}
       </div>
     </form>

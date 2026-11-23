@@ -6,6 +6,7 @@ import { Card, inputClass, Label } from "@/components/admin/ui";
 import { FieldView } from "@/components/admin/form/fields";
 import { MediaPicker } from "@/components/admin/form/media-field";
 import { previewCampaign, sendCampaign, type CampaignInput } from "./actions";
+import { useStepUp } from "@/components/admin/step-up";
 
 const START: Required<CampaignInput> = {
   subject: "",
@@ -28,13 +29,14 @@ export function Composer({ trips, codes }: { trips: { value: string; label: stri
   const [picker, setPicker] = useState(false);
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   const set = <K extends keyof typeof START>(k: K, x: (typeof START)[K]) => setV((o) => ({ ...o, [k]: x }));
   useEffect(() => {
     const t = setTimeout(() => void previewCampaign({ ...v, heading: v.heading || "Your heading", body: v.body || "Your message appears here.", subject: v.subject || "Subject" }).then(setHtml), 350);
     return () => clearTimeout(t);
   }, [v]);
   const send = (test: boolean) => start(async () => {
-    if (!test && !confirm("Send this newsletter to every subscriber now? This can't be undone.")) return;
+    if (!test && !(await stepUp({ purpose: "newsletter", title: "Send this newsletter to every subscriber now", detail: "This can't be undone. Send yourself a test first if you haven't.", action: "Send to everyone" }))) return;
     const r = await sendCampaign(v, test);
     setMsg(r.ok ? r.message : r.error);
   });

@@ -4,14 +4,16 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { deleteAction, showAction, unpublishAction } from "../actions";
+import { useStepUp } from "@/components/admin/step-up";
 
 /** Hide / show / delete, straight from the list. */
 export function RowActions({ collection, id, title, status, singular }: { collection: string; id: string; title: string; status: string; singular: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ask: string) =>
+  const stepUp = useStepUp();
+  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ask: string, code = false) =>
     start(async () => {
-      if (!confirm(ask)) return;
+      if (code ? !(await stepUp({ purpose: "delete", title: `Delete “${title}” for good`, detail: `This can't be undone. To take it off the website but keep it, use Hide instead.`, action: "Delete for good", danger: true })) : !confirm(ask)) return;
       const r = await fn();
       if (!r.ok) alert(r.error);
       router.refresh();
@@ -31,7 +33,7 @@ export function RowActions({ collection, id, title, status, singular }: { collec
         </button>
       )}
       <button type="button" disabled={pending} className={`${btn} text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40`} title={`Delete this ${singular}`}
-        onClick={() => run(() => deleteAction(collection, id), `Delete "${title}" for good?\n\nThis can't be undone. To take it off the website but keep it, use Hide instead.`)}>
+        onClick={() => run(() => deleteAction(collection, id), "", true)}>
         <Trash2 className="size-3.5" aria-hidden /> Delete
       </button>
     </span>

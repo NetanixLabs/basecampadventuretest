@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Card, inputClass, Label } from "@/components/admin/ui";
 import { saveCompany } from "../system-actions";
+import { useStepUp } from "@/components/admin/step-up";
 
 type V = Record<"contactPerson" | "phone" | "mobile" | "whatsapp" | "email" | "street" | "city" | "poBox" | "facebook" | "instagram" | "x" | "tripadvisor" | "legalName" | "govReg" | "vat" | "ntbLicence" | "nma" | "taan" | "googleReview", string>;
 
@@ -32,6 +33,7 @@ export function CompanyForm({ initial }: { initial: V }) {
   const [v, setV] = useState(initial);
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   const group = (g: string) => FIELDS.filter((f) => f.group === g).map((f) => (
     <div key={f.k}>
       <Label htmlFor={`co-${f.k}`} info={f.info}>{f.l}</Label>
@@ -40,7 +42,7 @@ export function CompanyForm({ initial }: { initial: V }) {
   ));
   return (
     <Card title="Company & contact" info="These details appear across the whole website (header, footer, contact page, booking page, Google's business information) and in every email. Saving updates everything at once.">
-      <form onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await saveCompany(v); setMsg(r.ok ? r.message ?? "Saved." : r.error); }); }} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save company and contact details", detail: "They change at once across the whole website (header, footer, contact page, Google's business details) and in every email.", action: "Save" }))) return; const r = await saveCompany(v); setMsg(r.ok ? r.message ?? "Saved." : r.error); }); }} className="space-y-6">
         <div>
           <p className="mb-3 text-xs font-semibold tracking-wide text-muted uppercase">Contact</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{group("contact")}</div>

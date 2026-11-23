@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { Card, inputClass, Label } from "@/components/admin/ui";
 import { saveReceiptSettings } from "./actions";
+import { useStepUp } from "@/components/admin/step-up";
 
 type V = { signatory: string; signatoryTitle: string; vatMode: "none" | "included" | "added"; vatRate: number; receiptPrefix: string; billPrefix: string; creditPrefix: string; footerNote: string; bankDetails: string };
 
@@ -13,7 +14,9 @@ function ImageSlot({ kind, label, has, hint }: { kind: "signature" | "stamp"; la
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [v, setV] = useState(0);
+  const stepUp = useStepUp();
   async function upload(f: File) {
+    if (!(await stepUp({ purpose: "settings", title: `${has ? "Replace" : "Add"} the ${kind === "signature" ? "authorised signature" : "company stamp"}`, detail: "It appears on every new receipt, bill and credit note.", action: has ? "Replace" : "Add" }))) { if (ref.current) ref.current.value = ""; return; }
     setBusy(true);
     const body = new FormData();
     body.set("kind", kind);
@@ -26,7 +29,7 @@ function ImageSlot({ kind, label, has, hint }: { kind: "signature" | "stamp"; la
     router.refresh();
   }
   async function remove() {
-    if (!confirm(`Remove the ${kind}?`)) return;
+    if (!(await stepUp({ purpose: "settings", title: `Remove the ${kind === "signature" ? "authorised signature" : "company stamp"}`, detail: "New receipts are made without it until a new one is added.", action: "Remove", danger: true }))) return;
     await fetch(`/api/receipt-brand/?kind=${kind}`, { method: "DELETE" });
     router.refresh();
   }
@@ -52,6 +55,7 @@ export function ReceiptSettingsForm({ initial, has }: { initial: V; has: { signa
   const [v, setV] = useState(initial);
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   return (
     <div className="space-y-6">
       <Card title="Signature and stamp" info="Photograph them on plain white paper in good light, straight from above. The paper, shadows and empty borders are removed automatically so only the ink is kept. A PNG with a transparent background is used as it is.">
@@ -60,7 +64,7 @@ export function ReceiptSettingsForm({ initial, has }: { initial: V; has: { signa
           <ImageSlot kind="stamp" label="Company stamp / seal" has={has.stamp} hint="Company stamp, placed next to the signature." />
         </div>
       </Card>
-      <form onSubmit={(e) => { e.preventDefault(); start(async () => setMsg((await saveReceiptSettings(v)).message)); }} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save receipt details", detail: "Company details, numbering and wording on every new receipt, bill and credit note.", action: "Save" }))) return; setMsg((await saveReceiptSettings(v)).message); }); }} className="space-y-6">
         <Card title="Details on every receipt">
           <div className="grid gap-4 sm:grid-cols-2">
             <div><Label htmlFor="rs-n">Signed by (name)</Label><input id="rs-n" value={v.signatory} onChange={(e) => setV({ ...v, signatory: e.target.value })} className={inputClass} /></div>

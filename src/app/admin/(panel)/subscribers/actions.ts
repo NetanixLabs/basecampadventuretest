@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { z } from "zod";
 import { audit } from "@/lib/admin/audit";
 import { db } from "@/lib/admin/db";
@@ -67,7 +69,9 @@ export async function previewCampaign(input: unknown): Promise<string> {
 /** Sends the newsletter (or a test to yourself). Each subscriber gets their own unsubscribe link. */
 export async function sendCampaign(input: unknown, test: boolean): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
   try {
-    const { user } = await assertUser("email");
+    const auth = await assertUser("email");
+    const { user } = auth;
+    await assertStepUp(auth, "newsletter");
     if (test) {
       const r = await build(input, `${site()}/api/newsletter/unsubscribe/?t=test`);
       if ("error" in r) return { ok: false, error: r.error };

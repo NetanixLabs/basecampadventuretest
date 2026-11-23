@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { audit } from "@/lib/admin/audit";
@@ -40,7 +42,9 @@ export async function saveCustomer(id: string | null, input: unknown): Promise<R
 
 export async function deleteCustomer(id: string): Promise<R> {
   try {
-    const { user } = await assertUser("customers");
+    const auth = await assertUser("customers");
+    const { user } = auth;
+    await assertStepUp(auth, "delete");
     const c = await db.customer.delete({ where: { id } });
     await audit(user.id, "customer.delete", "customer", id, c.email);
     return { ok: true, message: "Customer record deleted. Bookings and receipts are kept for the accounts." };

@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Badge, Card, inputClass, Label } from "@/components/admin/ui";
 import { saveKeys, testEmail } from "./keys-actions";
 import type { ConfigKey } from "@/lib/admin/config";
+import { useStepUp } from "@/components/admin/step-up";
 
 type Status = Record<ConfigKey, { fromAdmin: boolean; set: boolean; value: string | null }>;
 
@@ -52,9 +53,10 @@ export function KeysForm({ status }: { status: Status }) {
   const [v, setV] = useState<Partial<Record<ConfigKey, string>>>(() => Object.fromEntries(Object.entries(status).filter(([, s]) => s.value !== null).map(([k, s]) => [k, s.value ?? ""])));
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   return (
     <Card title="Keys & email" info="Keys are encrypted before they're saved and are never shown again; type a new value to replace one. Anything left empty uses the server's own settings file. Only main admins can see this.">
-      <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await saveKeys(v); setMsg(r.message); if (r.ok) { setV((o) => Object.fromEntries(Object.entries(o).filter(([k]) => !GROUPS.flatMap((g) => g.keys).find((x) => x.k === k)?.secret))); router.refresh(); } }); }}>
+      <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "keys", title: "Save payment and email keys", detail: "These keys take payments and send every email. A wrong key stops bookings or emails at once.", action: "Save keys" }))) return; const r = await saveKeys(v); setMsg(r.message); if (r.ok) { setV((o) => Object.fromEntries(Object.entries(o).filter(([k]) => !GROUPS.flatMap((g) => g.keys).find((x) => x.k === k)?.secret))); router.refresh(); } }); }}>
         {GROUPS.map((g) => (
           <fieldset key={g.title} className="rounded-xl border border-line p-4">
             <legend className="px-1 text-sm font-semibold">{g.title}</legend>
@@ -89,7 +91,7 @@ export function KeysForm({ status }: { status: Status }) {
                         />
                       )}
                       {s.fromAdmin ? (
-                        <button type="button" title="Remove and use the server's setting" disabled={pending} onClick={() => start(async () => { if (!confirm(`Remove ${f.l}?`)) return; const r = await saveKeys({ [f.k]: null }); setMsg(r.message); router.refresh(); })} className="shrink-0 rounded-full border border-line px-3 text-xs font-semibold hover:border-red-300 hover:text-red-700">Remove</button>
+                        <button type="button" title="Remove and use the server's setting" disabled={pending} onClick={() => start(async () => { if (!(await stepUp({ purpose: "keys", title: `Remove ${f.l}`, detail: "The server's own setting is used instead, or the feature stops if there is none.", action: "Remove key", danger: true }))) return; const r = await saveKeys({ [f.k]: null }); setMsg(r.message); router.refresh(); })} className="shrink-0 rounded-full border border-line px-3 text-xs font-semibold hover:border-red-300 hover:text-red-700">Remove</button>
                       ) : null}
                     </div>
                   </div>

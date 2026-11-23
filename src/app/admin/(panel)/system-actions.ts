@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -29,7 +31,9 @@ const settingsSchema = z.object({
 
 export async function saveSettings(input: unknown): Promise<R> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const p = settingsSchema.safeParse(input);
     if (!p.success) throw new Error(`!${p.error.issues[0]?.message}`);
     for (const [key, value] of Object.entries(p.data)) await db.setting.upsert({ where: { key }, create: { key, value, public: true }, update: { value } });
@@ -68,7 +72,9 @@ const companySchema = z.object({
 /** Company details shown across the website and in every email. */
 export async function saveCompany(input: unknown): Promise<R> {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const p = companySchema.safeParse(input);
     if (!p.success) throw new Error(`!${p.error.issues[0]?.message}`);
     await db.setting.upsert({ where: { key: "company" }, create: { key: "company", value: p.data, public: true }, update: { value: p.data } });
@@ -99,7 +105,9 @@ function withinMyRights(actor: { role: Role; permissions?: string[] }, rights: s
 
 export async function inviteUser(input: { email: string; name: string; role: Role }): Promise<R> {
   try {
-    const { user } = await assertUser("users");
+    const auth = await assertUser("users");
+    const { user } = auth;
+    await assertStepUp(auth, "users");
     const email = input.email.trim().toLowerCase();
     if (!z.email().safeParse(email).success) throw new Error("!Enter a valid email.");
     if (!input.name.trim()) throw new Error("!Enter their name.");
@@ -119,7 +127,9 @@ export async function inviteUser(input: { email: string; name: string; role: Rol
 
 export async function updateUser(id: string, change: { role?: Role; status?: "active" | "suspended"; resetTwoFactor?: boolean; permissions?: string[]; phone?: string }): Promise<R> {
   try {
-    const { user } = await assertUser("users");
+    const auth = await assertUser("users");
+    const { user } = auth;
+    await assertStepUp(auth, "users");
     const target = await db.user.findUnique({ where: { id } });
     if (!target) throw new Error("!User not found.");
     if (target.id === user.id && (change.role || change.status || change.permissions)) throw new Error("!You can't change your own role, permissions or suspend yourself.");
@@ -192,7 +202,9 @@ export async function signOutOthers(): Promise<R> {
 export async function saveRedirect(from: string, to: string): Promise<R> {
   try {
     // A redirect changes the live website at once, so it needs the Publish permission.
-    const { user } = await assertUser("publish");
+    const auth = await assertUser("publish");
+    const { user } = auth;
+    await assertStepUp(auth, "redirect");
     const f = from.trim().replace(/^https?:\/\/[^/]+/, "");
     const t = to.trim().replace(/^https?:\/\/(www\.)?basecampadventure\.com/, "");
     if (!f.startsWith("/")) throw new Error("!The old address must start with /");
@@ -209,7 +221,9 @@ export async function saveRedirect(from: string, to: string): Promise<R> {
 
 export async function deleteRedirect(id: string): Promise<R> {
   try {
-    const { user } = await assertUser("publish");
+    const auth = await assertUser("publish");
+    const { user } = auth;
+    await assertStepUp(auth, "redirect");
     const r = await db.redirect.delete({ where: { id } });
     await writeRedirects();
     refreshSite();

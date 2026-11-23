@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { Denied, assertUser } from "@/lib/admin/guards";
 import { InputError, removeEntry, reorder, saveEntry, setStatus, type SaveResult } from "@/lib/admin/entries";
 import { db } from "@/lib/admin/db";
@@ -42,7 +44,9 @@ export async function showAction(key: string, id: string) {
 
 export async function deleteAction(key: string, id: string) {
   return run(async () => {
-    const { user } = await assertUser("publish");
+    const auth = await assertUser("publish");
+    const { user } = auth;
+    await assertStepUp(auth, "delete");
     await removeEntry(user.id, key, id);
   });
 }

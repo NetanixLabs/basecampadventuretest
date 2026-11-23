@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Badge, Card, inputClass, Label, Table, when } from "@/components/admin/ui";
+import { useStepUp, type StepUpRequest } from "@/components/admin/step-up";
 import { inviteUser, updateUser } from "../system-actions";
 import { PERMISSIONS } from "@/lib/admin/permissions";
 import type { Role } from "@/generated/prisma/browser";
@@ -21,8 +22,10 @@ export function UserManager({ me, users }: { me: { id: string; role: Role }; use
   const [msg, setMsg] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>, ask?: string) => start(async () => {
-    if (ask && !confirm(ask)) return;
+  const stepUp = useStepUp();
+  // Every change to a team account is confirmed with the authenticator code (checked again on the server).
+  const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>, ask: Omit<StepUpRequest, "purpose">) => start(async () => {
+    if (!(await stepUp({ purpose: "users", ...ask }))) { router.refresh(); return; }
     const r = await fn();
     setMsg(r.ok ? r.message ?? "Done." : r.error ?? "Failed.");
     router.refresh();
@@ -36,7 +39,7 @@ export function UserManager({ me, users }: { me: { id: string; role: Role }; use
             <td><p className="font-semibold">{u.name}{u.id === me.id ? " (you)" : ""}</p><p className="text-xs text-muted">{u.email}</p></td>
             <td>
               {u.id === me.id || u.role === "owner" ? <Badge tone="pine">{label(u.role)}</Badge> : (
-                <select value={u.role} onChange={(e) => run(() => updateUser(u.id, { role: e.target.value as Role }))} className="rounded-lg border border-line bg-card px-2 py-1 text-sm" aria-label={`Role of ${u.name}`}>
+                <select value={u.role} onChange={(e) => { const role = e.target.value as Role; run(() => updateUser(u.id, { role }), { title: `Make ${u.name} ${label(role)}`, detail: <>{ROLES.find((r) => r.v === role)?.d} They are signed out and sign in again with the new rights.</>, action: "Change role" }); }} className="rounded-lg border border-line bg-card px-2 py-1 text-sm" aria-label={`Role of ${u.name}`}>
                   {ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}
                 </select>
               )}
@@ -47,17 +50,17 @@ export function UserManager({ me, users }: { me: { id: string; role: Role }; use
               {u.id !== me.id ? (
                 <span className="flex justify-end gap-3 text-xs font-semibold">
                   {u.role !== "owner" ? <button type="button" className="text-pine hover:underline" onClick={() => setEditing(editing === u.id ? null : u.id)}>Permissions{u.permissions.length ? " (custom)" : ""}</button> : null}
-                  {u.totpEnabled ? <button type="button" className="text-pine hover:underline" onClick={() => run(() => updateUser(u.id, { resetTwoFactor: true }), `Reset ${u.name}'s two-step sign-in? Do this if they lost their phone.`)}>Reset 2FA</button> : null}
-                  <button type="button" className={u.status === "active" ? "text-red-700 hover:underline" : "text-pine hover:underline"} onClick={() => run(() => updateUser(u.id, { status: u.status === "active" ? "suspended" : "active" }), u.status === "active" ? `Suspend ${u.name}? They're signed out immediately.` : undefined)}>{u.status === "active" ? "Suspend" : "Re-activate"}</button>
+                  {u.totpEnabled ? <button type="button" className="text-pine hover:underline" onClick={() => run(() => updateUser(u.id, { resetTwoFactor: true }), { title: `Reset ${u.name}'s two-step sign-in`, detail: "Do this only if they lost their phone. They set it up again at their next sign-in.", action: "Reset two-step sign-in", danger: true })}>Reset 2FA</button> : null}
+                  <button type="button" className={u.status === "active" ? "text-red-700 hover:underline" : "text-pine hover:underline"} onClick={() => run(() => updateUser(u.id, { status: u.status === "active" ? "suspended" : "active" }), u.status === "active" ? { title: `Suspend ${u.name}`, detail: "They're signed out at once and can't sign in until re-activated.", action: "Suspend", danger: true } : { title: `Re-activate ${u.name}`, action: "Re-activate" })}>{u.status === "active" ? "Suspend" : "Re-activate"}</button>
                 </span>
               ) : null}
             </td>
           </tr>
         ))}
       </Table>
-      {editing ? <PermissionEditor key={editing} user={users.find((u) => u.id === editing)!} onSave={(perms) => run(() => updateUser(editing, { permissions: perms }), "Save these permissions? They will be signed out and sign in again with the new rights.")} onClose={() => setEditing(null)} pending={pending} /> : null}
+      {editing ? <PermissionEditor key={editing} user={users.find((u) => u.id === editing)!} onSave={(perms) => run(() => updateUser(editing, { permissions: perms }), { title: `Change what ${users.find((u) => u.id === editing)?.name} can do`, detail: perms.length ? <>New rights: {perms.map((k) => PERMISSIONS.find((p) => p.key === k)?.label ?? k).join(", ")}. They are signed out and sign in again.</> : "Back to their role's standard rights. They are signed out and sign in again.", action: "Save permissions" })} onClose={() => setEditing(null)} pending={pending} /> : null}
       <Card title="Invite someone" info="They receive an email to choose their password (the link works for 3 days), then set up two-step sign-in with an authenticator app on their phone.">
-        <form className="grid gap-4 sm:grid-cols-[1fr_1fr_12rem_auto] sm:items-end" onSubmit={(e) => { e.preventDefault(); run(() => inviteUser(inv)); setInv({ name: "", email: "", role: "editor" }); }}>
+        <form className="grid gap-4 sm:grid-cols-[1fr_1fr_12rem_auto] sm:items-end" onSubmit={(e) => { e.preventDefault(); const v = inv; run(async () => { const r = await inviteUser(v); if (r.ok) setInv({ name: "", email: "", role: "editor" }); return r; }, { title: `Invite ${v.name || v.email} as ${label(v.role)}`, detail: <>An invitation goes to <strong>{v.email}</strong>. {ROLES.find((r) => r.v === v.role)?.d}</>, action: "Send invitation" }); }}>
           <div><Label htmlFor="in">Name</Label><input id="in" value={inv.name} onChange={(e) => setInv({ ...inv, name: e.target.value })} className={inputClass} required /></div>
           <div><Label htmlFor="ie">Email</Label><input id="ie" type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} className={inputClass} required /></div>
           <div><Label htmlFor="ir">Role</Label><select id="ir" value={inv.role} onChange={(e) => setInv({ ...inv, role: e.target.value as Role })} className={inputClass}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</select></div>

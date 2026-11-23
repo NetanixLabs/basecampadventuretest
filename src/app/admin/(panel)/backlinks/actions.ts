@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/admin/audit";
 import { cleanUrl, recheck } from "@/lib/admin/backlinks";
@@ -16,7 +18,9 @@ const done = (message?: string): R => { revalidatePath("/backlinks"); return { o
 export async function fixMissingAction(path: string, to: string): Promise<R> {
   try {
     // A redirect changes the live website at once, so it needs the Publish permission.
-    const { user } = await assertUser("publish");
+    const auth = await assertUser("publish");
+    const { user } = auth;
+    await assertStepUp(auth, "redirect");
     if (!(await db.missingPage.findUnique({ where: { path } }))) throw new Error("!That address is no longer in the list.");
     const t = to.trim().replace(/^https?:\/\/(www\.)?basecampadventure\.com/, "");
     if (!t.startsWith("/") && !/^https?:\/\//.test(t)) throw new Error("!The new address must start with / or https://");

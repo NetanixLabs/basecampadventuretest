@@ -6,6 +6,7 @@ import { ArrowRight, Check, ExternalLink, Loader2, RefreshCw, Trash2 } from "luc
 import { Badge, inputClass, type Tone } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { addBacklinksAction, checkAllAction, checkBacklinkAction, deleteBacklinkAction, fixMissingAction, ignoreMissingAction } from "./actions";
+import { useStepUp } from "@/components/admin/step-up";
 
 type Note = { tone: "green" | "red"; text: string } | null;
 const NoteLine = ({ note }: { note: Note }) =>
@@ -27,6 +28,7 @@ export function MissingList({ rows }: { rows: Missing[] }) {
 
 function MissingRow({ row }: { row: Missing }) {
   const router = useRouter();
+  const stepUp = useStepUp();
   const [to, setTo] = useState(row.suggestion?.path ?? "");
   const [note, setNote] = useState<Note>(null);
   const [pending, start] = useTransition();
@@ -54,7 +56,7 @@ function MissingRow({ row }: { row: Missing }) {
       ) : <p className="mt-1.5 text-xs text-muted">Typed in or from a bookmark (no linking page known).</p>}
       <form
         className="mt-3 flex flex-wrap items-center gap-2"
-        onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await fixMissingAction(row.path, to); setNote(r.ok ? { tone: "green", text: r.message ?? "Fixed." } : { tone: "red", text: r.error }); if (r.ok) router.refresh(); }); }}
+        onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "redirect", title: `Send ${row.path} to ${to}`, detail: "A permanent redirect, live at once: visitors and Google opening the old address go to this page, and the links to it keep their value.", action: "Add redirect" }))) return; const r = await fixMissingAction(row.path, to); setNote(r.ok ? { tone: "green", text: r.message ?? "Fixed." } : { tone: "red", text: r.error }); if (r.ok) router.refresh(); }); }}
       >
         <ArrowRight className="size-4 text-muted" />
         <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="/trip/the-right-page/" aria-label={`Send ${row.path} to`} className={cn(inputClass, "max-w-md flex-1 py-2 font-mono text-[13px]")} required />

@@ -1,5 +1,7 @@
 "use server";
 
+import { assertStepUp } from "@/lib/admin/step-up";
+
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { audit } from "@/lib/admin/audit";
@@ -53,7 +55,9 @@ export async function createReceiptAction(input: unknown): Promise<R> {
 
 export async function voidReceipt(id: string, reason: string): Promise<R> {
   try {
-    const { user } = await assertUser("receipts");
+    const auth = await assertUser("receipts");
+    const { user } = auth;
+    await assertStepUp(auth, "money");
     if (reason.trim().length < 3) return { ok: false, message: "Give a short reason." };
     const r = await db.receipt.update({ where: { id }, data: { voidedAt: new Date(), voidReason: reason.trim().slice(0, 300) } });
     await audit(user.id, "receipt.void", "receipt", id, `${r.number}: ${reason}`);
@@ -99,7 +103,9 @@ export async function receiptForPaymentAction(paymentId: string): Promise<R> {
 /** A credit note for a refund (part or all of a receipt). */
 export async function creditNote(receiptId: string, input: { amount: number; reason: string; method: string; recordRefund: boolean; email: boolean }): Promise<R> {
   try {
-    const { user } = await assertUser("receipts");
+    const auth = await assertUser("receipts");
+    const { user } = auth;
+    await assertStepUp(auth, "money");
     const n = await issueCreditNote(receiptId, { amount: Number(input.amount), reason: String(input.reason ?? ""), method: String(input.method ?? ""), recordRefund: Boolean(input.recordRefund) }, { id: user.id, name: user.name });
     await audit(user.id, "receipt.credit", "receipt", n.id, `${n.number} for ${receiptId}`);
     let note = "";

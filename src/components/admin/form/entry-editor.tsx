@@ -7,6 +7,7 @@ import { ExternalLink, History, MoreHorizontal, Trash2, EyeOff, Check } from "lu
 import type { CollectionDef, Option, OptionSource } from "@/lib/admin/collections";
 import { Fields } from "@/components/admin/form/fields";
 import { Badge, Button } from "@/components/admin/ui";
+import { useStepUp } from "@/components/admin/step-up";
 import { deleteAction, revisionAction, saveAction, unpublishAction } from "@/app/admin/(panel)/c/actions";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export function EntryEditor({
   const [liveBehind, setLiveBehind] = useState(initialDirty);
   const [message, setMessage] = useState<{ tone: "green" | "red"; text: string } | null>(null);
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   const [menu, setMenu] = useState(false);
   const [history, setHistory] = useState(false);
   const [slugTouched, setSlugTouched] = useState(Boolean(id));
@@ -152,7 +154,8 @@ export function EntryEditor({
                     ) : null}
                     {canPublish ? (
                       <MenuItem danger icon={<Trash2 className="size-4" />} onClick={() => start(async () => {
-                        if (!confirm(`Delete "${title}" for good? This can't be undone.${status === "published" ? " It will disappear from the website. To keep it but take it off the site, use Hide instead." : ""}`)) return;
+                        setMenu(false);
+                        if (!(await stepUp({ purpose: "delete", title: `Delete “${title}” for good`, detail: `This can't be undone.${status === "published" ? " It disappears from the website. To keep it but take it off the site, use Hide instead." : ""}`, action: "Delete for good", danger: true }))) return;
                         const r = await deleteAction(def.key, id);
                         if (r.ok) router.push(`/c/${def.key}`); else setMessage({ tone: "red", text: r.error });
                       })}>Delete for good</MenuItem>

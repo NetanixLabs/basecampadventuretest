@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { audit } from "@/lib/admin/audit";
 import { Denied, assertUser, can } from "@/lib/admin/guards";
+import { assertStepUp } from "@/lib/admin/step-up";
 import { getBrand, saveBrand } from "@/lib/server/receipt-brand";
 import { inkOnly } from "@/lib/server/ink";
 import { readFileData, removePrivate, writePrivate } from "@/lib/server/portal";
@@ -10,7 +11,10 @@ export const dynamic = "force-dynamic";
 /** Upload the signature or the company stamp (kept encrypted, never public). */
 export async function POST(req: Request) {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    // The signature and stamp make receipts official: changing them needs the authenticator code.
+    await assertStepUp(auth, "settings");
     if (Number(req.headers.get("content-length") ?? 0) > 4_000_000) return NextResponse.json({ error: "Images can be up to 3 MB." }, { status: 413 });
     const form = await req.formData();
     const kind = form.get("kind");
@@ -54,7 +58,9 @@ export async function GET(req: Request) {
 /** Remove the signature or stamp. */
 export async function DELETE(req: Request) {
   try {
-    const { user } = await assertUser("settings");
+    const auth = await assertUser("settings");
+    const { user } = auth;
+    await assertStepUp(auth, "settings");
     const kind = new URL(req.url).searchParams.get("kind");
     if (kind !== "signature" && kind !== "stamp") return new NextResponse("Bad request", { status: 400 });
     const brand = await getBrand();

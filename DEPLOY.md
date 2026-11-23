@@ -216,7 +216,13 @@ also hear about every publish instantly through IndexNow.
 - Uploads checked by content (not file name), re-encoded, camera/GPS data removed.
 - Keys encrypted (AES-256-GCM) in the database, never shown after saving.
 - WeTravel notifications verified by signature, replay-protected, processed once.
-- Every sign-in, change and email in the Activity log.
+- Sensitive changes need the current authenticator code and a ticked confirmation, every time,
+  checked on the server (a code confirms one kind of change, lasts 2 minutes and is used up by
+  the change): team accounts, settings, payment and email keys, receipt signature and stamp,
+  deleting content, photos or customers, Replace everywhere, redirects, sending the newsletter,
+  cancelling receipts and credit notes. Wrong codes count towards the sign-in lock-out.
+- Nobody but the owner can give rights they don't have themselves.
+- Every sign-in, change, confirmation and email in the Activity log.
 
 If the server is ever restored from a backup, keep the same `ENCRYPTION_KEY`.
 Locked out completely? On the server: `npm run admin:user -- --email you@example.com --reset-password`.

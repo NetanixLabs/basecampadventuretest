@@ -5,6 +5,7 @@ import { Card, inputClass, Label } from "@/components/admin/ui";
 import { LANGS, type Features } from "@/lib/features";
 import { saveFeatures } from "./actions";
 import { cn } from "@/lib/utils";
+import { useStepUp } from "@/components/admin/step-up";
 
 function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -27,11 +28,12 @@ export function FeaturesForm({ initial, whatsappKeys }: { initial: Features; wha
   const [secrets, setSecrets] = useState({ WHATSAPP_TOKEN: "", WHATSAPP_PHONE_ID: "", CALLMEBOT_KEYS: "" });
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
+  const stepUp = useStepUp();
   const set = <K extends keyof Features>(k: K, v: Partial<Features[K]>) => setF((o) => ({ ...o, [k]: { ...o[k], ...v } }));
   const num = (v: string) => Number(v.replace(/[^0-9]/g, "")) || 0;
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await saveFeatures(f, secrets); setMsg(r.message); if (r.ok) setSecrets({ WHATSAPP_TOKEN: "", WHATSAPP_PHONE_ID: "", CALLMEBOT_KEYS: "" }); }); }} className="space-y-6 pb-24 lg:pb-0">
+    <form onSubmit={(e) => { e.preventDefault(); start(async () => { if (!(await stepUp({ purpose: "settings", title: "Save feature switches", detail: "Reminders, reviews, traveller pages, payments, languages and alerts change at once for the office and the website.", action: "Save" }))) return; const r = await saveFeatures(f, secrets); setMsg(r.message); if (r.ok) setSecrets({ WHATSAPP_TOKEN: "", WHATSAPP_PHONE_ID: "", CALLMEBOT_KEYS: "" }); }); }} className="space-y-6 pb-24 lg:pb-0">
       <div className="grid gap-6 lg:grid-cols-2">
         <Feature title="Reminders for unpaid bookings" info="If a traveller starts a booking but hasn't paid after this many hours, they get a friendly reminder with their payment link. A second, more personal reminder can follow a few days later, optionally with a small discount code (make the code under Sales → Discount codes first)." on={f.abandoned.enabled} onChange={(v) => set("abandoned", { enabled: v })}>
           <div><Label htmlFor="ab-h">First reminder after (hours)</Label><input id="ab-h" inputMode="numeric" value={f.abandoned.afterHours} onChange={(e) => set("abandoned", { afterHours: num(e.target.value) })} className={inputClass} /></div>
