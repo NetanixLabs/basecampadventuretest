@@ -2,7 +2,7 @@
 
 import Image from "@/components/image";
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cropFor } from "@/lib/banner";
 import { GalleryButton } from "@/components/trip/gallery";
@@ -28,7 +28,7 @@ export function TripSlider({ images, title }: { images: Img[]; title: string }) 
         style={{ ["--pos-m" as string]: crops[0].position, ["--pos-s" as string]: crops[1].position, ["--pos-l" as string]: crops[2].position }}
       >
         <AnimatePresence initial={false} mode="popLayout">
-          <motion.div
+          <m.div
             key={img.src}
             className="absolute inset-0"
             initial={{ opacity: 0, scale: 1.04 }}
@@ -42,8 +42,8 @@ export function TripSlider({ images, title }: { images: Img[]; title: string }) 
               if (info.offset.x > 50) go(-1);
             }}
           >
-            <Image src={img.src} alt={img.alt || `${title} photograph ${i + 1}`} fill preload={i === 0} fetchPriority={i === 0 ? "high" : "auto"} quality={80} sizes="(max-width: 1440px) 100vw, 1376px" className="object-cover object-[var(--pos-m)] sm:object-[var(--pos-s)] lg:object-[var(--pos-l)]" />
-          </motion.div>
+            <Image src={img.src} alt={img.alt || `${title} photograph ${i + 1}`} fill preload={i === 0} fetchPriority={i === 0 ? "high" : "auto"} quality={75} sizes="(max-width: 1440px) 100vw, 1376px" className="object-cover object-[var(--pos-m)] sm:object-[var(--pos-s)] lg:object-[var(--pos-l)]" />
+          </m.div>
         </AnimatePresence>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
       </div>

@@ -5,7 +5,7 @@ import { tellTawk } from "@/lib/tawk";
 import Image from "@/components/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, CircleCheckBig, Loader2, Lock, Minus, Plus, Send, ShieldCheck, X } from "lucide-react";
 import { PaymentMarks } from "@/components/icons";
 import { Portal } from "@/components/portal";
@@ -52,9 +52,9 @@ function Sheet({ title, onClose, children, wide = false }: { title: string; onCl
   }, [onClose]);
 
   return (
-    <motion.div data-lenis-prevent className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <m.div data-lenis-prevent className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <button type="button" aria-label="Close" className="absolute inset-0 bg-pine-night/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
+      <m.div
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -72,8 +72,8 @@ function Sheet({ title, onClose, children, wide = false }: { title: string; onCl
           <X className="size-5" aria-hidden />
         </button>
         {children}
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }
 
@@ -242,7 +242,7 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7">
         <AnimatePresence mode="wait">
-          <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.22 }}>
+          <m.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.22 }}>
             {step === 0 ? (
               <div className="grid gap-5 md:grid-cols-[1.2fr_1fr]">
                 <div>
@@ -347,7 +347,7 @@ function BookingFlow({ trip, onClose }: { trip: ModalTrip; onClose: () => void }
                 </div>
               </div>
             ) : null}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </div>
 

@@ -104,7 +104,7 @@ function BannerPhoto({ src, wide }: { src: string; wide: number }) {
       className={cn("relative overflow-hidden rounded-xl bg-snow-2", wide > 2.9 ? "aspect-[3/2] sm:aspect-[21/7]" : "aspect-[3/2] sm:aspect-[21/8]")}
       style={{ ["--pos-s" as string]: small?.position ?? "50% 50%", ["--pos-l" as string]: large?.position ?? "50% 40%" }}
     >
-      <Image src={src} alt="" fill preload fetchPriority="high" quality={82} sizes="(max-width: 1440px) 100vw, 1376px" className="object-cover object-[var(--pos-s)] sm:object-[var(--pos-l)]" />
+      <Image src={src} alt="" fill preload fetchPriority="high" quality={75} sizes="(max-width: 1440px) 100vw, 1376px" className="object-cover object-[var(--pos-s)] sm:object-[var(--pos-l)]" />
     </div>
   );
 }

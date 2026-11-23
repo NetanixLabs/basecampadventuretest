@@ -2,7 +2,7 @@
 
 import Image from "@/components/image";
 import { useCallback, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Portal } from "@/components/portal";
 
@@ -37,7 +37,7 @@ export function Lightbox({ images, index, onIndex, title }: { images: LightboxIm
     <Portal>
       <AnimatePresence>
         {current && index !== null ? (
-          <motion.div
+          <m.div
             data-lenis-prevent
             role="dialog"
             aria-modal="true"
@@ -60,7 +60,7 @@ export function Lightbox({ images, index, onIndex, title }: { images: LightboxIm
             </div>
             <div className="relative min-h-0 flex-1">
               <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
+                <m.div
                   key={current.src}
                   className="absolute inset-0 px-3 sm:px-20"
                   initial={{ opacity: 0, scale: 0.98 }}
@@ -75,7 +75,7 @@ export function Lightbox({ images, index, onIndex, title }: { images: LightboxIm
                   }}
                 >
                   <Image src={current.src} alt={current.alt || title} fill sizes="100vw" quality={85} className="object-contain" />
-                </motion.div>
+                </m.div>
               </AnimatePresence>
               {images.length > 1 ? (
                 <>
@@ -97,7 +97,7 @@ export function Lightbox({ images, index, onIndex, title }: { images: LightboxIm
                 ))}
               </div>
             ) : null}
-          </motion.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </Portal>

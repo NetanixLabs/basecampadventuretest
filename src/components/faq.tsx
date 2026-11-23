@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,7 @@ export function Faq({ items, tone = "light", defaultOpen = 0 }: { items: { q: st
       {items.map((it, i) => {
         const isOpen = open === i;
         return (
-          <div key={it.q}>
+          <div key={it.q} className="cv-auto">
             <h3>
               <button
                 type="button"
@@ -30,7 +30,7 @@ export function Faq({ items, tone = "light", defaultOpen = 0 }: { items: { q: st
               </button>
             </h3>
             {/* Always rendered, only collapsed, so every answer is in the page for search engines. */}
-            <motion.div
+            <m.div
               initial={false}
               animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -38,7 +38,7 @@ export function Faq({ items, tone = "light", defaultOpen = 0 }: { items: { q: st
               inert={!isOpen}
             >
               <div className={cn("prose-trail pb-6 text-base", dark && "prose-on-dark")} dangerouslySetInnerHTML={{ __html: it.a }} />
-            </motion.div>
+            </m.div>
           </div>
         );
       })}

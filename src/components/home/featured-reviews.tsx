@@ -3,7 +3,7 @@
 import { ReviewVerified } from "@/components/review-verified";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Quote, Star } from "lucide-react";
 import { EASE } from "@/components/motion";
 
@@ -40,7 +40,7 @@ export function FeaturedReviews({ items }: { items: Featured[] }) {
       </div>
       <div className="relative mt-6 flex-1" aria-live="polite">
         <AnimatePresence mode="wait">
-          <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.5, ease: EASE }}>
+          <m.div key={i} initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.5, ease: EASE }}>
             <blockquote className="text-[1.15rem] leading-relaxed sm:text-[1.35rem] sm:leading-[1.55]">&ldquo;{r.body}&rdquo;</blockquote>
             <figcaption className="mt-6">
               <p className="flex items-center gap-1.5 font-bold">{r.name}<ReviewVerified /></p>
@@ -51,7 +51,7 @@ export function FeaturedReviews({ items }: { items: Featured[] }) {
                 </Link>
               </p>
             </figcaption>
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </div>
       {items.length > 1 ? (

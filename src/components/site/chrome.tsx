@@ -1,4 +1,5 @@
 import { ProseLightbox } from "@/components/prose-lightbox";
+import { MotionProvider } from "@/components/motion-provider";
 import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site/footer";
 import { SiteHeader } from "@/components/site/header";
@@ -26,7 +27,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   const fx = c.enabled ? { EUR: Number(c.eur), GBP: Number(c.gbp), AUD: Number(c.aud) } : null;
   const pay = { methods: [...(p.wetravel ? ["wetravel"] : []), ...(p.hbl ? ["hbl"] : [])], preferred: p.preferred };
   return (
-    <>
+    <MotionProvider>
       <script dangerouslySetInnerHTML={{ __html: `window.__BCA_PAY__=${JSON.stringify(pay)}${fx ? `;window.__BCA_FX__=${JSON.stringify(fx)}` : ""}` }} />
       <a href="#main" className="bg-marigold text-pine-night sr-only z-[100] rounded-full px-5 py-3 font-bold focus:not-sr-only focus:fixed focus:top-4 focus:left-4">
         Skip to content
@@ -41,6 +42,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       <ProseLightbox />
       <Visit />
       <JsonLd data={[organizationLd(), websiteLd()]} />
-    </>
+    </MotionProvider>
   );
 }

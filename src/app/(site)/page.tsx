@@ -153,7 +153,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-site px-4 sm:px-6 lg:px-6">
           <SectionHeading eyebrow={copy.popular.eyebrow || `${popular.length} packages`} lines={headingLines(copy.popular.heading)} />
           <div className="mt-6">
-            <TripCarousel trips={popular.slice(0, 20)} regionNames={regionNames} moreHref="/trip/" moreLabel={`All ${cards.length} trips`} />
+            <TripCarousel trips={popular.slice(0, 12)} regionNames={regionNames} moreHref="/trip/" moreLabel={`All ${cards.length} trips`} />
           </div>
         </div>
       </section>
@@ -277,7 +277,7 @@ export default function HomePage() {
                 {p.cover ? <PhotoGlow src={p.cover.src} strength="sm" /> : null}
                 <Link href={`/${p.slug}/`} className="group block">
                   <div className="zoom-img relative aspect-[16/10] overflow-hidden rounded-xl bg-snow-2">
-                    {p.cover ? <Image src={p.cover.src} alt={p.cover.alt} fill sizes="(max-width: 768px) 100vw, 33vw" quality={75} className="object-cover object-right-bottom" /> : null}
+                    {p.cover ? <Image src={p.cover.src} alt={p.cover.alt} fill sizes="(max-width: 768px) 100vw, 33vw" quality={70} className="object-cover object-right-bottom" /> : null}
                   </div>
                   <p className="mt-4 flex items-center gap-2 text-[0.64rem] font-bold tracking-[0.14em] text-muted uppercase">
                     {formatDate(p.published)} <span aria-hidden>·</span> <Clock className="size-3" aria-hidden /> {p.readingMinutes} min

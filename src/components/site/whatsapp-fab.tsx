@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { m, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { WhatsappIcon } from "@/components/icons";
 import { whatsappHref } from "@/lib/site";
@@ -15,7 +15,7 @@ export function WhatsappFab() {
   useMotionValueEvent(scrollY, "change", (y) => setShow(y > 600));
 
   return (
-    <motion.a
+    <m.a
       href={whatsappHref()}
       target="_blank"
       rel="noopener noreferrer"
@@ -28,6 +28,6 @@ export function WhatsappFab() {
     >
       <span className="absolute inset-0 animate-ping rounded-full bg-[#25D366] opacity-25" aria-hidden />
       <WhatsappIcon className="relative size-6 sm:size-7" />
-    </motion.a>
+    </m.a>
   );
 }

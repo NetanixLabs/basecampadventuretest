@@ -3,7 +3,7 @@
 import { ReviewVerified } from "@/components/review-verified";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Quote, Star } from "lucide-react";
 import { Flag } from "@/components/flag";
 import { cn, formatDate } from "@/lib/utils";
@@ -92,7 +92,7 @@ export function ReviewCarousel({ items }: { items: CarouselReview[] }) {
       onBlur={() => setHold(false)}
       className="outline-none"
     >
-      <motion.div
+      <m.div
         className="relative mx-auto h-[20rem] touch-pan-y select-none sm:h-[19rem] [perspective:1400px]"
         onPanEnd={(_, info) => {
           if (info.offset.x < -50) go(1);
@@ -108,7 +108,7 @@ export function ReviewCarousel({ items }: { items: CarouselReview[] }) {
           const shown = d <= (narrow ? 1 : 2);
           const isActive = o === 0;
           return (
-            <motion.div
+            <m.div
               key={i}
               role="group"
               aria-roledescription="slide"
@@ -182,10 +182,10 @@ export function ReviewCarousel({ items }: { items: CarouselReview[] }) {
                   <button type="button" onClick={() => go(o)} tabIndex={-1} aria-label={`Show review by ${r.name}`} className="absolute inset-0 cursor-pointer" />
                 ) : null}
               </div>
-            </motion.div>
+            </m.div>
           );
         })}
-      </motion.div>
+      </m.div>
 
       <div className="mt-3 flex items-center justify-center gap-3">
         <button type="button" onClick={() => go(-1)} aria-label="Previous review" className="hover:border-pine grid size-10 place-items-center rounded-full border border-line bg-card transition-colors">

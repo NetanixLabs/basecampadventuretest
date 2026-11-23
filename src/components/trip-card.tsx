@@ -2,16 +2,7 @@
 
 import Image from "@/components/image";
 import Link from "next/link";
-import { useState } from "react";
 import { Star } from "lucide-react";
-import {
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-} from "framer-motion";
 import { PhotoGlow } from "@/components/photo-glow";
 import { CardActions } from "@/components/shortlist";
 import type { TripCard as Card } from "@/lib/types";
@@ -23,7 +14,15 @@ import { cn, usd } from "@/lib/utils";
  *
  * Compact enough for four in a row. On a mouse it tilts gently toward the
  * pointer with a soft glare; on touch and with reduced motion it stays still.
+ * The tilt is plain CSS driven by two custom properties (globals.css,
+ * .package-card), so a page of cards costs nothing extra on a phone.
  */
+const tiltTo = (el: HTMLElement, x: number, y: number) => {
+  el.style.setProperty("--tilt-x", `${(4 - y * 8).toFixed(2)}deg`);
+  el.style.setProperty("--tilt-y", `${(x * 10 - 5).toFixed(2)}deg`);
+  el.style.setProperty("--glare-x", `${(x * 100).toFixed(1)}%`);
+  el.style.setProperty("--glare-y", `${(y * 100).toFixed(1)}%`);
+};
 export function TripCard({
   trip,
   regionName,
@@ -31,7 +30,7 @@ export function TripCard({
   priority = false,
   className,
   imageSizes = "(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 24vw",
-  imageQuality = 80,
+  imageQuality = 70,
 }: {
   trip: Card;
   regionName?: string;
@@ -43,36 +42,18 @@ export function TripCard({
   imageQuality?: number;
   size?: "md" | "lg";
 }) {
-  const reduce = useReducedMotion();
-  const [fine, setFine] = useState(false);
-  const px = useMotionValue(0.5);
-  const py = useMotionValue(0.5);
-  const spring = { stiffness: 170, damping: 18, mass: 0.4 };
-  const rx = useSpring(useTransform(py, [0, 1], [4, -4]), spring);
-  const ry = useSpring(useTransform(px, [0, 1], [-5, 5]), spring);
-  const gx = useTransform(px, (v) => `${v * 100}%`);
-  const gy = useTransform(py, (v) => `${v * 100}%`);
-  const glare = useMotionTemplate`radial-gradient(16rem circle at ${gx} ${gy}, rgba(255,255,255,0.18), transparent 60%)`;
-  const tilt = fine && !reduce;
-
   const off = trip.price?.regular && trip.price.amount < trip.price.regular ? Math.round((1 - trip.price.amount / trip.price.regular) * 100) : null;
   const photoTag = label ?? regionName?.replace(" Region", "");
   const tag = photoTag?.trim().toLowerCase() === "other treks" ? undefined : photoTag;
 
   return (
-    <motion.article
-      onPointerEnter={(e) => setFine(e.pointerType === "mouse")}
+    <article
       onPointerMove={(e) => {
         if (e.pointerType !== "mouse") return;
         const r = e.currentTarget.getBoundingClientRect();
-        px.set((e.clientX - r.left) / r.width);
-        py.set((e.clientY - r.top) / r.height);
+        tiltTo(e.currentTarget, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
       }}
-      onPointerLeave={() => {
-        px.set(0.5);
-        py.set(0.5);
-      }}
-      style={tilt ? { rotateX: rx, rotateY: ry, transformPerspective: 1100 } : undefined}
+      onPointerLeave={(e) => tiltTo(e.currentTarget, 0.5, 0.5)}
       className={cn("package-card group relative isolate h-full", className)}
     >
       {trip.cover ? <PhotoGlow src={trip.cover.src} strength="sm" /> : null}
@@ -132,11 +113,11 @@ export function TripCard({
           </div>
         </div>
 
-        {tilt ? <motion.span aria-hidden style={{ backgroundImage: glare }} className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" /> : null}
+        <span aria-hidden className="package-glare pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300" />
       </Link>
       <div className="pointer-events-none absolute inset-x-0 top-0 aspect-[3/2]">
         <CardActions slug={trip.slug} title={trip.title} className="pointer-events-auto absolute right-3 bottom-3" />
       </div>
-    </motion.article>
+    </article>
   );
 }

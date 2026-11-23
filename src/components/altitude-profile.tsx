@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { placeOf } from "@/lib/itinerary";
 import { cn } from "@/lib/utils";
 
@@ -146,8 +146,8 @@ export function AltitudeProfile({ days, tone = "dark", className, words = EN_WOR
             </g>
           ))}
 
-          <motion.path d={area} fill={`url(#alt-fill-${tone})`} initial={{ opacity: 0 }} animate={{ opacity: draw ? 1 : 0 }} transition={{ duration: 1.2, delay: 0.9 }} />
-          <motion.path
+          <m.path d={area} fill={`url(#alt-fill-${tone})`} initial={{ opacity: 0 }} animate={{ opacity: draw ? 1 : 0 }} transition={{ duration: 1.2, delay: 0.9 }} />
+          <m.path
             d={path}
             fill="none"
             stroke="var(--glacier)"
@@ -160,7 +160,7 @@ export function AltitudeProfile({ days, tone = "dark", className, words = EN_WOR
 
           {points.map((p, i) => (
             <g key={i}>
-              <motion.circle
+              <m.circle
                 cx={p.x}
                 cy={p.y}
                 r={i === hover ? 7 : labels.includes(i) ? 5 : compact ? 2.5 : 3}
@@ -197,14 +197,14 @@ export function AltitudeProfile({ days, tone = "dark", className, words = EN_WOR
             const max = compact ? 12 : 18;
             const anchor = p.x < PAD.l + 30 ? "start" : p.x > W - PAD.r - 30 ? "end" : "middle";
             return (
-              <motion.g key={`l${i}`} initial={{ opacity: 0 }} animate={{ opacity: draw ? 1 : 0 }} transition={{ delay: 1.6 }} pointerEvents="none">
+              <m.g key={`l${i}`} initial={{ opacity: 0 }} animate={{ opacity: draw ? 1 : 0 }} transition={{ delay: 1.6 }} pointerEvents="none">
                 <text x={p.x} y={p.y - 14} textAnchor={anchor} fontSize={compact ? 11 : 12.5} fontWeight="700" fill={dark ? "white" : "var(--ink)"}>
                   {name.length > max ? `${name.slice(0, max - 1)}…` : name}
                 </text>
                 <text x={p.x} y={p.y - 28} textAnchor={anchor} fontSize={compact ? 9.5 : 10.5} fontFamily="var(--font-mono)" fill={p === peak ? "var(--marigold)" : dark ? "white" : "var(--muted)"} fillOpacity={p === peak ? 1 : 0.7}>
                   {fmt(p.a)}
                 </text>
-              </motion.g>
+              </m.g>
             );
           })}
 

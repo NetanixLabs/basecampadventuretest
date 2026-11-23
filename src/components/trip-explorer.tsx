@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowRight, Compass, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { Portal } from "@/components/portal";
 import { TripCard } from "@/components/trip-card";
@@ -208,9 +208,9 @@ export function TripExplorer({
       <Portal>
       <AnimatePresence>
         {sheet ? (
-          <motion.div data-lenis-prevent className="fixed inset-0 z-[200] lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <m.div data-lenis-prevent className="fixed inset-0 z-[200] lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <button type="button" aria-label="Close filters" className="absolute inset-0 bg-pine-night/50" onClick={() => setSheet(false)} />
-            <motion.div
+            <m.div
               role="dialog"
               aria-modal="true"
               aria-label="Filters"
@@ -226,8 +226,8 @@ export function TripExplorer({
               <button type="button" onClick={() => setSheet(false)} className="bg-pine mt-6 w-full rounded-full py-4 font-bold text-white">
                 Show {results.length} trips
               </button>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
       </Portal>
@@ -270,10 +270,10 @@ function Results({ trips, regionNames }: { trips: Card[]; regionNames: Record<st
   const left = trips.length - shown;
   return (
     <>
-      <motion.div layout className="mt-8 package-grid-gap grid sm:grid-cols-2 lg:grid-cols-4">
+      <m.div layout className="mt-8 package-grid-gap grid sm:grid-cols-2 lg:grid-cols-4">
         <AnimatePresence mode="popLayout" initial={false}>
           {trips.slice(0, shown).map((t, i) => (
-            <motion.div
+            <m.div
               key={t.slug}
               layout
               initial={{ opacity: 0, scale: 0.94, y: 24 }}
@@ -282,10 +282,10 @@ function Results({ trips, regionNames }: { trips: Card[]; regionNames: Record<st
               transition={{ duration: 0.45, delay: Math.min(i % 12, 8) * 0.03, ease: [0.22, 1, 0.36, 1] }}
             >
               <TripCard trip={t} regionName={regionNames[t.destinations[0]]} priority={i < 3} />
-            </motion.div>
+            </m.div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </m.div>
       {left > 0 ? (
         <div className="mt-10 flex flex-col items-center gap-2">
           <button type="button" onClick={() => setShown((n) => n + 12)} className="hover:border-pine inline-flex items-center gap-2 rounded-lg border border-line bg-card px-6 py-3.5 text-sm font-bold transition-colors">

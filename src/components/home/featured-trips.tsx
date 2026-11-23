@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, m } from "framer-motion";
 import { TripCard } from "@/components/trip-card";
 import type { TripCard as Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -79,7 +79,7 @@ export function FeaturedTrips({ groups, regionNames, regions }: { groups: TripGr
               onClick={() => setKey(g.key)}
               className={cn("relative shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors", g.key === key ? "text-white" : "border border-line bg-card text-ink-soft hover:text-ink")}
             >
-              {g.key === key ? <motion.span layoutId="trip-tab" className="bg-pine absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 380, damping: 32 }} /> : null}
+              {g.key === key ? <m.span layoutId="trip-tab" className="bg-pine absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 380, damping: 32 }} /> : null}
               <span className="relative">{g.label}</span>
             </button>
           ))}
@@ -87,10 +87,10 @@ export function FeaturedTrips({ groups, regionNames, regions }: { groups: TripGr
         <p className="text-sm text-muted">{Math.min(group.trips.length, 8)} handpicked trips</p>
       </div>
 
-      <motion.div layout className="rail mt-6 package-grid-gap grid sm:grid-cols-2 lg:grid-cols-4">
+      <m.div layout className="rail mt-6 package-grid-gap grid sm:grid-cols-2 lg:grid-cols-4">
         <AnimatePresence mode="popLayout" initial={false}>
           {group.trips.slice(0, 8).map((t, i) => (
-            <motion.div
+            <m.div
               key={`${group.key}-${t.slug}`}
               layout
               initial={{ opacity: 0, y: 30, scale: 0.97 }}
@@ -99,10 +99,10 @@ export function FeaturedTrips({ groups, regionNames, regions }: { groups: TripGr
               transition={{ duration: 0.5, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
             >
               <TripCard trip={t} regionName={regionNames[t.destinations[0]]} />
-            </motion.div>
+            </m.div>
           ))}
         </AnimatePresence>
-      </motion.div>
+      </m.div>
 
       <div className="mt-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <Link href={group.href} className="border-b-2 border-ink pb-1 text-sm font-bold">

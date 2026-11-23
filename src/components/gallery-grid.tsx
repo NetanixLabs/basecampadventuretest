@@ -3,7 +3,7 @@
 import Image from "@/components/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowUpRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { PhotoGlow } from "@/components/photo-glow";
 import { Portal } from "@/components/portal";
@@ -68,7 +68,7 @@ export function GalleryGrid({ photos, regions }: { photos: GalleryPhoto[]; regio
 
       <div className="mt-8 columns-2 gap-3 sm:gap-4 md:columns-3 lg:columns-4 [&>*]:mb-3 sm:[&>*]:mb-4">
         {shown.map((p, i) => (
-          <motion.button
+          <m.button
             key={p.src}
             type="button"
             layout
@@ -95,7 +95,7 @@ export function GalleryGrid({ photos, regions }: { photos: GalleryPhoto[]; regio
                 {p.tripTitle}
               </span>
             </span>
-          </motion.button>
+          </m.button>
         ))}
       </div>
 
@@ -110,7 +110,7 @@ export function GalleryGrid({ photos, regions }: { photos: GalleryPhoto[]; regio
       <Portal>
         <AnimatePresence>
           {current && index !== null ? (
-            <motion.div
+            <m.div
               data-lenis-prevent
               role="dialog"
               aria-modal="true"
@@ -133,7 +133,7 @@ export function GalleryGrid({ photos, regions }: { photos: GalleryPhoto[]; regio
               </div>
               <div className="relative flex-1">
                 <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
+                  <m.div
                     key={current.src}
                     className="absolute inset-0 px-4 sm:px-20"
                     initial={{ opacity: 0, scale: 0.97 }}
@@ -148,7 +148,7 @@ export function GalleryGrid({ photos, regions }: { photos: GalleryPhoto[]; regio
                     }}
                   >
                     <Image src={current.src} alt={current.alt || current.tripTitle} fill sizes="100vw" quality={85} className="object-contain" />
-                  </motion.div>
+                  </m.div>
                 </AnimatePresence>
                 <button type="button" onClick={() => go(-1)} aria-label="Previous photo" className="absolute top-1/2 left-3 grid size-12 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-white/20 sm:left-6">
                   <ChevronLeft className="size-6" aria-hidden />
@@ -158,7 +158,7 @@ export function GalleryGrid({ photos, regions }: { photos: GalleryPhoto[]; regio
                 </button>
               </div>
               <p className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-sm text-white/70">{current.alt}</p>
-            </motion.div>
+            </m.div>
           ) : null}
         </AnimatePresence>
       </Portal>

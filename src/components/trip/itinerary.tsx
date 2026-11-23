@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { BedDouble, ChevronDown, Coffee, Mountain, Route, Sandwich, Timer, UtensilsCrossed } from "lucide-react";
 import { accommodationPlaceOf, distanceOf, distanceEstimateOf, distanceLabels, durationOf, placeOf } from "@/lib/itinerary";
 import { AccommodationFact } from "@/components/trip/accommodation-fact";
@@ -47,7 +47,7 @@ export function Itinerary({ days }: { days: ItineraryDay[] }) {
           const photo = itineraryPhoto(d, place);
           const accommodation = place ? `${place} - Guest house` : d.accommodation?.trim() || (!/departure|onward destination|fly (?:back )?home/i.test(d.title) && d.day < days.length ? "Not specified" : "");
           return (
-            <li key={d.day} className="relative pb-3 pl-14">
+            <li key={d.day} className="cv-auto relative pb-3 pl-14">
               <span
                 className={cn(
                   "absolute top-2.5 left-0 grid size-[2.3rem] place-items-center rounded-full border-2 font-mono text-xs font-medium transition-colors",
@@ -86,7 +86,7 @@ export function Itinerary({ days }: { days: ItineraryDay[] }) {
                     {photo ? <li className="inline-flex items-center"><AccommodationFact value="" place={photo.name} images={photo} iconOnly /></li> : null}
                   </ul>
                 ) : null}
-                <motion.div initial={false} animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden" inert={!isOpen}>
+                <m.div initial={false} animate={{ height: isOpen ? "auto" : 0, opacity: isOpen ? 1 : 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden" inert={!isOpen}>
                   <div className="px-4 pb-5">
                     {d.html ? <div className="prose-trail text-base" dangerouslySetInnerHTML={{ __html: withoutPhotos(d.html) }} /> : null}
                     {accommodation ? (
@@ -96,12 +96,12 @@ export function Itinerary({ days }: { days: ItineraryDay[] }) {
                     ) : null}
                     {d.meals.length ? (
                       <ul className="mt-3 flex flex-wrap gap-2" aria-label="Meals included">
-                        {(["breakfast", "lunch", "dinner"] as const).map((m) => {
-                          const on = d.meals.includes(m);
-                          const Icon = m === "breakfast" ? Coffee : m === "lunch" ? Sandwich : UtensilsCrossed;
+                        {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
+                          const on = d.meals.includes(meal);
+                          const Icon = meal === "breakfast" ? Coffee : meal === "lunch" ? Sandwich : UtensilsCrossed;
                           return (
-                            <li key={m} className={cn("inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize", on ? "border-pine/30 bg-glacier-soft text-pine" : "border-line text-muted/60 line-through")}>
-                              <Icon className="size-3.5" aria-hidden /> {m}
+                            <li key={meal} className={cn("inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold capitalize", on ? "border-pine/30 bg-glacier-soft text-pine" : "border-line text-muted/60 line-through")}>
+                              <Icon className="size-3.5" aria-hidden /> {meal}
                             </li>
                           );
                         })}
@@ -109,7 +109,7 @@ export function Itinerary({ days }: { days: ItineraryDay[] }) {
                     ) : null}
 
                   </div>
-                </motion.div>
+                </m.div>
               </div>
             </li>
           );

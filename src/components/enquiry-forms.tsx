@@ -4,7 +4,7 @@ import { tellTawk } from "@/lib/tawk";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, CircleCheckBig, Loader2, Send } from "lucide-react";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ async function send(payload: Record<string, unknown>) {
 
 function Sent({ reference, onReset }: { reference: string; onReset: () => void }) {
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-10 text-center">
+    <m.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center py-10 text-center">
       <span className="bg-moss/15 text-moss grid size-16 place-items-center rounded-full">
         <CircleCheckBig className="size-8" aria-hidden />
       </span>
@@ -29,7 +29,7 @@ function Sent({ reference, onReset }: { reference: string; onReset: () => void }
       <p className="mt-4 max-w-md text-ink-soft">Our Kathmandu team will reply within a few hours, usually much sooner. For anything urgent, WhatsApp {site.contactPerson.split(" ")[0]} on {site.mobile}.</p>
       <p className="mt-5 rounded-full bg-snow-2 px-5 py-2 font-mono text-sm">Reference {reference}</p>
       <button type="button" onClick={onReset} className="text-pine mt-6 font-semibold underline">Send another message</button>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -150,12 +150,12 @@ export function CustomTripForm() {
           ))}
         </div>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
-          <motion.div className="bg-marigold h-full rounded-full" animate={{ width: `${((step + 1) / steps.length) * 100}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
+          <m.div className="bg-marigold h-full rounded-full" animate={{ width: `${((step + 1) / steps.length) * 100}%` }} transition={{ type: "spring", stiffness: 120, damping: 20 }} />
         </div>
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div key={step} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.35 }}>
+        <m.div key={step} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.35 }}>
           {step === 0 ? (
             <div className="space-y-8">
               <ChipGroup label="Where would you like to go?" options={PLACES} selected={f.places} onToggle={(v) => toggle("places", v)} />
@@ -238,7 +238,7 @@ export function CustomTripForm() {
               {error ? <p role="alert" className="rounded-xl bg-crimson/10 px-4 py-3 text-sm font-medium text-crimson sm:col-span-2">{error}</p> : null}
             </form>
           ) : null}
-        </motion.div>
+        </m.div>
       </AnimatePresence>
 
       <div className="mt-10 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-between">

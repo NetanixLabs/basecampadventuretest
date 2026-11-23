@@ -3,7 +3,7 @@
 import Image from "@/components/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowRight, BookOpen, CornerDownLeft, FileText, Loader2, MapPin, Search, UserRound, X } from "lucide-react";
 import { Portal } from "@/components/portal";
 import { cn } from "@/lib/utils";
@@ -141,7 +141,7 @@ export function SiteSearch() {
     <Portal>
       <AnimatePresence>
         {open ? (
-          <motion.div
+          <m.div
             data-lenis-prevent
             className="fixed inset-0 z-[180] flex items-start justify-center bg-[#0b1012]/55 px-3 pt-[max(1rem,8vh)] backdrop-blur-sm"
             initial={{ opacity: 0 }}
@@ -149,7 +149,7 @@ export function SiteSearch() {
             exit={{ opacity: 0 }}
             onMouseDown={(e) => e.target === e.currentTarget && close()}
           >
-            <motion.div
+            <m.div
               role="dialog"
               aria-modal="true"
               aria-label="Search the site"
@@ -253,8 +253,8 @@ export function SiteSearch() {
                   All trips <ArrowRight className="size-3.5" aria-hidden />
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </Portal>

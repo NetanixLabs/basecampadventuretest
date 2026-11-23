@@ -6,7 +6,7 @@ import Image from "@/components/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CircleCheckBig, Clock, Loader2, Lock, Minus, Plus, ShieldCheck, Tag, Users } from "lucide-react";
 import { PaymentMarks } from "@/components/icons";
 import { site } from "@/lib/site";
@@ -110,7 +110,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
 
   if (done) {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl rounded-[2rem] border border-line bg-card p-8 text-center sm:p-12">
+      <m.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl rounded-[2rem] border border-line bg-card p-8 text-center sm:p-12">
         <span className="bg-moss/15 text-moss mx-auto grid size-16 place-items-center rounded-full">
           {done.paymentUrl ? <Loader2 className="size-8 animate-spin" aria-hidden /> : <CircleCheckBig className="size-8" aria-hidden />}
         </span>
@@ -131,7 +131,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
             WhatsApp us your reference
           </a>
         </div>
-      </motion.div>
+      </m.div>
     );
   }
 
@@ -160,7 +160,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
 
         <AnimatePresence mode="wait">
           {step === 1 ? (
-            <motion.div key="s1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6 rounded-[1.8rem] border border-line bg-card p-6 sm:p-8">
+            <m.div key="s1" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6 rounded-[1.8rem] border border-line bg-card p-6 sm:p-8">
               <h2 className="font-display text-4xl font-black uppercase">Your trip</h2>
               <Field label="Trip" htmlFor="ck-trip">
                 <select id="ck-trip" value={slug} onChange={(e) => setSlug(e.target.value)} className="input">
@@ -201,9 +201,9 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
                 Continue to traveller details <ArrowRight className="size-4" aria-hidden />
               </button>
               {!canNext ? <p className="text-center text-sm text-muted">Choose a start date to continue.</p> : null}
-            </motion.div>
+            </m.div>
           ) : (
-            <motion.form
+            <m.form
               key="s2"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -267,7 +267,7 @@ export function Checkout({ trips }: { trips: CheckoutTrip[] }) {
                 <PaymentMarks className="flex flex-wrap justify-center gap-2" />
                 <p className="flex items-center gap-1.5"><ShieldCheck className="text-moss size-4" aria-hidden /> Card details are entered on WeTravel&apos;s secure checkout. We never see or store them.</p>
               </div>
-            </motion.form>
+            </m.form>
           )}
         </AnimatePresence>
       </div>

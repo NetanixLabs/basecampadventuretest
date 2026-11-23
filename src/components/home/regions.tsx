@@ -3,7 +3,7 @@
 import Image from "@/components/image";
 import Link from "next/link";
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowRight, ChevronDown, Minus, Mountain, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,13 +22,13 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
     <div className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
       <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black/20 lg:aspect-auto lg:min-h-[30rem]">
         <AnimatePresence initial={false}>
-          <motion.div key={r.photo} className="absolute inset-0" initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-            <Image src={r.photo} alt={`${r.name} landscape`} fill sizes="(max-width: 1024px) 100vw, 50vw" quality={80} className="object-cover object-right-bottom" />
-          </motion.div>
+          <m.div key={r.photo} className="absolute inset-0" initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+            <Image src={r.photo} alt={`${r.name} landscape`} fill sizes="(max-width: 1024px) 100vw, 50vw" quality={70} className="object-cover object-right-bottom" />
+          </m.div>
         </AnimatePresence>
         <div className="scrim-b absolute inset-0" />
         <AnimatePresence mode="wait">
-          <motion.div key={r.slug} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.45 }} className="absolute inset-x-0 bottom-0 p-6 pr-[28%] text-white sm:p-8 sm:pr-[28%]">
+          <m.div key={r.slug} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.45 }} className="absolute inset-x-0 bottom-0 p-6 pr-[28%] text-white sm:p-8 sm:pr-[28%]">
             <p className="text-[0.68rem] font-bold tracking-[0.16em] text-white/75 uppercase">{String(open + 1).padStart(2, "0")} / {r.name}</p>
             <p className="accent-word mt-2 text-4xl leading-[1.02] sm:text-5xl">{r.trips} {r.trips === 1 ? "trip" : "trips"} to explore.</p>
             {r.highest ? (
@@ -36,7 +36,7 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
                 <Mountain className="size-3.5" aria-hidden /> Up to {r.highest.toLocaleString("en-US")} m
               </p>
             ) : null}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </div>
 
@@ -53,14 +53,14 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
                 </span>
                 {on ? <Minus className="size-5 text-white" aria-hidden /> : <Plus className="size-5 text-white/70" aria-hidden />}
               </button>
-              <motion.div initial={false} animate={{ height: on ? "auto" : 0, opacity: on ? 1 : 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden" inert={!on}>
+              <m.div initial={false} animate={{ height: on ? "auto" : 0, opacity: on ? 1 : 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden" inert={!on}>
                 <div className="pb-5 pl-10">
                   <p className="line-clamp-3 max-w-md text-sm leading-relaxed text-white/80">{x.line}</p>
                   <Link href={x.href ?? `/destinations/${x.slug}/`} className="mt-4 inline-flex rounded-lg bg-white px-5 py-3 text-sm font-bold text-[#006c7c] transition-colors hover:bg-[#e0f1f4]">
                     Explore {x.name.replace(" Region", "")} trips
                   </Link>
                 </div>
-              </motion.div>
+              </m.div>
             </li>
           );
         })}
@@ -70,7 +70,7 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
             <span className={cn("min-w-0 flex-1 text-xl font-semibold tracking-tight transition-colors sm:text-2xl", moreOpen ? "text-glacier" : "text-white")}>More Treks</span>
             <ChevronDown className={cn("size-5 text-white/70 transition-transform duration-300 motion-reduce:transition-none", moreOpen && "rotate-180")} aria-hidden />
           </button>
-          <motion.div id="home-more-treks" initial={false} animate={{ height: moreOpen ? "auto" : 0, opacity: moreOpen ? 1 : 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden" inert={!moreOpen}>
+          <m.div id="home-more-treks" initial={false} animate={{ height: moreOpen ? "auto" : 0, opacity: moreOpen ? 1 : 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden" inert={!moreOpen}>
             <div className="space-y-2 pb-5 pl-10">
               {moreTreks.map((trip) => (
                 <Link key={trip.slug} href={`/trip/${trip.slug}/`} className="flex items-center justify-between gap-4 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15">
@@ -79,7 +79,7 @@ export function RegionShowcase({ regions, moreTreks }: { regions: RegionPanel[];
                 </Link>
               ))}
             </div>
-          </motion.div>
+          </m.div>
         </li>
       </ul>
     </div>

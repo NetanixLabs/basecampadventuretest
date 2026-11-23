@@ -11,6 +11,10 @@ type EquipmentItem = { name: string; description: string; image: string; categor
 export function Equipment({ items }: { items: EquipmentItem[] }) {
   const [category, setCategory] = useState("All items");
   const [packed, setPacked] = useState<Set<number>>(new Set());
+  // The full list is long on a phone: the first items, then the rest on request.
+  const [all, setAll] = useState(false);
+  const FIRST = 8;
+  const collapsed = category === "All items" && !all && items.length > FIRST + 2;
   const categories = ["All items", ...new Set(items.map((item) => item.category))];
   const percent = Math.round(packed.size / items.length * 100);
 
@@ -54,8 +58,8 @@ export function Equipment({ items }: { items: EquipmentItem[] }) {
       </div>
 
       <ul className="mt-5 grid items-start gap-3 sm:grid-cols-2">
-        {items.map((item, index) => category !== "All items" && item.category !== category ? null : (
-          <li key={`${item.name}-${index}`} className={cn("rounded-2xl border bg-card p-4 transition-colors duration-200 motion-reduce:transition-none", packed.has(index) ? "border-pine/35 bg-glacier-soft/40" : "border-line hover:border-pine/35")}>
+        {items.map((item, index) => (category !== "All items" && item.category !== category) || (collapsed && index >= FIRST) ? null : (
+          <li key={`${item.name}-${index}`} className={cn("cv-auto rounded-2xl border bg-card p-4 transition-colors duration-200 motion-reduce:transition-none", packed.has(index) ? "border-pine/35 bg-glacier-soft/40" : "border-line hover:border-pine/35")}>
             <div className="flex items-start gap-3">
               <label className="relative mt-1 flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md">
                 <input type="checkbox" checked={packed.has(index)} aria-label={`Packed: ${item.name}`} onChange={() => setPacked((current) => { const next = new Set(current); if (next.has(index)) next.delete(index); else next.add(index); return next; })} className="peer absolute inset-0 size-6 cursor-pointer appearance-none rounded-md border border-line bg-card checked:border-pine checked:bg-pine focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine" />
@@ -81,6 +85,11 @@ export function Equipment({ items }: { items: EquipmentItem[] }) {
           </li>
         ))}
       </ul>
+      {collapsed ? (
+        <button type="button" onClick={() => setAll(true)} className="mt-4 w-full rounded-xl border border-line bg-card px-4 py-3 text-sm font-semibold text-pine transition-colors hover:border-pine focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine">
+          Show all {items.length} items
+        </button>
+      ) : null}
       <p className="mt-5 text-xs leading-relaxed text-muted">Images illustrate the type of equipment; brands and models may vary. Your checklist stays checked while this page is open.</p>
     </section>
   );

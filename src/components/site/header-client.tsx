@@ -4,7 +4,7 @@ import Image from "@/components/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-motion";
+import { AnimatePresence, m, useMotionValueEvent, useScroll } from "framer-motion";
 import { ArrowRight, ChevronDown, Menu as MenuIcon, Phone, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { WhatsappIcon } from "@/components/icons";
@@ -112,7 +112,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                     </Link>
                     <AnimatePresence>
                       {openMenu === l.href ? (
-                        <motion.div
+                        <m.div
                           initial={{ opacity: 0, y: -6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -4 }}
@@ -138,7 +138,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                             </ul>
                             </div>
                           </div>
-                        </motion.div>
+                        </m.div>
                       ) : null}
                     </AnimatePresence>
                   </div>
@@ -179,7 +179,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
       <Portal>
         <AnimatePresence>
           {mobile ? (
-            <motion.div
+            <m.div
               data-lenis-prevent
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -201,7 +201,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
               </div>
               <nav aria-label="Mobile" className="flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-6 sm:px-6">
                 {LINKS.map((l, i) => (
-                  <motion.div key={l.href} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 * i, duration: 0.3 }}>
+                  <m.div key={l.href} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 * i, duration: 0.3 }}>
                     <Link href={l.href} className="flex items-center justify-between border-b border-line py-4 text-[1.35rem] font-bold tracking-tight">
                       {w(l.label)} <ArrowRight className="size-5 text-muted" aria-hidden />
                     </Link>
@@ -221,7 +221,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                         </div>
                       </div>
                     ) : null}
-                  </motion.div>
+                  </m.div>
                 ))}
                 <Link href="/contact-us/" className="flex items-center justify-between border-b border-line py-4 text-[1.35rem] font-bold tracking-tight">
                   {w("Contact")} <ArrowRight className="size-5 text-muted" aria-hidden />
@@ -237,7 +237,7 @@ export function HeaderClient({ regions, tripOptions }: { regions: HeaderRegion[]
                   </a>
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           ) : null}
         </AnimatePresence>
       </Portal>

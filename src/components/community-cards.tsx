@@ -23,7 +23,7 @@ export function CommunityCards({ posts, full = false, className }: { posts: Comm
             <article id={p.slug} className="group flex h-full scroll-mt-28 flex-col overflow-hidden rounded-[1.1rem] border border-line bg-card">
               <div className="relative aspect-[16/10] overflow-hidden">
                 {cover ? (
-                  <Image src={cover.src} alt={cover.alt || p.title} fill sizes="(max-width: 640px) 100vw, 40vw" quality={80} className="object-cover object-right-bottom transition-transform duration-[1100ms] group-hover:scale-[1.05]" />
+                  <Image src={cover.src} alt={cover.alt || p.title} fill sizes="(max-width: 640px) 100vw, 40vw" quality={70} className="object-cover object-right-bottom transition-transform duration-[1100ms] group-hover:scale-[1.05]" />
                 ) : (
                   <div className="bg-pine absolute inset-0 overflow-hidden text-white dark:bg-pine-deep">
                     <div aria-hidden className="blueprint absolute inset-0 text-white opacity-[0.09]" />

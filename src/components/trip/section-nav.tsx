@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
+import { AnimatePresence, m, useScroll, useSpring } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { openTripModal } from "@/components/trip/trip-modals";
 import { pinnedOffset, scrollToId } from "@/lib/scroll";
@@ -93,7 +93,7 @@ export function SectionNav({
                 )}
               >
                 {on ? (
-                  <motion.span layoutId="trip-tab-pill" className="bg-pine absolute inset-0 rounded-xl" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+                  <m.span layoutId="trip-tab-pill" className="bg-pine absolute inset-0 rounded-xl" transition={{ type: "spring", stiffness: 420, damping: 34 }} />
                 ) : null}
                 <span className="relative">{i.label}</span>
               </a>
@@ -103,7 +103,7 @@ export function SectionNav({
 
         <AnimatePresence>
           {stuck ? (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 16 }}
@@ -119,11 +119,11 @@ export function SectionNav({
               <button type="button" onClick={() => openTripModal(price ? "book" : "enquire")} className="bg-marigold text-pine-night hover:bg-pine inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors hover:text-white">
                 {price ? "Book Now" : "Send Us A Message"} <ArrowRight className="size-4" aria-hidden />
               </button>
-            </motion.div>
+            </m.div>
           ) : null}
         </AnimatePresence>
 
-        <motion.span aria-hidden className="bg-marigold absolute inset-x-0 bottom-0 h-[2.5px] origin-left" style={{ scaleX: progress }} />
+        <m.span aria-hidden className="bg-marigold absolute inset-x-0 bottom-0 h-[2.5px] origin-left" style={{ scaleX: progress }} />
       </nav>
     </div>
   );

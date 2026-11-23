@@ -2,7 +2,7 @@
 
 import Image from "@/components/image";
 import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Camera, Expand, Images } from "lucide-react";
 import { WhatsappIcon } from "@/components/icons";
 import { Lightbox, type LightboxImage } from "@/components/lightbox";
@@ -49,7 +49,7 @@ export function TripPhotos({ title, ours, travellers, shareHref }: { title: stri
               onClick={() => setTab(b.k)}
               className={cn("relative shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors", tab === b.k ? "text-white" : "border border-line bg-card text-ink-soft hover:text-ink")}
             >
-              {tab === b.k ? <motion.span layoutId="trip-photos-tab" className="bg-pine absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} /> : null}
+              {tab === b.k ? <m.span layoutId="trip-photos-tab" className="bg-pine absolute inset-0 rounded-full" transition={{ type: "spring", stiffness: 420, damping: 34 }} /> : null}
               <span className="relative">{b.l}</span>
             </button>
           ))}

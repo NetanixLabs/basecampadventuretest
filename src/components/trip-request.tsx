@@ -4,7 +4,7 @@ import { tellTawk } from "@/lib/tawk";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, CircleCheckBig, Loader2, Mail, MessageCircle, Minus, Mountain, Pencil, Phone, Plus, Send, Users } from "lucide-react";
 import { WhatsappIcon } from "@/components/icons";
 import { CountrySelect } from "@/components/trip/trip-modals";
@@ -137,7 +137,7 @@ export function TripRequest({ trips }: { trips: RequestTrip[] }) {
 
   if (ref) {
     return (
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-line bg-card p-6 text-center sm:p-12">
+      <m.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-line bg-card p-6 text-center sm:p-12">
         <span className="bg-glacier-soft text-pine mx-auto grid size-16 place-items-center rounded-full">
           <CircleCheckBig className="size-8" aria-hidden />
         </span>
@@ -154,7 +154,7 @@ export function TripRequest({ trips }: { trips: RequestTrip[] }) {
             Keep exploring trips <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
-      </motion.div>
+      </m.div>
     );
   }
 
@@ -185,7 +185,7 @@ export function TripRequest({ trips }: { trips: RequestTrip[] }) {
         </p>
 
         <AnimatePresence mode="wait">
-          <motion.div key={step} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} transition={{ duration: 0.28 }} className="mt-7">
+          <m.div key={step} initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} transition={{ duration: 0.28 }} className="mt-7">
             {step === 0 ? (
               <div className="space-y-7">
                 <Field label="Start from one of our trips" id="r-trip" hint="Optional: we can change anything in it.">
@@ -302,7 +302,7 @@ export function TripRequest({ trips }: { trips: RequestTrip[] }) {
                 </label>
               </div>
             ) : null}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
 
         {error ? (

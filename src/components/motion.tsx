@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
-  motion,
+  m,
   useInView,
   useMotionValue,
   useReducedMotion,
@@ -30,7 +30,7 @@ export function Reveal({
   as?: "div" | "section" | "li" | "article";
 }) {
   const reduce = useReducedMotion();
-  const Tag = motion[as];
+  const Tag = m[as];
   return (
     <Tag
       initial={reduce ? false : { opacity: 0, y }}
@@ -48,7 +48,7 @@ export function Reveal({
 export function Stagger({ children, className, gap = 0.07 }: { children: React.ReactNode; className?: string; gap?: number }) {
   const reduce = useReducedMotion();
   return (
-    <motion.div
+    <m.div
       initial={reduce ? false : "hidden"}
       whileInView="show"
       viewport={{ once: true, margin: "-40px" }}
@@ -56,13 +56,13 @@ export function Stagger({ children, className, gap = 0.07 }: { children: React.R
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 export function StaggerItem({ children, className, ...rest }: { children: React.ReactNode; className?: string } & HTMLMotionProps<"div">) {
   return (
-    <motion.div
+    <m.div
       variants={{
         hidden: { opacity: 0, y: 36, scale: 0.98 },
         show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.75, ease: EASE } },
@@ -71,7 +71,7 @@ export function StaggerItem({ children, className, ...rest }: { children: React.
       {...rest}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -109,7 +109,7 @@ export function LineReveal({
       </Plain>
     );
   }
-  const Tag = motion[as];
+  const Tag = m[as];
   const trigger = { whileInView: "show", viewport: { once: true, margin: "-10%" } };
   return (
     <Tag
@@ -120,12 +120,12 @@ export function LineReveal({
     >
       {lines.map((line, i) => (
         <span key={i} className="block overflow-hidden pb-[0.06em]">
-          <motion.span
+          <m.span
             className="block"
             variants={{ hidden: { y: "110%", rotate: 2 }, show: { y: 0, rotate: 0, transition: { duration: 0.9, ease: EASE } } }}
           >
             {line}
-          </motion.span>
+          </m.span>
         </span>
       ))}
     </Tag>
@@ -152,9 +152,9 @@ export function Parallax({ children, className, amount = 14, minWidth = 0 }: { c
   const y = useTransform(scrollYProgress, [0, 1], [`-${amount}%`, `${amount}%`]);
   return (
     <div ref={ref} className={cn("relative overflow-hidden", className)}>
-      <motion.div className="absolute inset-0" style={reduce ? undefined : { y, scale: 1 + (amount * 2) / 100 }}>
+      <m.div className="absolute inset-0" style={reduce ? undefined : { y, scale: 1 + (amount * 2) / 100 }}>
         {children}
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -199,7 +199,7 @@ export function Magnetic({ children, strength = 0.28, className }: { children: R
   const sy = useSpring(y, { stiffness: 220, damping: 16, mass: 0.4 });
   if (reduce) return <div className={className}>{children}</div>;
   return (
-    <motion.div
+    <m.div
       className={cn("inline-block", className)}
       style={{ x: sx, y: sy }}
       onPointerMove={(e) => {
@@ -214,7 +214,7 @@ export function Magnetic({ children, strength = 0.28, className }: { children: R
       }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -222,5 +222,5 @@ export function Magnetic({ children, strength = 0.28, className }: { children: R
 export function ReadingProgress() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 24 });
-  return <motion.div aria-hidden className="bg-marigold fixed inset-x-0 top-0 z-[60] h-[3px] origin-left" style={{ scaleX }} />;
+  return <m.div aria-hidden className="bg-marigold fixed inset-x-0 top-0 z-[60] h-[3px] origin-left" style={{ scaleX }} />;
 }

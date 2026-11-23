@@ -675,3 +675,22 @@
   html[data-full-edit] .admin-shell { padding-left: 0; }
   html[data-full-edit] .admin-main { max-width: 1680px; padding-left: 5.5rem; padding-right: 2.5rem; }
 }
+
+/* Trip cards: a gentle tilt and glare toward a mouse pointer (trip-card.tsx sets the variables).
+   Only for a real mouse and without reduced motion; phones and touch screens get a still card. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .package-card {
+    transform: perspective(1100px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .package-card .package-glare {
+    background-image: radial-gradient(16rem circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255, 255, 255, 0.18), transparent 60%);
+  }
+  .package-card:hover .package-glare { opacity: 1; }
+}
+
+/* Phones and tablets skip laying out and painting long-list items until they scroll near
+   (itinerary days, questions, packing list). Search engines and screen readers still get everything. */
+@media (max-width: 1023px) {
+  .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 220px; }
+}
