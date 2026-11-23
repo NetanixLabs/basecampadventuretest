@@ -12,6 +12,22 @@ import { RESERVED_PAGES } from "@/lib/reserved-pages";
 import type { Prisma } from "@/generated/prisma/client";
 
 const PER_PAGE = 40;
+
+/** The photo that represents an item in the list (main photo, portrait, first gallery photo…). */
+function coverOf(data: unknown): string | null {
+  const d = (data ?? {}) as Record<string, unknown>;
+  for (const k of ["cover", "photo", "image", "thumbnail", "poster"]) {
+    const v = d[k];
+    if (v && typeof v === "object" && typeof (v as { src?: unknown }).src === "string") return (v as { src: string }).src;
+    if (typeof v === "string" && v.startsWith("/")) return v;
+  }
+  for (const k of ["gallery", "photos", "images"]) {
+    const v = d[k];
+    if (Array.isArray(v) && v[0] && typeof v[0].src === "string") return v[0].src;
+  }
+  return null;
+}
+const thumbUrl = (src: string) => (src.endsWith(".svg") ? src : `/_next/image/?url=${encodeURIComponent(src)}&w=96&q=70`);
 /** Lists the website shows in the office's own order. */
 const ORDERED = new Set(["team", "videoReviews", "videos", "awards", "offers", "community", "destinations", "activities", "difficulty"]);
 
@@ -38,6 +54,7 @@ export default async function ListPage({ params, searchParams }: { params: Promi
     db.entry.count({ where }),
     db.entry.groupBy({ by: ["status"], where: { collection: def.key }, _count: true }),
   ]);
+  const withPhotos = def.sections.some((sec) => sec.fields.some((f) => f.type === "image" || f.type === "gallery"));
   const count = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
   const pages = Math.ceil(total / PER_PAGE);
   const link = (p: Record<string, string>) => `?${new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}), ...p }).toString()}`;
@@ -83,9 +100,21 @@ export default async function ListPage({ params, searchParams }: { params: Promi
           {rows.map((r) => (
             <tr key={r.id}>
               <td className="max-w-md">
-                <Link href={`/c/${def.key}/${r.id}`} className="font-semibold text-ink hover:text-pine">{r.title}</Link>
-                <p className="truncate font-mono text-xs text-muted">{def.url ? def.url.replace("{slug}", r.slug) : r.slug}</p>
-                {def.key === "pages" && RESERVED_PAGES.has(r.slug) ? <p className="text-xs text-amber-700">Has its own designed page: only the SEO title and description are used.</p> : null}
+                <div className="flex items-center gap-3">
+                  {withPhotos ? (
+                    <Link href={`/c/${def.key}/${r.id}`} className="size-12 shrink-0 overflow-hidden rounded-lg border border-line bg-black/5" tabIndex={-1} aria-hidden>
+                      {coverOf(r.data) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={thumbUrl(coverOf(r.data)!)} alt="" loading="lazy" className="size-full object-cover" />
+                      ) : <span className="grid size-full place-items-center text-[10px] font-semibold text-muted">No photo</span>}
+                    </Link>
+                  ) : null}
+                  <div className="min-w-0">
+                    <Link href={`/c/${def.key}/${r.id}`} className="font-semibold text-ink hover:text-pine">{r.title}</Link>
+                    <p className="truncate font-mono text-xs text-muted">{def.url ? def.url.replace("{slug}", r.slug) : r.slug}</p>
+                    {def.key === "pages" && RESERVED_PAGES.has(r.slug) ? <p className="text-xs text-amber-700">Has its own designed page: only the SEO title and description are used.</p> : null}
+                  </div>
+                </div>
               </td>
               {(def.columns ?? []).map((c) => {
                 const v = getPath(r.data, c.name);

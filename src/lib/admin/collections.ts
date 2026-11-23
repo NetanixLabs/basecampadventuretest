@@ -141,7 +141,7 @@ const trips: CollectionDef = {
         { name: "activities", label: "Activities", type: "multiselect", source: "activities", wide: true },
         { name: "tags", label: "Trip tags", type: "multiselect", source: "tripTags", wide: true },
         {
-          name: "facts", label: "Fact list (top of the page)", type: "repeater", itemLabel: "fact", titleField: "label", wide: true,
+          name: "facts", label: "Fact list (top of the page)", type: "repeater", itemLabel: "fact", titleField: "label", collapsed: true, wide: true,
           fields: [
             { name: "label", label: "Label", type: "text", placeholder: "Accommodation" },
             { name: "value", label: "Value", type: "text", placeholder: "Teahouse / lodge" },

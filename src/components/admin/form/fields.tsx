@@ -286,6 +286,13 @@ function Repeater({ field, value, onChange, ctx }: { field: Extract<Field, { typ
   };
   return (
     <div className="mt-2 space-y-2">
+      {value.length > 2 ? (
+        <div className="flex items-center gap-3 text-xs">
+          <span className="font-semibold text-muted">{value.length} {value.length === 1 ? field.itemLabel : `${field.itemLabel}s`}</span>
+          <button type="button" onClick={() => setOpen(new Set(value.map((_, i) => i)))} className="font-semibold text-pine hover:underline">Open all</button>
+          <button type="button" onClick={() => setOpen(new Set())} className="font-semibold text-pine hover:underline">Close all</button>
+        </div>
+      ) : null}
       {value.map((row, i) => (
         <div
           key={i}
