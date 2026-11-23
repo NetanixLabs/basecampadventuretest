@@ -62,7 +62,7 @@ export default async function BacklinksPage({ searchParams }: { searchParams: Pr
       </nav>
 
       {tab === "missing" ? (
-        <Card title="Addresses that showed “not found”" description="Most visited first. Fix the ones linked from other websites first: each is a backlink that's currently wasted." info="Pick the page each address should go to (a suggestion is filled in when one looks right) and press Fix. It becomes a permanent 301 redirect, which passes the link's value to the new page. Ignore the ones that don't matter, like typing mistakes.">
+        <Card title="Addresses that showed “not found”" description="Most visited first. Fix the ones linked from other websites first: each is a backlink that's currently wasted." info="Pick the page each address should go to (a suggestion is filled in when one looks right) and press Fix. It becomes a permanent redirect, which passes the link's value to the new page. Ignore the ones that don't matter, like typing mistakes.">
           <MissingList rows={missing.map((m) => ({ path: m.path, hits: m.hits, lastSeen: m.lastSeen.toISOString(), referrers: Object.entries((m.referrers as Record<string, number>) ?? {}).sort((a, b) => b[1] - a[1]).map(([url, n]) => ({ url, n, own: isOwn(url) })), suggestion: suggest(m.path) }))} />
         </Card>
       ) : tab === "backlinks" ? (

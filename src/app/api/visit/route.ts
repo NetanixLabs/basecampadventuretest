@@ -31,8 +31,12 @@ export async function POST(req: Request) {
   // Which other website sent the visitor, and to which page: the backlinks that bring people.
   const referral = referralOf(body?.ref, body?.path, req.headers.get("host") ?? "");
   if (referral) {
-    await db.$executeRaw`INSERT INTO "Referral" ("domain", "path", "visits", "firstSeen", "lastSeen") VALUES (${referral.domain}, ${referral.path}, 1, now(), now())
-      ON CONFLICT ("domain", "path") DO UPDATE SET "visits" = "Referral"."visits" + 1, "lastSeen" = now()`.catch(() => undefined);
+    // Capped at 20,000 website/page pairs, so made-up referrers can't fill the database.
+    const updated = await db.$executeRaw`UPDATE "Referral" SET "visits" = "visits" + 1, "lastSeen" = now() WHERE "domain" = ${referral.domain} AND "path" = ${referral.path}`.catch(() => 1);
+    if (!updated) {
+      await db.$executeRaw`INSERT INTO "Referral" ("domain", "path", "visits", "firstSeen", "lastSeen") SELECT ${referral.domain}, ${referral.path}, 1, now(), now()
+        WHERE (SELECT count(*) FROM "Referral") < 20000 ON CONFLICT ("domain", "path") DO NOTHING`.catch(() => undefined);
+    }
   }
   return new NextResponse(null, { status: 204 });
 }

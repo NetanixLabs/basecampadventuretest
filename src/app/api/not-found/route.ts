@@ -5,6 +5,7 @@ import { clientIpFrom } from "@/lib/ip";
 import { rateLimited } from "@/lib/server/store";
 
 export const dynamic = "force-dynamic";
+const MAX = 5000;
 
 /** Addresses nobody needs to hear about: bots probing for WordPress files and the like. */
 const NOISE = /^\/(wp-(login|admin|includes|json)|xmlrpc|\.env|\.git|cgi-bin|phpmyadmin|vendor|admin\.php|config\.)|\.(php|asp|aspx|jsp|cgi|env|sql|bak|zip)$/i;
@@ -36,6 +37,8 @@ export async function POST(req: Request) {
 
   const now = new Date();
   const row = await db.missingPage.findUnique({ where: { path } }).catch(() => null);
+  // Anyone can trigger this, so the list is capped: a flood of made-up addresses can't fill the database.
+  if (!row && (await db.missingPage.count().catch(() => MAX)) >= MAX) return new NextResponse(null, { status: 204 });
   const refs = { ...((row?.referrers as Record<string, number>) ?? {}) };
   if (ref) refs[ref] = (refs[ref] ?? 0) + 1;
   const top = Object.fromEntries(Object.entries(refs).sort((a, b) => b[1] - a[1]).slice(0, 20)) as Prisma.InputJsonValue;

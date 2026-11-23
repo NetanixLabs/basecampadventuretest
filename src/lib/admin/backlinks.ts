@@ -19,6 +19,8 @@ export type Check = { status: "live" | "nofollow" | "missing" | "error"; target:
 
 const OUR_HOSTS = new Set(["basecampadventure.com", "www.basecampadventure.com", new URL(site.url).hostname.toLowerCase()]);
 const MAX_BYTES = 3 * 1024 * 1024;
+/** Lets the checker open local test pages. Development only: ignored in production. */
+const ALLOW_LOCAL = process.env.BACKLINK_CHECK_ALLOW_LOCAL === "true" && process.env.NODE_ENV !== "production";
 
 function privateAddress(ip: string) {
   if (isIP(ip) === 4) {
@@ -31,8 +33,8 @@ function privateAddress(ip: string) {
 
 async function assertPublic(u: URL) {
   if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Only http and https pages can be checked.");
-  if (u.port && !["80", "443"].includes(u.port) && process.env.BACKLINK_CHECK_ALLOW_LOCAL !== "true") throw new Error("Only normal web addresses can be checked.");
-  if (process.env.BACKLINK_CHECK_ALLOW_LOCAL === "true") return; // local testing only
+  if (u.port && !["80", "443"].includes(u.port) && !ALLOW_LOCAL) throw new Error("Only normal web addresses can be checked.");
+  if (ALLOW_LOCAL) return; // local testing only
   const host = u.hostname.replace(/^\[|\]$/g, "");
   const ips = isIP(host) ? [host] : (await lookup(host, { all: true })).map((a) => a.address);
   if (!ips.length || ips.some(privateAddress)) throw new Error("That address isn't a public website.");

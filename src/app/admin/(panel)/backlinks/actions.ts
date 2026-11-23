@@ -12,10 +12,12 @@ type R = { ok: true; message?: string } | { ok: false; error: string };
 const fail = (e: unknown, fallback = "Something went wrong. Please try again."): R => ({ ok: false, error: e instanceof Denied ? e.message : e instanceof Error && e.message.startsWith("!") ? e.message.slice(1) : fallback });
 const done = (message?: string): R => { revalidatePath("/backlinks"); return { ok: true, message }; };
 
-/** Sends a missing address to a working page (a permanent 301, so the link keeps its value). */
+/** Sends a missing address to a working page (permanent, so the link keeps its value). */
 export async function fixMissingAction(path: string, to: string): Promise<R> {
   try {
-    const { user } = await assertUser("content");
+    // A redirect changes the live website at once, so it needs the Publish permission.
+    const { user } = await assertUser("publish");
+    if (!(await db.missingPage.findUnique({ where: { path } }))) throw new Error("!That address is no longer in the list.");
     const t = to.trim().replace(/^https?:\/\/(www\.)?basecampadventure\.com/, "");
     if (!t.startsWith("/") && !/^https?:\/\//.test(t)) throw new Error("!The new address must start with / or https://");
     if (t === path) throw new Error("!That's the same address.");

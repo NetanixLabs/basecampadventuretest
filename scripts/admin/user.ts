@@ -2,7 +2,7 @@
  * Create an admin account or reset a password from the server's terminal
  * (useful if everyone is locked out):
  *
- *   npm run admin:user -- --email you@example.com --name "Your Name" --role admin
+ *   npm run admin:user -- --email you@example.com --name "Your Name" --role admin   (or editor, sales)
  *   npm run admin:user -- --email you@example.com --reset-password
  *   npm run admin:user -- --email you@example.com --reset-2fa
  *
@@ -40,9 +40,12 @@ async function main() {
     return;
   }
 
-  const role = arg("role") === "editor" ? "editor" : (await db.user.count()) === 0 ? "owner" : "admin";
+  // The very first account is the owner. After that: admin, editor or sales, named explicitly.
+  const asked = arg("role") ?? "admin";
+  if (!["admin", "editor", "sales"].includes(asked)) throw new Error(`Unknown --role "${asked}". Use admin, editor or sales.`);
+  const role = (await db.user.count()) === 0 ? "owner" : (asked as "admin" | "editor" | "sales");
   await db.user.create({ data: { email, name: arg("name") ?? email.split("@")[0], role, passwordHash: await hashPassword(password) } });
-  console.log(`Created ${role === "editor" ? "an editor" : "a main admin"} account for ${email}.${arg("password") ? "" : `\nTemporary password: ${password}`}`);
+  console.log(`Created ${role === "owner" ? "the owner" : role === "admin" ? "a main admin" : role === "editor" ? "an editor" : "a sales"} account for ${email}.${arg("password") ? "" : `\nTemporary password: ${password}`}`);
 }
 
 main()

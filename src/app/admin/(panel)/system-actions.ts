@@ -8,7 +8,7 @@ import { db } from "@/lib/admin/db";
 import { sendTemplate } from "@/lib/admin/email/send";
 import { addRedirect } from "@/lib/admin/entries";
 import { PERMISSIONS } from "@/lib/admin/permissions";
-import { Denied, assertUser } from "@/lib/admin/guards";
+import { Denied, GRANTS, assertUser, can } from "@/lib/admin/guards";
 import { hashPassword, passwordProblem, verifyPassword } from "@/lib/admin/password";
 import { refreshSite, writeRedirects, writeSettings } from "@/lib/admin/publish";
 import { issueResetLink } from "@/lib/admin/reset";
@@ -86,6 +86,17 @@ export async function saveCompany(input: unknown): Promise<R> {
 /** The two roles the office uses: main admin and editor (owner is the first main admin). */
 const ROLES: Role[] = ["admin", "editor", "sales"];
 
+/** What someone can actually do: their custom permissions if the owner set any, otherwise their role's. */
+const rightsOf = (u: { role: Role; permissions?: string[] }) => PERMISSIONS.map((p) => p.key).filter((k) => can(u, k));
+
+/** Nobody but the owner can give rights they don't have themselves (no creating a stronger account). */
+function withinMyRights(actor: { role: Role; permissions?: string[] }, rights: string[]) {
+  if (actor.role === "owner") return;
+  const mine = new Set<string>(rightsOf(actor));
+  const extra = rights.filter((r) => !mine.has(r));
+  if (extra.length) throw new Error(`!You can only give rights you have yourself. Missing: ${extra.map((k) => PERMISSIONS.find((p) => p.key === k)?.label ?? k).join(", ")}. Ask the owner.`);
+}
+
 export async function inviteUser(input: { email: string; name: string; role: Role }): Promise<R> {
   try {
     const { user } = await assertUser("users");
@@ -94,6 +105,7 @@ export async function inviteUser(input: { email: string; name: string; role: Rol
     if (!input.name.trim()) throw new Error("!Enter their name.");
     if (!ROLES.includes(input.role)) throw new Error("!Choose a role.");
     if (await db.user.findUnique({ where: { email } })) throw new Error("!That email already has an account.");
+    withinMyRights(user, GRANTS[input.role]);
     const u = await db.user.create({ data: { email, name: input.name.trim(), role: input.role, passwordHash: await hashPassword(randomBytes(32).toString("base64url")) } });
     const link = await issueResetLink(u.id, 3 * 24 * 3600_000);
     const r = await sendTemplate("user-invite", email, { name: u.name.split(" ")[0], inviter: user.name }, { buttonHref: link });
@@ -114,6 +126,12 @@ export async function updateUser(id: string, change: { role?: Role; status?: "ac
     if (change.permissions && target.role === "owner") throw new Error("!The owner always has every permission.");
     if (target.role === "owner" && user.role !== "owner") throw new Error("!Only the owner can change the owner's account.");
     if (change.role === "owner" && user.role !== "owner") throw new Error("!Only the owner can make someone an owner.");
+    // Someone with more rights than you can't be changed by you; and you can't give more than you have.
+    if (user.role !== "owner") {
+      if (rightsOf(target).some((r) => !can(user, r))) throw new Error("!This person has rights you don't have, so only the owner can change their account.");
+      const custom = change.permissions ?? target.permissions;
+      withinMyRights(user, custom.length ? custom : GRANTS[change.role ?? target.role]);
+    }
     if ((change.role && change.role !== "owner" && target.role === "owner") || (change.status === "suspended" && target.role === "owner")) {
       if ((await db.user.count({ where: { role: "owner", status: "active" } })) <= 1) throw new Error("!There must always be one active owner.");
     }
@@ -173,10 +191,12 @@ export async function signOutOthers(): Promise<R> {
 
 export async function saveRedirect(from: string, to: string): Promise<R> {
   try {
-    const { user } = await assertUser("content");
+    // A redirect changes the live website at once, so it needs the Publish permission.
+    const { user } = await assertUser("publish");
     const f = from.trim().replace(/^https?:\/\/[^/]+/, "");
     const t = to.trim().replace(/^https?:\/\/(www\.)?basecampadventure\.com/, "");
     if (!f.startsWith("/")) throw new Error("!The old address must start with /");
+    if (f === "/" || /^\/(admin|portal|api|_next)(\/|$)/.test(f)) throw new Error("!That address can't be redirected.");
     if (!t.startsWith("/") && !/^https?:\/\//.test(t)) throw new Error("!The new address must start with / or https://");
     await addRedirect(f.endsWith("/") || /\.\w+$/.test(f) ? f : `${f}/`, t, "Added by hand");
     refreshSite();
@@ -189,7 +209,7 @@ export async function saveRedirect(from: string, to: string): Promise<R> {
 
 export async function deleteRedirect(id: string): Promise<R> {
   try {
-    const { user } = await assertUser("content");
+    const { user } = await assertUser("publish");
     const r = await db.redirect.delete({ where: { id } });
     await writeRedirects();
     refreshSite();

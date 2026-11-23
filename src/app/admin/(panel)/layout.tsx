@@ -56,16 +56,14 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         ...(can(r, "email") ? [{ href: "/emails", label: "Email templates", icon: "Mail" as const }] : []),
       ],
     },
-    ...(can(r, "settings")
-      ? [{
-          label: "System",
-          items: [
-            { href: "/settings", label: "Settings", icon: "Settings" as const },
-            ...(can(r, "users") ? [{ href: "/users", label: "Team accounts", icon: "Shield" as const }] : []),
-            { href: "/activity", label: "Activity log", icon: "BarChart3" as const },
-          ],
-        }]
-      : []),
+    {
+      label: "System",
+      items: [
+        ...(can(r, "settings") ? [{ href: "/settings", label: "Settings", icon: "Settings" as const }] : []),
+        ...(can(r, "users") ? [{ href: "/users", label: "Team accounts", icon: "Shield" as const }] : []),
+        ...(can(r, "settings") ? [{ href: "/activity", label: "Activity log", icon: "BarChart3" as const }] : []),
+      ],
+    },
   ].filter((g) => g.items.length);
 
   return (
